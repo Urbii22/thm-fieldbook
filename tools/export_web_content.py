@@ -14,6 +14,21 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "web" / "data" / "content.json"
 
 
+MASTER_SECTION_SLUGS = {
+    "ultra-quick-start": "ultra-quick-start",
+    "arquetipos-de-rooms": "arquetipos-de-rooms",
+    "windows-local-privilege-escalation": "windows-privesc",
+    "pivoting-y-tunneling": "pivoting",
+    "web-moderna-y-apis": "web-y-apis",
+    "metodologia-cve-exploit": "cve-y-exploits",
+    "credenciales-cracking-y-loot": "credenciales-y-loot",
+    "plantilla-de-room-writeup": "notas-y-cierre",
+    "equivalencias-windows-linux": "equivalencias",
+    "errores-tipicos": "errores-tipicos",
+    "checklist-de-atasco": "checklist-de-atasco",
+}
+
+
 TAG_RULES = {
     "web": ["web", "api", "jwt", "idor", "ssrf", "upload", "wordpress", "sqli", "graphql"],
     "windows": ["windows", "winrm", "powershell", "privilege", "registry", "servicios"],
@@ -195,8 +210,66 @@ def normalize_section(section: dict[str, Any], index: int) -> dict[str, Any]:
     }
 
 
+def extract_master_commands(doc: dict[str, Any]) -> list[str]:
+    commands: list[str] = []
+    for section in doc.get("sections", []):
+        for key in ("code", "code2"):
+            for line in section.get(key, []):
+                command = normalize_text(line).strip()
+                if command:
+                    commands.append(command)
+    return commands
+
+
+def load_master_docs() -> list[dict[str, Any]]:
+    source_path = ROOT / "tools" / "generate_thm_playbook.py"
+    module = ast.parse(source_path.read_text(encoding="utf-8"))
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "GENERATED_DOCS" for target in node.targets):
+            expression = ast.Expression(node.value)
+            ast.fix_missing_locations(expression)
+            return eval(compile(expression, str(source_path), "eval"), {"__builtins__": {}}, {"cm": 1})
+    raise RuntimeError("No GENERATED_DOCS assignment found in generate_thm_playbook.py")
+
+
+def build_master_command_index() -> dict[str, list[str]]:
+    command_index: dict[str, list[str]] = {}
+    for doc in load_master_docs():
+        source_slug = slugify(normalize_text(doc.get("short", "")))
+        target_slug = MASTER_SECTION_SLUGS.get(source_slug)
+        if not target_slug:
+            continue
+        command_index[target_slug] = extract_master_commands(doc)
+    return command_index
+
+
+def should_merge_master_commands(sections: list[dict[str, Any]]) -> bool:
+    slugs = {section["slug"] for section in sections}
+    return len(sections) >= 10 and bool(slugs.intersection(MASTER_SECTION_SLUGS.values()))
+
+
+def merge_master_commands(sections: list[dict[str, Any]]) -> None:
+    if not should_merge_master_commands(sections):
+        return
+
+    master_commands = build_master_command_index()
+    for section in sections:
+        supplemental = master_commands.get(section["slug"], [])
+        if not supplemental:
+            continue
+
+        seen = set(section["commands"])
+        additions = [command for command in supplemental if command not in seen]
+        if not additions:
+            continue
+
+        section["commands"].extend(additions)
+        section["searchText"] = " ".join([section["searchText"], *additions])
+
+
 def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
     normalized_sections = [normalize_section(section, index) for index, section in enumerate(sections, 1)]
+    merge_master_commands(normalized_sections)
     all_tags = sorted({tag for section in normalized_sections for tag in section["tags"]})
     phases = sorted({section["phase"] for section in normalized_sections})
 

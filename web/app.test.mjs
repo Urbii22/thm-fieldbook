@@ -108,6 +108,15 @@ assert.equal(
 
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
+const content = JSON.parse(readFileSync(new URL("./data/content.json", import.meta.url), "utf8"));
+const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
+
+for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster"]) {
+  assert.ok(
+    filterCommandEntries(contentCommandIndex, query).length > 0,
+    `Expected searchable command results for ${query}`,
+  );
+}
 
 assert.match(html, /<h1\b[^>]*>/);
 assert.doesNotMatch(`${html}\n${js}`, /Ã|Â|â[^\s<>"']*/);
