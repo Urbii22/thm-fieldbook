@@ -1,11 +1,12 @@
-const CACHE = "thm-fieldbook-v4";
+const CACHE = "thm-fieldbook-v5";
+const VERSION = "20260706-master-commands";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.mjs",
-  "./data/content.json",
-  "./data/revshells.json",
+  `./styles.css?v=${VERSION}`,
+  `./app.mjs?v=${VERSION}`,
+  `./data/content.json?v=${VERSION}`,
+  `./data/revshells.json?v=${VERSION}`,
   "./manifest.webmanifest",
   "./icon.svg",
 ];
@@ -28,6 +29,20 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  const isDataRequest = url.pathname.endsWith("/data/content.json") || url.pathname.endsWith("/data/revshells.json");
+  if (isDataRequest) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
