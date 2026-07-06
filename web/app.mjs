@@ -239,6 +239,31 @@ function queryTerms() {
     .filter((term) => term.length >= 2);
 }
 
+export function filterCommandEntries(commandIndex, query, limit = 80) {
+  const terms = normalizeQuery(query).split(" ").filter(Boolean);
+  const scored = [];
+  for (const entry of commandIndex) {
+    const hay = normalizeQuery(entry.command);
+    const words = hay.split(/[^a-z0-9_.-]+/).filter(Boolean);
+    let score = terms.length ? 0 : 1;
+    let ok = true;
+    for (const term of terms) {
+      if (hay.startsWith(term)) score += 8;
+      else if (words.includes(term)) score += 5;
+      else if (hay.includes(term)) score += 2;
+      else {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && score > 0) scored.push({ entry, score });
+  }
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((item) => item.entry);
+}
+
 function highlight(escaped, terms) {
   if (!terms.length) return escaped;
   const pattern = terms
@@ -545,12 +570,14 @@ function renderShortcuts(data) {
 
 function renderResults(sections) {
   const container = document.querySelector("[data-results]");
+  const commandMatches = state.query ? renderInlineCommandMatches() : "";
   if (!sections.length) {
-    container.innerHTML = `<p class="list-empty">Sin coincidencias. Cambia fase, tema o termino.</p>`;
+    container.innerHTML = commandMatches || `<p class="list-empty">Sin coincidencias. Cambia fase, tema o termino.</p>`;
+    bindInlineCommandMatches(container);
     return;
   }
   const terms = queryTerms();
-  container.innerHTML = sections
+  container.innerHTML = commandMatches + sections
     .map((section) => {
       const fav = state.favs.has(section.slug);
       return `<div class="result-wrap">
@@ -567,6 +594,7 @@ function renderResults(sections) {
       </div>`;
     })
     .join("");
+  bindInlineCommandMatches(container);
   container.querySelectorAll(".result").forEach((button) => {
     button.addEventListener("click", () => {
       state.activeSlug = button.dataset.slug;
@@ -583,23 +611,47 @@ function renderResults(sections) {
   });
 }
 
+function renderInlineCommandMatches() {
+  const entries = filterCommandEntries(state.commandIndex, state.query, 6);
+  if (!entries.length) return "";
+  const terms = queryTerms();
+  return `<section class="command-matches" aria-label="Comandos encontrados">
+    <div class="command-matches-head">
+      <strong>Comandos encontrados</strong>
+      <button type="button" data-switch-commands>${entries.length === 6 ? "ver mas" : `${entries.length} resultados`}</button>
+    </div>
+    ${entries
+      .map((entry) => {
+        const command = adaptCommand(entry.command, state.room);
+        const value = escapeHtml(command);
+        return `<button type="button" class="command-match" data-copy="${value}" data-slug="${escapeHtml(entry.section.slug)}" title="Copiar comando">
+          <code>${highlight(markPlaceholders(value), terms)}</code>
+          <span>${escapeHtml(entry.section.title)}</span>
+          <b>copy</b>
+        </button>`;
+      })
+      .join("")}
+  </section>`;
+}
+
+function bindInlineCommandMatches(container) {
+  container.querySelector("[data-switch-commands]")?.addEventListener("click", () => {
+    state.mode = "commands";
+    render();
+  });
+  container.querySelectorAll(".command-match").forEach((button) => {
+    button.addEventListener("dblclick", () => {
+      state.mode = "sections";
+      state.activeSlug = button.dataset.slug;
+      pushRecent(button.dataset.slug);
+      writeHash(true);
+      render();
+    });
+  });
+}
+
 function filterCommands(limit = 80) {
-  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
-  const scored = [];
-  for (const entry of state.commandIndex) {
-    const hay = normalizeQuery(entry.command);
-    let score = terms.length ? 0 : 1;
-    let ok = true;
-    for (const term of terms) {
-      if (hay.includes(term)) score += 2;
-      else {
-        ok = false;
-        break;
-      }
-    }
-    if (ok && score > 0) scored.push({ entry, score });
-  }
-  return scored.slice(0, limit).map((item) => item.entry);
+  return filterCommandEntries(state.commandIndex, state.query, limit);
 }
 
 function renderCommandResults() {

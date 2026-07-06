@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { adaptCommand, buildRoomContext, filterSections, getTopCommands, normalizeQuery, shouldRenderCodeBlock } from "./app.mjs";
+import {
+  adaptCommand,
+  buildRoomContext,
+  filterCommandEntries,
+  filterSections,
+  getTopCommands,
+  normalizeQuery,
+  shouldRenderCodeBlock,
+} from "./app.mjs";
 
 const sections = [
   {
@@ -40,6 +48,29 @@ assert.deepEqual(
 );
 
 assert.deepEqual(getTopCommands(sections, 2), ["ffuf -u http://$IP/FUZZ", "curl -i http://$IP"]);
+
+const commandIndex = sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
+
+assert.deepEqual(
+  filterCommandEntries(commandIndex, "ffuf").map((entry) => entry.command),
+  ["ffuf -u http://$IP/FUZZ"],
+);
+
+assert.deepEqual(
+  filterCommandEntries(commandIndex, "curl ip").map((entry) => entry.command),
+  ["curl -i http://$IP"],
+);
+
+assert.deepEqual(
+  filterCommandEntries(
+    [
+      { command: "mkdir -p nmap web loot", section: sections[0] },
+      { command: "nmap -sC -sV $IP", section: sections[0] },
+    ],
+    "nmap",
+  ).map((entry) => entry.command),
+  ["nmap -sC -sV $IP", "mkdir -p nmap web loot"],
+);
 
 assert.deepEqual(buildRoomContext(" 10.10.145.23 "), {
   ip: "10.10.145.23",

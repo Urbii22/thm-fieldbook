@@ -729,6 +729,89 @@ mark.hit {
   gap: 8px;
 }
 
+.command-matches {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(35, 134, 54, 0.06);
+  padding: 10px;
+}
+
+.command-matches-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.command-matches-head strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.command-matches-head button {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.command-matches-head button:hover {
+  border-color: var(--blue);
+  color: var(--text);
+}
+
+.command-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: var(--code-bg);
+  cursor: pointer;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.command-match:hover {
+  border-color: rgba(88, 166, 255, 0.45);
+}
+
+.command-match code {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.command-match span {
+  grid-column: 1;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+.command-match b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  border-radius: 7px;
+  background: var(--panel-hi);
+  color: var(--muted);
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.command-match:hover b {
+  color: var(--text);
+}
+
 .list-empty {
   margin: 0;
   padding: 20px 4px;
