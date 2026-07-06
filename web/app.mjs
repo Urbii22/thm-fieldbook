@@ -106,6 +106,31 @@ const ALIASES = {
   windows: ["winpeas", "powershell", "servicios", "registry", "winrm"],
 };
 
+const COMMAND_QUERY_TERMS = new Set([
+  "arjun",
+  "certutil",
+  "chisel",
+  "curl",
+  "enum4linux",
+  "feroxbuster",
+  "ffuf",
+  "gobuster",
+  "hashcat",
+  "john",
+  "jwt_tool",
+  "katana",
+  "ligolo",
+  "linpeas",
+  "nmap",
+  "nxc",
+  "proxychains",
+  "smbclient",
+  "sqlmap",
+  "whatweb",
+  "winpeas",
+  "wpscan",
+]);
+
 function boundedEditDistance(a, b, max) {
   if (Math.abs(a.length - b.length) > max) return max + 1;
   const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
@@ -654,6 +679,17 @@ function filterCommands(limit = 80) {
   return filterCommandEntries(state.commandIndex, state.query, limit);
 }
 
+function isCommandFocusedQuery(entries) {
+  if (state.mode === "commands") return entries.length > 0;
+  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
+  if (!terms.length || !entries.length) return false;
+  if (terms.some((term) => COMMAND_QUERY_TERMS.has(term))) return true;
+  return entries.some((entry) => {
+    const words = normalizeQuery(entry.command).split(/[^a-z0-9_.-]+/).filter(Boolean);
+    return terms.every((term) => words.includes(term));
+  });
+}
+
 function renderCommandResults() {
   const container = document.querySelector("[data-results]");
   const entries = filterCommands();
@@ -690,6 +726,66 @@ function renderCommandResults() {
       render();
     });
   });
+}
+
+function renderCommandSearchDetail() {
+  const container = document.querySelector("[data-detail]");
+  const entries = filterCommands(80);
+  if (!state.query || !isCommandFocusedQuery(entries)) return false;
+
+  const terms = queryTerms();
+  const copyAll = escapeHtml(entries.map((entry) => adaptCommand(entry.command, state.room)).join("\n"));
+  const helper = state.room.ip
+    ? `Adaptados a <b>${escapeHtml(state.room.ip)}</b>.`
+    : "Fija la IP de la room arriba para autocompletar <b>$IP</b> / <b>$URL</b>.";
+
+  container.setAttribute("style", phaseStyle(entries[0].section.phase));
+  container.innerHTML = `
+    <header class="detail-head command-search-head">
+      <div class="detail-meta">
+        <span class="detail-phase">Busqueda</span>
+        <span class="detail-count">${entries.length} comandos</span>
+      </div>
+      <h2>Comandos para "${escapeHtml(state.query)}"</h2>
+      <p>Resultados copiables del master y de las secciones. Doble click en un resultado de la izquierda abre su seccion.</p>
+    </header>
+    <section class="detail-body">
+      <section class="command-shelf command-focus" aria-label="Comandos encontrados">
+        <div class="command-shelf-head">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <h3>comandos encontrados</h3>
+          <button type="button" class="copy-all" data-copy="${copyAll}" title="Copiar todos">${COPY_ICON}<span class="copy-label">copiar todo</span></button>
+        </div>
+        <p class="command-hint">${helper}</p>
+        <div class="command-grid command-hit-grid">
+          ${entries
+            .map(
+              (entry) => `<article class="command-hit-card" style="${phaseStyle(entry.section.phase)}">
+                <div class="command-hit-source">
+                  <span>${escapeHtml(phaseLabel(entry.section.phase))}</span>
+                  <button type="button" data-open-section="${escapeHtml(entry.section.slug)}">${escapeHtml(entry.section.title)}</button>
+                </div>
+                ${commandCard(entry.command, { edit: true, terms })}
+              </article>`,
+            )
+            .join("")}
+        </div>
+      </section>
+    </section>
+  `;
+  container.querySelectorAll("[data-open-section]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeSlug = button.dataset.openSection;
+      state.query = "";
+      state.mode = "sections";
+      document.querySelector("[data-search]").value = "";
+      pushRecent(state.activeSlug);
+      writeHash(true);
+      render();
+    });
+  });
+  bindCommandTools();
+  return true;
 }
 
 function commandsHtml(section) {
@@ -1137,7 +1233,7 @@ function render() {
   if (favBtn) favBtn.classList.toggle("active", state.favOnly);
   if (state.mode === "commands") renderCommandResults();
   else renderResults(sections);
-  renderDetail(active);
+  if (!renderCommandSearchDetail()) renderDetail(active);
   renderRoomConfig();
   renderNotes();
   renderRoomBadge();
@@ -1201,10 +1297,10 @@ function bindModeToggle() {
 }
 
 async function init() {
-  const response = await fetch("./data/content.json?v=20260706-master-commands");
+  const response = await fetch("./data/content.json?v=20260706-command-detail");
   state.data = await response.json();
   try {
-    const revResponse = await fetch("./data/revshells.json?v=20260706-master-commands");
+    const revResponse = await fetch("./data/revshells.json?v=20260706-command-detail");
     const revData = await revResponse.json();
     REV_TEMPLATES = Array.isArray(revData.templates) ? revData.templates : [];
     STABILIZE = Array.isArray(revData.stabilize) ? revData.stabilize : [];
