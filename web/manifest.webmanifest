@@ -1,0 +1,20 @@
+{
+  "name": "THM Fieldbook",
+  "short_name": "Fieldbook",
+  "description": "Base de consulta rapida para playbooks de TryHackMe y CTF.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

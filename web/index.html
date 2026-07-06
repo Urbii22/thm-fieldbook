@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>THM Fieldbook</title>
+    <meta name="description" content="Base de consulta rapida para playbooks de TryHackMe y CTF." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0e14" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="scanline" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#top">
+          <span class="brand-mark" aria-hidden="true">&gt;_</span>
+          <span class="brand-text">
+            <b>THM Fieldbook</b>
+            <small>consola de campo</small>
+          </span>
+        </a>
+
+        <label class="search" aria-label="Buscar">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <input data-search type="search" placeholder="smb, jwt, hashcat, pivot, winpeas..." autocomplete="off" spellcheck="false" />
+          <kbd class="search-kbd">/</kbd>
+        </label>
+
+        <div class="target" data-target-state="idle">
+          <span class="target-led" aria-hidden="true"></span>
+          <div class="target-fields">
+            <span class="target-label">Target</span>
+            <input data-room-ip type="text" inputmode="decimal" placeholder="10.10.145.23" autocomplete="off" spellcheck="false" />
+          </div>
+          <small data-room-status>sin IP</small>
+        </div>
+
+        <button type="button" class="room-toggle" data-room-toggle aria-expanded="false" aria-controls="roompanel" title="Variables y notas de la room">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span>room</span>
+          <b class="room-count" data-room-count hidden></b>
+        </button>
+      </div>
+
+      <section class="roompanel" id="roompanel" data-roompanel aria-label="Variables y notas de la room" hidden>
+        <div class="roompanel-inner">
+          <div class="roompanel-head">
+            <h2>Variables de la room</h2>
+            <p>Se sustituyen en cada comando. Persisten al recargar. Lo que dejes en <b>rojo</b> sigue sin resolver.</p>
+          </div>
+          <div class="vars" data-vars></div>
+          <div class="notes-block">
+            <h2>Notas / loot</h2>
+            <textarea data-notes rows="5" spellcheck="false" placeholder="Puertos abiertos, hostnames, creds encontradas, siguiente paso..."></textarea>
+          </div>
+
+          <div class="revshell-block">
+            <div class="revshell-head">
+              <h2>Reverse shell</h2>
+              <div class="revshell-controls">
+                <label class="rev-ctl">
+                  <span>Tipo</span>
+                  <select data-rev-type></select>
+                </label>
+                <label class="rev-ctl">
+                  <span>LPORT</span>
+                  <input data-rev-lport type="text" inputmode="numeric" placeholder="4444" spellcheck="false" />
+                </label>
+                <span class="rev-lhost">LHOST = <b data-rev-lhost>ATTACKER_IP</b></span>
+              </div>
+            </div>
+            <div class="rev-out" data-rev-out></div>
+            <p class="rev-listener-label">Listener</p>
+            <div class="rev-out" data-rev-listener></div>
+          </div>
+
+          <div class="roompanel-foot">
+            <button type="button" class="reset-room" data-reset-room>Reset room</button>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="shell" id="top">
+      <section class="quickbar" aria-label="Accesos rapidos por situacion">
+        <div class="stats" aria-label="Resumen de contenido">
+          <span class="stat"><b data-total>0</b><small>temas</small></span>
+          <span class="stat"><b data-command-total>0</b><small>comandos</small></span>
+          <span class="stat"><b data-count>0</b><small>en vista</small></span>
+        </div>
+        <div class="shortcuts" data-shortcuts aria-label="Atajos por situacion"></div>
+      </section>
+
+      <section class="workbench">
+        <aside class="finder" aria-label="Filtros y resultados">
+          <div class="filter-block">
+            <h2>Fase</h2>
+            <div class="chips" data-phases></div>
+          </div>
+          <div class="filter-block">
+            <h2>Tema</h2>
+            <div class="chips" data-tags></div>
+          </div>
+
+          <div class="list-head">
+            <div class="mode-toggle" data-mode role="tablist" aria-label="Modo de resultados">
+              <button type="button" data-mode-val="sections" class="active" role="tab">Secciones</button>
+              <button type="button" data-mode-val="commands" role="tab">Comandos</button>
+            </div>
+            <div class="list-head-right">
+              <button type="button" class="fav-filter" data-fav-only title="Solo favoritos" aria-label="Solo favoritos">★</button>
+              <span class="list-hint" data-list-hint>↑↓ navegar</span>
+            </div>
+          </div>
+          <div class="recent-row" data-recent hidden></div>
+          <div class="results" data-results role="listbox" aria-label="Resultados"></div>
+        </aside>
+
+        <article class="detail" data-detail aria-live="polite"></article>
+      </section>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

