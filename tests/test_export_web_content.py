@@ -48,6 +48,15 @@ class ExportWebContentTests(unittest.TestCase):
         self.assertGreaterEqual(len(sections), 10)
         self.assertEqual(sections[0]["short"], "Ultra quick start")
 
+    def test_web_section_includes_gobuster_command_alternatives(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        web_section = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+
+        commands = "\n".join(web_section["commands"])
+
+        self.assertIn("gobuster dir", commands)
+        self.assertIn("gobuster vhost", commands)
+
     def test_phase_is_inferred_from_primary_topic_before_broad_tags(self):
         payload = export_web_content.build_payload(
             [
