@@ -1,4 +1,4 @@
-const CACHE = "thm-fieldbook-v3";
+const CACHE = "thm-fieldbook-v4";
 const ASSETS = [
   "./",
   "./index.html",

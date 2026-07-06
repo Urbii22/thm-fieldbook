@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { adaptCommand, buildRoomContext, filterSections, getTopCommands, normalizeQuery } from "./app.mjs";
+import { readFileSync } from "node:fs";
+import { adaptCommand, buildRoomContext, filterSections, getTopCommands, normalizeQuery, shouldRenderCodeBlock } from "./app.mjs";
 
 const sections = [
   {
@@ -21,6 +22,7 @@ const sections = [
 ];
 
 assert.equal(normalizeQuery("  Web   APIs  "), "web apis");
+assert.equal(normalizeQuery("víctima máquina acción"), "victima maquina accion");
 
 assert.deepEqual(
   filterSections(sections, { query: "jwt", tag: "all", phase: "all" }).map((section) => section.title),
@@ -62,3 +64,19 @@ assert.equal(
 );
 
 assert.equal(adaptCommand("echo ATTACKER_IP", { ip: "10.10.145.23", url: "http://10.10.145.23" }), "echo ATTACKER_IP");
+
+assert.equal(
+  shouldRenderCodeBlock(["curl -i $URL/", "whatweb -a 3 $URL"], { commands: ["curl -i $URL/", "whatweb -a 3 $URL"] }),
+  false,
+);
+
+assert.equal(
+  shouldRenderCodeBlock(["curl -i $URL/", "ffuf -u $URL/FUZZ"], { commands: ["curl -i $URL/"] }),
+  true,
+);
+
+const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
+const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
+
+assert.match(html, /<h1\b[^>]*>/);
+assert.doesNotMatch(`${html}\n${js}`, /Ã|Â|â[^\s<>"']*/);

@@ -175,6 +175,12 @@ export function getTopCommands(sections, limit = 8) {
   return sections.flatMap((section) => section.commands).slice(0, limit);
 }
 
+export function shouldRenderCodeBlock(lines, section) {
+  const commands = new Set((section?.commands || []).map((command) => String(command).trim()));
+  const normalized = (lines || []).map((line) => String(line).trim()).filter(Boolean);
+  return normalized.some((line) => !commands.has(line));
+}
+
 export function buildRoomContext(ipValue) {
   const ip = String(ipValue || "").trim();
   return {
@@ -409,6 +415,7 @@ function blockHtml(block, ctx = {}) {
     return `<ul class="checklist">${items}</ul>`;
   }
   if (kind === "code") {
+    if (!shouldRenderCodeBlock(payload, ctx.section)) return "";
     return `<div class="code-stack">${payload
       .map((line) => commandCard(line, { edit: true, terms: queryTerms() }))
       .join("")}</div>`;
@@ -688,7 +695,7 @@ function renderDetail(section) {
       <div class="tag-row">${section.tags.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}</div>
     </header>
     <section class="detail-body">${commandsHtml(section)}${section.blocks
-      .map((block, index) => blockHtml(block, { slug: section.slug, index }))
+      .map((block, index) => blockHtml(block, { slug: section.slug, index, section }))
       .join("")}</section>
   `;
   container.querySelectorAll("[data-tag]").forEach((button) => {
