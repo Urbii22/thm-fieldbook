@@ -37,6 +37,7 @@ let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
 let REV_TEMPLATES = [];
+let STABILIZE = [];
 
 // Secondary room variables (IP lives in the topbar). token = human hint of what it fills.
 const ROOM_VARS = [
@@ -431,6 +432,25 @@ function buildRevshell(id, lhost, lport) {
   return tpl.replaceAll("{LHOST}", lhost).replaceAll("{LPORT}", lport);
 }
 
+function b64Utf8(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function b64Utf16le(str) {
+  let bin = "";
+  for (const ch of str) {
+    const c = ch.charCodeAt(0);
+    bin += String.fromCharCode(c & 0xff, (c >> 8) & 0xff);
+  }
+  return btoa(bin);
+}
+
+function encodingVariants(command, type) {
+  const url = encodeURIComponent(command);
+  const b64 = type === "powershell" ? `powershell -enc ${b64Utf16le(command)}` : `echo '${b64Utf8(command)}' | base64 -d | bash`;
+  return { url, b64 };
+}
+
 function renderRevshell() {
   const out = document.querySelector("[data-rev-out]");
   const listenerOut = document.querySelector("[data-rev-listener]");
@@ -453,10 +473,30 @@ function renderRevshell() {
   if (typeSelect) typeSelect.value = state.profile.revType || REV_TEMPLATES[0].id;
   if (lportInput && document.activeElement !== lportInput) lportInput.value = lport;
   if (lhostReadout) lhostReadout.textContent = lhost;
-  const command = buildRevshell(state.profile.revType || REV_TEMPLATES[0].id, lhost, lport);
+  const type = state.profile.revType || REV_TEMPLATES[0].id;
+  const command = buildRevshell(type, lhost, lport);
   out.innerHTML = commandCard(command, { edit: true });
   if (listenerOut) listenerOut.innerHTML = commandCard(`nc -lvnp ${lport}`, {});
+
+  const enc = document.querySelector("[data-rev-enc]");
+  if (enc) {
+    const { url, b64 } = encodingVariants(command, type);
+    enc.innerHTML = `<span class="rev-enc-label">variantes</span>
+      <button type="button" class="rev-enc-btn" data-copy="${escapeHtml(b64)}" title="Copiar codificado en base64">base64</button>
+      <button type="button" class="rev-enc-btn" data-copy="${escapeHtml(url)}" title="Copiar URL-encoded">url</button>`;
+  }
+
+  const stab = document.querySelector("[data-rev-stabilize]");
+  if (stab) {
+    stab.innerHTML = STABILIZE.map((step) => {
+      const cmd = (step.parts || []).join("");
+      const label = step.label ? `<span class="stab-label">${escapeHtml(step.label)}</span>` : "";
+      return `<div class="stab-step">${label}${commandCard(cmd, {})}</div>`;
+    }).join("");
+  }
+
   bindCommandToolsIn(document.querySelector(".revshell-block"));
+  bindCopyButtons();
 }
 
 function renderOptions(container, values, selected, labeler, onSelect) {
@@ -1108,8 +1148,10 @@ async function init() {
     const revResponse = await fetch("./data/revshells.json");
     const revData = await revResponse.json();
     REV_TEMPLATES = Array.isArray(revData.templates) ? revData.templates : [];
+    STABILIZE = Array.isArray(revData.stabilize) ? revData.stabilize : [];
   } catch {
     REV_TEMPLATES = [];
+    STABILIZE = [];
   }
   state.activeSlug = state.data.sections[0]?.slug || "";
   state.profile = loadProfile();
