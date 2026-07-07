@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v8";
-const VERSION = "20260707-content-expand";
+const CACHE = "thm-fieldbook-v9";
+const VERSION = "20260707-section-nav";
 const ASSETS = [
   "./",
   "./index.html",

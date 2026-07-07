@@ -955,21 +955,106 @@ function commandsHtml(section) {
   </section>`;
 }
 
+// Split a section's blocks into groups at each ("h2", …) boundary. Content before
+// the first h2 is an untitled intro group. Keeps each block's original index so
+// checklist keys (slug::blockIndex::itemIndex) stay stable.
+function buildSectionGroups(section) {
+  const groups = [];
+  let current = { title: null, blocks: [] };
+  (section.blocks || []).forEach((block, index) => {
+    if (block[0] === "h2") {
+      if (current.title !== null || current.blocks.length) groups.push(current);
+      current = { title: block[1], blocks: [] };
+    } else {
+      current.blocks.push([block, index]);
+    }
+  });
+  if (current.title !== null || current.blocks.length) groups.push(current);
+  return groups;
+}
+
+function countGroupCommands(group) {
+  return group.blocks.reduce((sum, [block]) => (block[0] === "code" ? sum + block[1].length : sum), 0);
+}
+
 // Commands that live only in section.commands (e.g. merged from the master guide)
-// and are not present in any code block, so the detail view still shows them.
-function leftoverCommandsHtml(section) {
+// and are not in any code block, so the detail still surfaces them.
+function leftoverCommands(section) {
   const inBlocks = new Set();
   for (const block of section.blocks || []) {
     if (block[0] === "code") {
       for (const line of block[1]) inBlocks.add(String(line).trim());
     }
   }
-  const leftover = (section.commands || []).filter((command) => !inBlocks.has(String(command).trim()));
-  if (!leftover.length) return "";
-  const terms = queryTerms();
-  return `<h3>Mas comandos</h3><div class="code-stack">${leftover
-    .map((command) => commandCard(command, { edit: true, terms }))
-    .join("")}</div>`;
+  return (section.commands || []).filter((command) => !inBlocks.has(String(command).trim()));
+}
+
+function sectionBodyHtml(section) {
+  const groups = buildSectionGroups(section);
+  const toc = [];
+  const parts = [];
+  let k = 0;
+
+  for (const group of groups) {
+    const body = group.blocks
+      .map(([block, index]) => blockHtml(block, { slug: section.slug, index, section }))
+      .join("");
+    if (group.title === null) {
+      if (body) parts.push(`<div class="cmd-group cmd-intro">${body}</div>`);
+      continue;
+    }
+    const id = `sec-grp-${k++}`;
+    const count = countGroupCommands(group);
+    toc.push({ id, title: group.title, count });
+    parts.push(
+      `<details class="cmd-group" open id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">${escapeHtml(group.title)}</span>${count ? `<b>${count} cmd</b>` : ""}<span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body">${body}</div></details>`,
+    );
+  }
+
+  const leftover = leftoverCommands(section);
+  if (leftover.length) {
+    const id = `sec-grp-${k++}`;
+    toc.push({ id, title: "Mas comandos", count: leftover.length });
+    const terms = queryTerms();
+    const cards = leftover.map((command) => commandCard(command, { edit: true, terms })).join("");
+    parts.push(
+      `<details class="cmd-group" open id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">Mas comandos</span><b>${leftover.length} cmd</b><span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body"><div class="code-stack">${cards}</div></div></details>`,
+    );
+  }
+
+  const tocHtml =
+    toc.length >= 2
+      ? `<nav class="section-toc" aria-label="Ir a un bloque de la seccion">${toc
+          .map((item) => `<button type="button" data-jump="${item.id}"><span>${escapeHtml(item.title)}</span><b>${item.count}</b></button>`)
+          .join("")}</nav>`
+      : "";
+  return tocHtml + parts.join("");
+}
+
+// Keep --topbar-h in sync with the real sticky topbar height so the in-section
+// TOC pins right below it (topbar stacks taller on narrow viewports / open room).
+function trackTopbarHeight() {
+  const topbar = document.querySelector(".topbar");
+  if (!topbar) return;
+  const set = () => document.documentElement.style.setProperty("--topbar-h", `${topbar.offsetHeight}px`);
+  set();
+  if ("ResizeObserver" in window) new ResizeObserver(set).observe(topbar);
+  window.addEventListener("resize", set);
+}
+
+function bindSectionNav() {
+  const container = document.querySelector("[data-detail]");
+  if (!container) return;
+  const buttons = [...container.querySelectorAll(".section-toc [data-jump]")];
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = container.querySelector(`#${CSS.escape(button.dataset.jump)}`);
+      if (!target) return;
+      if (target.tagName === "DETAILS") target.open = true;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      buttons.forEach((other) => other.classList.toggle("active", other === button));
+    });
+  });
 }
 
 function renderRoomConfig() {
@@ -1006,9 +1091,7 @@ function renderDetail(section) {
       <p>${escapeHtml(section.summary)}</p>
       <div class="tag-row">${section.tags.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}</div>
     </header>
-    <section class="detail-body">${commandsHtml(section)}${section.blocks
-      .map((block, index) => blockHtml(block, { slug: section.slug, index, section }))
-      .join("")}${leftoverCommandsHtml(section)}</section>
+    <section class="detail-body">${commandsHtml(section)}${sectionBodyHtml(section)}</section>
   `;
   container.querySelectorAll("[data-tag]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1021,6 +1104,7 @@ function renderDetail(section) {
   });
   bindChecklist(section);
   bindCommandTools();
+  bindSectionNav();
 }
 
 function checklistProgress(section) {
@@ -1535,6 +1619,7 @@ async function init() {
   renderShortcuts(state.data);
   bindKeyboard();
   bindExplain();
+  trackTopbarHeight();
   window.addEventListener("popstate", () => {
     applyHashToState();
     render();
