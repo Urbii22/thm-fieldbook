@@ -1,4 +1,4 @@
-const CACHE = "thm-fieldbook-v6";
+const CACHE = "thm-fieldbook-v7";
 const VERSION = "20260706-command-detail";
 const ASSETS = [
   "./",

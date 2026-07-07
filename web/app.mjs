@@ -329,7 +329,12 @@ const FLAG_HELP = {
   "-sC": "scripts NSE por defecto",
   "-sV": "detecta versiones",
   "-sU": "escaneo UDP",
+  "-sS": "escaneo SYN sigiloso",
+  "-sT": "escaneo TCP connect",
   "-Pn": "omite el ping de descubrimiento",
+  "-n": "sin resolucion DNS",
+  "-v": "salida verbosa",
+  "-O": "detecta el sistema operativo",
   "-A": "OS + version + scripts + traceroute",
   "--min-rate": "fuerza paquetes/seg (ruidoso)",
   "-T4": "timing agresivo",
@@ -365,22 +370,6 @@ const FLAG_HELP = {
   winpeas: "auditoria de privesc en Windows",
 };
 
-function explainCommand(raw) {
-  const lower = String(raw).toLowerCase();
-  const tokens = lower.split(/\s+/);
-  const out = [];
-  for (const [key, desc] of Object.entries(FLAG_HELP)) {
-    let hit = false;
-    if (key.includes(" ")) hit = lower.includes(key);
-    else if (key.endsWith("-") && key.length > 2) hit = lower.includes(key);
-    else if (key.startsWith("-")) hit = tokens.includes(key);
-    else hit = tokens.some((token) => token === key || token.startsWith(`${key}`));
-    if (hit) out.push({ token: key, desc });
-    if (out.length >= 6) break;
-  }
-  return out;
-}
-
 const DANGER_PATTERNS = [
   /\brm\s+-[a-z]*r[a-z]*f|\brm\s+-[a-z]*f[a-z]*r/,
   /\bmkfs\b/,
@@ -413,17 +402,182 @@ function detectRisk(raw) {
   return null;
 }
 
+// token -> what it represents, shown as a variable to swap in the explain modal.
+const VAR_HELP = {
+  "$IP": "IP objetivo",
+  "<IP>": "IP objetivo",
+  "$RHOST": "IP objetivo",
+  "$URL": "URL objetivo",
+  "<URL>": "URL objetivo",
+  "$DOMAIN": "dominio de Active Directory",
+  "<DOMAIN>": "dominio de Active Directory",
+  "$DC_HOST": "hostname del Domain Controller",
+  "<DC_HOST>": "hostname del Domain Controller",
+  "$DC_FQDN": "FQDN del Domain Controller",
+  "<DC_FQDN>": "FQDN del Domain Controller",
+  "$PORT": "puerto(s)",
+  "<PORT>": "puerto(s)",
+  "<PUERTOS>": "puerto(s)",
+  "$USER": "usuario",
+  "<USER>": "usuario",
+  "$PASS": "contrasena",
+  "<PASS>": "contrasena",
+  "$LHOST": "tu IP (attacker / listener)",
+  "<LHOST>": "tu IP (attacker / listener)",
+  "ATTACKER_IP": "tu IP (attacker / listener)",
+  "$LPORT": "tu puerto de escucha",
+  "<LPORT>": "tu puerto de escucha",
+};
+
+// first-token tool -> one-line purpose for the explain modal.
+const TOOL_PURPOSE = {
+  nmap: "Escanea puertos y detecta servicios y versiones en el objetivo.",
+  ffuf: "Fuzzing web: descubre rutas, ficheros o parametros por fuerza bruta.",
+  gobuster: "Fuerza bruta de rutas, subdominios o vhosts en un servidor web.",
+  feroxbuster: "Fuerza bruta recursiva de rutas web.",
+  wfuzz: "Fuzzing web de parametros y rutas.",
+  hashcat: "Crackea hashes con GPU usando diccionario o reglas.",
+  john: "Crackea hashes con CPU (John the Ripper).",
+  curl: "Cliente HTTP para lanzar peticiones y ver la respuesta.",
+  wget: "Descarga ficheros por HTTP/HTTPS.",
+  chisel: "Crea un tunel TCP/SOCKS para pivotar a redes internas.",
+  socat: "Reenvia y conecta sockets; util para shells y tuneles.",
+  proxychains: "Rutea la herramienta que le sigue a traves de un proxy SOCKS.",
+  crackmapexec: "Enumera y ejecuta en masa sobre SMB/WinRM/LDAP.",
+  nxc: "NetExec: enumera y ejecuta en masa (sucesor de CrackMapExec).",
+  netexec: "Enumera y ejecuta en masa sobre SMB/WinRM/LDAP.",
+  "evil-winrm": "Shell interactiva remota por WinRM.",
+  smbclient: "Cliente para listar y acceder a recursos compartidos SMB.",
+  smbmap: "Enumera shares SMB y sus permisos.",
+  enum4linux: "Enumera usuarios, grupos y shares por SMB/AD.",
+  "enum4linux-ng": "Enumeracion SMB/AD (version mejorada).",
+  responder: "Envenena LLMNR/NBT-NS para capturar hashes NetNTLM.",
+  linpeas: "Audita un sistema Linux buscando vias de escalada.",
+  winpeas: "Audita un sistema Windows buscando vias de escalada.",
+  wpscan: "Escanea WordPress: usuarios, plugins y vulnerabilidades.",
+  sqlmap: "Automatiza la deteccion y explotacion de inyeccion SQL.",
+  hydra: "Fuerza bruta de credenciales contra un servicio de red.",
+  msfvenom: "Genera payloads (shells, binarios) para explotacion.",
+  nc: "Netcat: abre o escucha conexiones TCP/UDP (listener o cliente).",
+  ncat: "Netcat de Nmap: conexiones TCP/UDP, listener o cliente.",
+  ssh: "Cliente SSH para acceso remoto y tuneles.",
+  sudo: "Ejecuta como otro usuario; util para revisar o abusar de permisos.",
+  ldapsearch: "Consulta un directorio LDAP.",
+  kinit: "Solicita un ticket Kerberos (TGT).",
+};
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function baseTool(token) {
+  const clean = String(token || "").split("/").pop().toLowerCase();
+  return clean;
+}
+
+const PORT_FLAGS = new Set(["-p", "--port", "-p-", "-dport", "--dport", "--top-ports"]);
+
+function classifyToken(token, index, prevToken) {
+  if (VAR_HELP[token]) return VAR_HELP[token];
+  if (/^\$[A-Za-z_]+$/.test(token) || /^<[A-Za-z]/.test(token) || token === "ATTACKER_IP") {
+    return "variable: reemplaza por tu valor";
+  }
+  if (index === 0) return "herramienta principal";
+  if (token.startsWith("--")) return FLAG_HELP[token] || "opcion (forma larga)";
+  if (token.startsWith("-")) return FLAG_HELP[token] || "flag / opcion";
+  if (/^https?:\/\//.test(token)) return "URL objetivo";
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(token)) return "direccion IP";
+  if (/[/\\]/.test(token) || /\.(txt|lst|list|conf|xml|json|pcap|php|sh|py|exe|elf)$/i.test(token)) {
+    return "ruta / fichero / wordlist";
+  }
+  if (/^\d+[,-]\d+/.test(token) || PORT_FLAGS.has(prevToken)) return "puerto(s)";
+  if (/^\d+$/.test(token)) return "valor numerico";
+  if (/^[A-Za-z0-9_.]+=.+/.test(token)) return "parametro clave=valor";
+  return "argumento / valor";
+}
+
+function describeCommand(raw) {
+  const tokens = String(raw).split(/\s+/).filter(Boolean);
+  const base = baseTool(tokens[0] || "");
+  let purpose = TOOL_PURPOSE[base];
+  if (!purpose) purpose = FLAG_HELP[base] ? `${capitalize(FLAG_HELP[base])}.` : "Comando de shell.";
+  const parts = tokens.map((token, index) => ({ token, desc: classifyToken(token, index, tokens[index - 1]) }));
+  const seen = new Set();
+  const vars = [];
+  for (const token of tokens) {
+    const isVar = VAR_HELP[token] || /^\$[A-Za-z_]+$/.test(token) || /^<[A-Za-z]/.test(token) || token === "ATTACKER_IP";
+    if (isVar && !seen.has(token)) {
+      seen.add(token);
+      vars.push({ token, desc: VAR_HELP[token] || "reemplaza por tu valor" });
+    }
+  }
+  return { purpose, parts, vars };
+}
+
+function infoMarkFor(rawCommand) {
+  return `<span class="cmd-info" data-explain="${escapeHtml(rawCommand)}" role="button" tabindex="0" title="Explicar comando" aria-label="Explicar comando">i</span>`;
+}
+
+function ensureCmdModal() {
+  let el = document.querySelector("[data-cmd-modal]");
+  if (el) return el;
+  el = document.createElement("div");
+  el.className = "cmd-modal-backdrop";
+  el.setAttribute("data-cmd-modal", "");
+  el.hidden = true;
+  el.innerHTML = `<div class="cmd-modal-box" role="dialog" aria-modal="true" aria-label="Explicacion del comando"></div>`;
+  document.body.appendChild(el);
+  el.addEventListener("click", (event) => {
+    if (event.target === el) closeCmdModal();
+  });
+  return el;
+}
+
+function closeCmdModal() {
+  const el = document.querySelector("[data-cmd-modal]");
+  if (el) el.hidden = true;
+}
+
+function openCmdModal(raw) {
+  if (!raw) return;
+  const el = ensureCmdModal();
+  const box = el.querySelector(".cmd-modal-box");
+  const info = describeCommand(raw);
+  const adapted = adaptCommand(raw, state.room);
+  const risk = detectRisk(raw);
+  const partsHtml = info.parts
+    .map((part) => `<li><code>${escapeHtml(part.token)}</code><span>${escapeHtml(part.desc)}</span></li>`)
+    .join("");
+  const varsHtml = info.vars.length
+    ? `<div class="cmd-modal-vars"><h4>Variables a ajustar</h4><ul>${info.vars
+        .map((v) => `<li><code>${escapeHtml(v.token)}</code><span>${escapeHtml(v.desc)}</span></li>`)
+        .join("")}</ul></div>`
+    : "";
+  const riskHtml = risk
+    ? `<p class="cmd-modal-risk risk-${risk.level}">${risk.level === "danger" ? "⚠" : "📡"} ${escapeHtml(risk.reason)}</p>`
+    : "";
+  box.innerHTML = `
+    <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">×</button>
+    <code class="cmd-modal-cmd">${escapeHtml(adapted)}</code>
+    <p class="cmd-modal-purpose">${escapeHtml(info.purpose)}</p>
+    ${riskHtml}
+    <h4>Partes del comando</h4>
+    <ul class="cmd-modal-parts">${partsHtml}</ul>
+    ${varsHtml}
+    <button type="button" class="cmd-modal-copy" data-copy="${escapeHtml(adapted)}">copiar comando</button>`;
+  box.querySelector("[data-cmd-close]").addEventListener("click", closeCmdModal);
+  el.hidden = false;
+  bindCopyButtons();
+}
+
 function commandCard(rawCommand, opts = {}) {
   const command = adaptCommand(rawCommand, state.room);
   const esc = escapeHtml(command);
   const risk = detectRisk(rawCommand);
-  const help = explainCommand(rawCommand);
   const riskMark = risk
     ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}" aria-label="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "⚠" : "📡"}</span>`
     : "";
-  const infoMark = help.length
-    ? `<span class="cmd-info" tabindex="0" title="${escapeHtml(help.map((h) => `${h.token} — ${h.desc}`).join("\n"))}">i</span>`
-    : "";
+  const infoMark = infoMarkFor(rawCommand);
   const editBtn = opts.edit
     ? `<button type="button" class="cmd-edit-btn" data-edit title="Editar antes de copiar" aria-label="Editar">✎</button>`
     : "";
@@ -652,6 +806,7 @@ function renderInlineCommandMatches() {
         return `<button type="button" class="command-match" data-copy="${value}" data-slug="${escapeHtml(entry.section.slug)}" title="Copiar comando">
           <code>${highlight(markPlaceholders(value), terms)}</code>
           <span>${escapeHtml(entry.section.title)}</span>
+          ${infoMarkFor(entry.command)}
           <b>copy</b>
         </button>`;
       })
@@ -703,13 +858,10 @@ function renderCommandResults() {
       const command = adaptCommand(entry.command, state.room);
       const value = escapeHtml(command);
       const risk = detectRisk(entry.command);
-      const help = explainCommand(entry.command);
       const riskMark = risk
         ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "⚠" : "📡"}</span>`
         : "";
-      const infoMark = help.length
-        ? `<span class="cmd-info" tabindex="0" title="${escapeHtml(help.map((h) => `${h.token} — ${h.desc}`).join("\n"))}">i</span>`
-        : "";
+      const infoMark = infoMarkFor(entry.command);
       return `<button type="button" class="cmd-result" style="${phaseStyle(entry.section.phase)}" data-copy="${value}" data-slug="${escapeHtml(entry.section.slug)}" title="Copiar comando">
         <code>${highlight(markPlaceholders(value), terms)}</code>
         <span class="cmd-src"><em>${escapeHtml(phaseLabel(entry.section.phase))}</em>${escapeHtml(entry.section.title)}<span class="cmd-src-tools">${riskMark}${infoMark}</span></span>
@@ -1258,9 +1410,38 @@ function isTyping(target) {
   return target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT");
 }
 
+function bindExplain() {
+  // Capture phase so the "i" marker opens the modal before the copy handler fires.
+  document.addEventListener(
+    "click",
+    (event) => {
+      const trigger = event.target.closest?.("[data-explain]");
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openCmdModal(trigger.dataset.explain);
+    },
+    true,
+  );
+  document.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && event.target?.matches?.("[data-explain]")) {
+      event.preventDefault();
+      openCmdModal(event.target.dataset.explain);
+    }
+  });
+}
+
 function bindKeyboard() {
   const search = document.querySelector("[data-search]");
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      const modal = document.querySelector("[data-cmd-modal]");
+      if (modal && !modal.hidden) {
+        event.preventDefault();
+        closeCmdModal();
+        return;
+      }
+    }
     if ((event.key === "/" || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k")) && !isTyping(event.target)) {
       event.preventDefault();
       search.focus();
@@ -1341,6 +1522,7 @@ async function init() {
   });
   renderShortcuts(state.data);
   bindKeyboard();
+  bindExplain();
   window.addEventListener("popstate", () => {
     applyHashToState();
     render();

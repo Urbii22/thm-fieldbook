@@ -1451,7 +1451,7 @@ code {
   font-family: var(--mono);
   font-size: 12px;
   font-style: italic;
-  cursor: help;
+  cursor: pointer;
 }
 
 .cmd-info:hover,
@@ -1912,6 +1912,159 @@ tr:last-child td {
   .target { width: 100%; }
   .target input { width: 100%; }
   .vars { grid-template-columns: 1fr; }
+}
+
+/* ===== Command explain modal ===== */
+.cmd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 5, 10, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.cmd-modal-backdrop[hidden] {
+  display: none;
+}
+
+.cmd-modal-box {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 22px 22px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.cmd-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.cmd-modal-close:hover {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+.cmd-modal-cmd {
+  display: block;
+  margin: 4px 34px 12px 0;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--code-bg);
+  padding: 10px 12px;
+  color: var(--code-text);
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre;
+}
+
+.cmd-modal-purpose {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.cmd-modal-risk {
+  margin: 0 0 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.cmd-modal-risk.risk-danger {
+  border: 1px solid var(--coral);
+  color: var(--coral);
+  background: rgba(240, 90, 90, 0.08);
+}
+
+.cmd-modal-risk.risk-noisy {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  background: rgba(227, 179, 65, 0.08);
+}
+
+.cmd-modal-box h4 {
+  margin: 0 0 8px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cmd-modal-parts,
+.cmd-modal-vars ul {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.cmd-modal-parts li,
+.cmd-modal-vars li {
+  display: grid;
+  grid-template-columns: minmax(60px, auto) 1fr;
+  gap: 10px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 6px;
+}
+
+.cmd-modal-parts code,
+.cmd-modal-vars code {
+  color: var(--green-hi);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.cmd-modal-parts span,
+.cmd-modal-vars span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.cmd-modal-vars {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 12px;
+}
+
+.cmd-modal-copy {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  background: var(--green);
+  color: #05080c;
+  cursor: pointer;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cmd-modal-copy.copied {
+  background: var(--green-hi);
 }
 
 @media (prefers-reduced-motion: reduce) {
