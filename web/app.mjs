@@ -619,7 +619,6 @@ function blockHtml(block, ctx = {}) {
     return `<ul class="checklist">${items}</ul>`;
   }
   if (kind === "code") {
-    if (!shouldRenderCodeBlock(payload, ctx.section)) return "";
     return `<div class="code-stack">${payload
       .map((line) => commandCard(line, { edit: true, terms: queryTerms() }))
       .join("")}</div>`;
@@ -941,23 +940,36 @@ function renderCommandSearchDetail() {
 }
 
 function commandsHtml(section) {
-  const rawCommands = section.commands.slice(0, 8);
-  if (!rawCommands.length) return "";
-  const commands = rawCommands.map((command) => adaptCommand(command, state.room));
+  if (!section.commands.length) return "";
   const helper = state.room.ip
     ? `Adaptados a <b>${escapeHtml(state.room.ip)}</b>.`
     : "Fija la IP de la room arriba para autocompletar <b>$IP</b> / <b>$URL</b>.";
-  const allCommands = escapeHtml(commands.join("\n"));
-  const terms = queryTerms();
+  const allCommands = escapeHtml(section.commands.map((command) => adaptCommand(command, state.room)).join("\n"));
   return `<section class="command-shelf" aria-label="Comandos de esta seccion">
     <div class="command-shelf-head">
       <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-      <h3>comandos · ${rawCommands.length}/${section.commands.length}</h3>
+      <h3>comandos · ${section.commands.length}</h3>
       <button type="button" class="copy-all" data-copy="${allCommands}" title="Copiar todos">${COPY_ICON}<span class="copy-label">copiar todo</span></button>
     </div>
     <p class="command-hint">${helper}</p>
-    <div class="command-grid">${rawCommands.map((command) => commandCard(command, { edit: true, terms })).join("")}</div>
   </section>`;
+}
+
+// Commands that live only in section.commands (e.g. merged from the master guide)
+// and are not present in any code block, so the detail view still shows them.
+function leftoverCommandsHtml(section) {
+  const inBlocks = new Set();
+  for (const block of section.blocks || []) {
+    if (block[0] === "code") {
+      for (const line of block[1]) inBlocks.add(String(line).trim());
+    }
+  }
+  const leftover = (section.commands || []).filter((command) => !inBlocks.has(String(command).trim()));
+  if (!leftover.length) return "";
+  const terms = queryTerms();
+  return `<h3>Mas comandos</h3><div class="code-stack">${leftover
+    .map((command) => commandCard(command, { edit: true, terms }))
+    .join("")}</div>`;
 }
 
 function renderRoomConfig() {
@@ -996,7 +1008,7 @@ function renderDetail(section) {
     </header>
     <section class="detail-body">${commandsHtml(section)}${section.blocks
       .map((block, index) => blockHtml(block, { slug: section.slug, index, section }))
-      .join("")}</section>
+      .join("")}${leftoverCommandsHtml(section)}</section>
   `;
   container.querySelectorAll("[data-tag]").forEach((button) => {
     button.addEventListener("click", () => {
