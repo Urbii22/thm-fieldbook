@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v9";
-const VERSION = "20260707-section-nav";
+const CACHE = "thm-fieldbook-v10";
+const VERSION = "20260707-win-pivot-groups";
 const ASSETS = [
   "./",
   "./index.html",

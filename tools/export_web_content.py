@@ -17,8 +17,6 @@ DEFAULT_OUTPUT = ROOT / "web" / "data" / "content.json"
 MASTER_SECTION_SLUGS = {
     "ultra-quick-start": "ultra-quick-start",
     "arquetipos-de-rooms": "arquetipos-de-rooms",
-    "windows-local-privilege-escalation": "windows-privesc",
-    "pivoting-y-tunneling": "pivoting",
     "web-moderna-y-apis": "web-y-apis",
     "metodologia-cve-exploit": "cve-y-exploits",
     "credenciales-cracking-y-loot": "credenciales-y-loot",
