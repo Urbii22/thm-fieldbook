@@ -111,7 +111,7 @@ const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
 const content = JSON.parse(readFileSync(new URL("./data/content.json", import.meta.url), "utf8"));
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
 
-for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster"]) {
+for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster", "wfuzz"]) {
   assert.ok(
     filterCommandEntries(contentCommandIndex, query).length > 0,
     `Expected searchable command results for ${query}`,

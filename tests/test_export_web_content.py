@@ -57,6 +57,16 @@ class ExportWebContentTests(unittest.TestCase):
         self.assertIn("gobuster dir", commands)
         self.assertIn("gobuster vhost", commands)
 
+    def test_web_section_includes_fuzzing_command_alternatives(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        web_section = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+
+        commands = "\n".join(web_section["commands"])
+
+        self.assertIn("wfuzz -c", commands)
+        self.assertIn("ffuf -u \"$URL/api/FUZZ\"", commands)
+        self.assertIn("feroxbuster -u $URL", commands)
+
     def test_full_guide_commands_are_merged_into_existing_sections(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
 

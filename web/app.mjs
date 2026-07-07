@@ -127,6 +127,7 @@ const COMMAND_QUERY_TERMS = new Set([
   "smbclient",
   "sqlmap",
   "whatweb",
+  "wfuzz",
   "winpeas",
   "wpscan",
 ]);
@@ -1574,10 +1575,10 @@ function bindModeToggle() {
 }
 
 async function init() {
-  const response = await fetch("./data/content.json?v=20260706-command-detail");
+  const response = await fetch("./data/content.json?v=20260707-fuzzing");
   state.data = await response.json();
   try {
-    const revResponse = await fetch("./data/revshells.json?v=20260706-command-detail");
+    const revResponse = await fetch("./data/revshells.json?v=20260707-fuzzing");
     const revData = await revResponse.json();
     REV_TEMPLATES = Array.isArray(revData.templates) ? revData.templates : [];
     STABILIZE = Array.isArray(revData.stabilize) ? revData.stabilize : [];
