@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v23";
-const VERSION = "20260708-fullwiki";
+const CACHE = "thm-fieldbook-v24";
+const VERSION = "20260708-navpolish";
 const ASSETS = [
   "./",
   "./index.html",

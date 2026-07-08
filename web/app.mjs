@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-fullwiki";
+const APP_VERSION = "20260708-navpolish";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1543,6 +1543,32 @@ function conceptById(id) {
   return state.concepts.find((concept) => concept.id === id);
 }
 
+function pathForConcept(id) {
+  return state.paths.find((path) => (path.concepts || []).includes(id));
+}
+
+// Unique existing concept ids referenced via [[...]] in a concept's prose,
+// in order of appearance, excluding itself. Used for the "relacionados" chips.
+function relatedConceptIds(concept) {
+  const text = [
+    concept.summary,
+    concept.que,
+    concept.porque,
+    concept.cuando,
+    ...(concept.senales || []),
+    ...(concept.pasos || []),
+  ].join(" ");
+  const seen = new Set();
+  const out = [];
+  for (const match of text.matchAll(/\[\[([^\]]+)\]\]/g)) {
+    const id = match[1].trim();
+    if (id === concept.id || seen.has(id) || !conceptById(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 // Turn prose with [[id]] links into HTML: escape + highlight plain runs, and
 // resolve each [[id]] to a clickable concept link (falls back to plain text
 // when the target does not exist yet).
@@ -1596,6 +1622,27 @@ function conceptPageHtml(concept, terms) {
         .join("")}</ol></section>`
     : "";
   const cmdBlock = cmds ? `<section class="concept-block"><h3>Comandos de ejemplo</h3><div class="guide-cmds">${cmds}</div></section>` : "";
+  const related = relatedConceptIds(concept);
+  const relatedBlock = related.length
+    ? `<section class="concept-block concept-related"><h3>Conceptos relacionados</h3><div class="concept-chips">${related
+        .map((id) => `<button type="button" class="concept-chip" data-concept-link="${escapeHtml(id)}">${escapeHtml(conceptById(id).title)}</button>`)
+        .join("")}</div></section>`
+    : "";
+  const path = pathForConcept(concept.id);
+  let rutaNav = "";
+  if (path) {
+    const seq = (path.concepts || []).filter((id) => conceptById(id));
+    const i = seq.indexOf(concept.id);
+    const prev = i > 0 ? conceptById(seq[i - 1]) : null;
+    const next = i < seq.length - 1 ? conceptById(seq[i + 1]) : null;
+    const prevBtn = prev
+      ? `<button type="button" class="ruta-nav-btn" data-concept-link="${escapeHtml(prev.id)}"><small>Anterior</small><span>&larr; ${escapeHtml(prev.title)}</span></button>`
+      : `<span></span>`;
+    const nextBtn = next
+      ? `<button type="button" class="ruta-nav-btn next" data-concept-link="${escapeHtml(next.id)}"><small>Siguiente</small><span>${escapeHtml(next.title)} &rarr;</span></button>`
+      : `<span></span>`;
+    rutaNav = `<nav class="ruta-nav"><span class="ruta-nav-label">Ruta ${escapeHtml(path.title)} &middot; ${i + 1}/${seq.length}</span><div class="ruta-nav-btns">${prevBtn}${nextBtn}</div></nav>`;
+  }
   return `<header class="guide-head">
       <span class="detail-phase">${escapeHtml(phaseLabel(concept.phase))}</span>
       <h2>${highlight(escapeHtml(concept.title), terms)}</h2>
@@ -1607,7 +1654,9 @@ function conceptPageHtml(concept, terms) {
     ${block("Cuando aplica", prose(concept.cuando))}
     ${senales}
     ${pasos}
-    ${cmdBlock}`;
+    ${cmdBlock}
+    ${relatedBlock}
+    ${rutaNav}`;
 }
 
 function renderConcepts() {
@@ -1651,7 +1700,7 @@ function renderConcepts() {
   listEl.innerHTML = groups
     .map(
       (group) => `<div class="concept-path">
-        <h3 class="concept-path-title">${escapeHtml(group.title)}</h3>
+        <h3 class="concept-path-title">${escapeHtml(group.title)}<span class="concept-path-count">${group.items.length}</span></h3>
         ${group.summary ? `<p class="concept-path-sum">${escapeHtml(group.summary)}</p>` : ""}
         ${group.items.map(itemBtn).join("")}
       </div>`,
