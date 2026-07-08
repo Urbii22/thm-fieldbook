@@ -1505,12 +1505,31 @@ function renderLearn() {
   });
   const guide = state.guides.find((item) => item.id === state.activeGuide);
   detailEl.setAttribute("style", phaseStyle(guide.phase));
+  const gotoBtn = guide.section
+    ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(guide.section)}">Ver todos los comandos de esta fase →</button>`
+    : "";
   detailEl.innerHTML = `<header class="guide-head">
       <span class="detail-phase">${escapeHtml(phaseLabel(guide.phase))}</span>
       <h2>${escapeHtml(guide.title)}</h2>
       <p>${escapeHtml(guide.summary)}</p>
+      ${gotoBtn}
     </header>
     <div class="guide-steps">${guide.steps.map((step, index) => guideStepHtml(step, index)).join("")}</div>`;
+  detailEl.querySelector("[data-goto-section]")?.addEventListener("click", (event) => {
+    const slug = event.currentTarget.dataset.gotoSection;
+    state.query = "";
+    state.tag = "all";
+    state.phase = "all";
+    state.favOnly = false;
+    const search = document.querySelector("[data-search]");
+    if (search) search.value = "";
+    setView("practica");
+    state.activeSlug = slug;
+    pushRecent(slug);
+    writeHash(true);
+    render();
+    document.querySelector("[data-detail]")?.scrollIntoView({ block: "start" });
+  });
   bindCommandToolsIn(detailEl);
   bindCopyButtons();
 }

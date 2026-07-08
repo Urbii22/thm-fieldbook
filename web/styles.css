@@ -2137,6 +2137,24 @@ tr:last-child td {
   line-height: 1.5;
 }
 
+.guide-goto {
+  margin-top: 14px;
+  border: 1px solid var(--green);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--green-hi);
+  cursor: pointer;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.guide-goto:hover {
+  background: var(--green);
+  color: #05080c;
+}
+
 .guide-steps {
   display: grid;
   gap: 20px;
