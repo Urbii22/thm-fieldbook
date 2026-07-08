@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-concepts";
+const APP_VERSION = "20260708-cmdnotes";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1467,10 +1467,31 @@ function renderModeToggle() {
   }
 }
 
+// A learn command is either a plain string or {cmd, why, out}: why = por que /
+// cuando usarlo, out = que detalles buscar en su salida.
+function commandOf(command) {
+  return typeof command === "string" ? command : command.cmd;
+}
+
+function commandText(command) {
+  return typeof command === "string"
+    ? command
+    : [command.cmd, command.why, command.out].filter(Boolean).join(" ");
+}
+
+function annotatedCommandHtml(command, terms) {
+  const card = commandCard(commandOf(command), { edit: true });
+  if (typeof command === "string" || (!command.why && !command.out)) return card;
+  const hl = (text) => highlight(escapeHtml(text), terms);
+  const why = command.why ? `<p class="cmd-why"><b>Por que</b><span>${hl(command.why)}</span></p>` : "";
+  const out = command.out ? `<p class="cmd-out"><b>En la salida busca</b><span>${hl(command.out)}</span></p>` : "";
+  return `<div class="cmd-with-note">${card}<div class="cmd-annot">${why}${out}</div></div>`;
+}
+
 function guideStepHtml(step, index) {
   const terms = queryTerms();
   const hl = (text) => highlight(escapeHtml(text), terms);
-  const cmds = (step.commands || []).map((command) => commandCard(command, { edit: true })).join("");
+  const cmds = (step.commands || []).map((command) => annotatedCommandHtml(command, terms)).join("");
   return `<article class="guide-step">
     <div class="guide-step-num">${index + 1}</div>
     <div class="guide-step-main">
@@ -1489,7 +1510,7 @@ function guideMatches(guide, terms) {
     [
       guide.title,
       guide.summary,
-      ...guide.steps.flatMap((step) => [step.title, step.idea, step.look, step.decide, ...(step.commands || [])]),
+      ...guide.steps.flatMap((step) => [step.title, step.idea, step.look, step.decide, ...(step.commands || []).map(commandText)]),
     ].join(" "),
   );
   return terms.every((term) => hay.includes(term));
@@ -1551,7 +1572,7 @@ function conceptMatches(concept, terms) {
       concept.cuando,
       ...(concept.senales || []),
       ...(concept.pasos || []),
-      ...(concept.commands || []),
+      ...(concept.commands || []).map(commandText),
     ].join(" "),
   );
   return terms.every((term) => hay.includes(term));
@@ -1559,7 +1580,7 @@ function conceptMatches(concept, terms) {
 
 function conceptPageHtml(concept, terms) {
   const prose = (text) => conceptProseHtml(text, terms);
-  const cmds = (concept.commands || []).map((command) => commandCard(command, { edit: true })).join("");
+  const cmds = (concept.commands || []).map((command) => annotatedCommandHtml(command, terms)).join("");
   const gotoBtn = concept.section
     ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(concept.section)}">Ver comandos de esta fase &rarr;</button>`
     : "";
