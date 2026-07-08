@@ -108,6 +108,7 @@ assert.equal(
 
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
+const sw = readFileSync(new URL("./sw.js", import.meta.url), "utf8");
 const content = JSON.parse(readFileSync(new URL("./data/content.json", import.meta.url), "utf8"));
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
 
@@ -116,6 +117,19 @@ for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster", "wfuzz"]) {
     filterCommandEntries(contentCommandIndex, query).length > 0,
     `Expected searchable command results for ${query}`,
   );
+}
+
+assert.equal(content.stats.totalGuides, content.guides.length);
+assert.ok(content.guides.length >= 8);
+for (const guide of content.guides) {
+  assert.ok(guide.id);
+  assert.ok(guide.title);
+  assert.ok(guide.summary);
+  assert.ok(guide.steps.length >= 3);
+}
+
+for (const asset of [html, js, sw]) {
+  assert.match(asset, /20260708-linpeas-loot/);
 }
 
 assert.match(html, /<h1\b[^>]*>/);

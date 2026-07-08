@@ -48,6 +48,22 @@ class ExportWebContentTests(unittest.TestCase):
         self.assertGreaterEqual(len(sections), 10)
         self.assertEqual(sections[0]["short"], "Ultra quick start")
 
+    def test_payload_exports_structured_learning_guides(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+
+        self.assertEqual(payload["stats"]["totalGuides"], len(payload["guides"]))
+        self.assertGreaterEqual(len(payload["guides"]), 8)
+
+        for guide in payload["guides"]:
+            self.assertTrue(guide["id"])
+            self.assertTrue(guide["title"])
+            self.assertTrue(guide["summary"])
+            self.assertGreaterEqual(len(guide["steps"]), 3)
+            for step in guide["steps"]:
+                self.assertTrue(step["title"])
+                self.assertTrue(step["idea"])
+                self.assertIn("commands", step)
+
     def test_web_section_includes_gobuster_command_alternatives(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
         web_section = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")

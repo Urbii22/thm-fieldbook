@@ -36,6 +36,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
+const APP_VERSION = "20260708-linpeas-loot";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1584,6 +1585,7 @@ function render() {
   renderNotes();
   renderRoomBadge();
   renderRevshell();
+  if (state.view === "aprender") renderLearn();
   bindCopyButtons();
 }
 
@@ -1672,10 +1674,10 @@ function bindModeToggle() {
 }
 
 async function init() {
-  const response = await fetch("./data/content.json?v=20260707-fuzzing");
+  const response = await fetch(`./data/content.json?v=${APP_VERSION}`);
   state.data = await response.json();
   try {
-    const revResponse = await fetch("./data/revshells.json?v=20260707-fuzzing");
+    const revResponse = await fetch(`./data/revshells.json?v=${APP_VERSION}`);
     const revData = await revResponse.json();
     REV_TEMPLATES = Array.isArray(revData.templates) ? revData.templates : [];
     STABILIZE = Array.isArray(revData.stabilize) ? revData.stabilize : [];
