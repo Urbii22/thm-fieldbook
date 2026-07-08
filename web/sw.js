@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v19";
-const VERSION = "20260708-pwa-autoupdate";
+const CACHE = "thm-fieldbook-v20";
+const VERSION = "20260708-concepts";
 const ASSETS = [
   "./",
   "./index.html",

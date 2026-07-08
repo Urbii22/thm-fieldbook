@@ -128,8 +128,28 @@ for (const guide of content.guides) {
   assert.ok(guide.steps.length >= 3);
 }
 
+assert.equal(content.stats.totalConcepts, content.concepts.length);
+assert.equal(content.stats.totalPaths, content.paths.length);
+assert.ok(content.concepts.length >= 1);
+const conceptIds = new Set(content.concepts.map((concept) => concept.id));
+for (const concept of content.concepts) {
+  assert.ok(concept.id);
+  assert.ok(concept.title);
+  assert.ok(concept.summary);
+  assert.ok(concept.que);
+  assert.ok(concept.section);
+}
+for (const path of content.paths) {
+  assert.ok(path.id);
+  assert.ok(path.title);
+  assert.ok(Array.isArray(path.concepts) && path.concepts.length);
+  for (const id of path.concepts) {
+    assert.ok(conceptIds.has(id), `ruta ${path.id} referencia concepto inexistente: ${id}`);
+  }
+}
+
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260708-pwa-autoupdate/);
+  assert.match(asset, /20260708-concepts/);
 }
 
 assert.match(js, /registration\.update\(\)/);

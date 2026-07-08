@@ -2064,6 +2064,127 @@ tr:last-child td {
   align-items: start;
 }
 
+.learn-tabs {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  width: fit-content;
+}
+
+.learn-tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 9px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.learn-tabs button.active {
+  background: var(--panel-hi);
+  color: var(--ink);
+}
+
+.concept-path {
+  display: grid;
+  gap: 8px;
+}
+
+.concept-path + .concept-path {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.concept-path-title {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--faint);
+}
+
+.concept-path-sum {
+  margin: 0 0 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.concept-item {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--phase, var(--line));
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 12px 14px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.concept-item:hover {
+  border-color: var(--faint);
+}
+
+.concept-item.active {
+  background: var(--panel-hi);
+  border-left-color: var(--green);
+}
+
+.concept-item strong {
+  font-size: 15px;
+}
+
+.concept-block {
+  margin-top: 18px;
+}
+
+.concept-block h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--phase, var(--faint));
+}
+
+.concept-block p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--ink-soft, var(--ink));
+}
+
+.concept-signals,
+.concept-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  line-height: 1.55;
+}
+
+.concept-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--green);
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--green);
+}
+
+.concept-link:hover {
+  color: var(--ink);
+}
+
 .learn-list {
   position: sticky;
   top: calc(var(--topbar-h, 64px) + 12px);

@@ -30,13 +30,17 @@ const state = {
   view: "practica",
   guides: [],
   activeGuide: "",
+  concepts: [],
+  paths: [],
+  activeConcept: "",
+  learnMode: "guides",
 };
 
 const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-pwa-autoupdate";
+const APP_VERSION = "20260708-concepts";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1491,7 +1495,172 @@ function guideMatches(guide, terms) {
   return terms.every((term) => hay.includes(term));
 }
 
+function gotoSection(slug) {
+  state.query = "";
+  state.tag = "all";
+  state.phase = "all";
+  state.favOnly = false;
+  const search = document.querySelector("[data-search]");
+  if (search) search.value = "";
+  setView("practica");
+  state.activeSlug = slug;
+  pushRecent(slug);
+  writeHash(true);
+  render();
+  document.querySelector("[data-detail]")?.scrollIntoView({ block: "start" });
+}
+
 function renderLearn() {
+  document.querySelectorAll("[data-learn-tabs] button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.learnVal === state.learnMode);
+  });
+  if (state.learnMode === "concepts") renderConcepts();
+  else renderGuides();
+}
+
+function conceptById(id) {
+  return state.concepts.find((concept) => concept.id === id);
+}
+
+// Turn prose with [[id]] links into HTML: escape + highlight plain runs, and
+// resolve each [[id]] to a clickable concept link (falls back to plain text
+// when the target does not exist yet).
+function conceptProseHtml(text, terms) {
+  if (!text) return "";
+  const parts = String(text).split(/(\[\[[^\]]+\]\])/g);
+  return parts
+    .map((part) => {
+      const match = /^\[\[([^\]]+)\]\]$/.exec(part);
+      if (!match) return highlight(escapeHtml(part), terms);
+      const target = conceptById(match[1].trim());
+      const label = highlight(escapeHtml(target ? target.title : match[1].trim()), terms);
+      if (!target) return label;
+      return `<button type="button" class="concept-link" data-concept-link="${escapeHtml(target.id)}">${label}</button>`;
+    })
+    .join("");
+}
+
+function conceptMatches(concept, terms) {
+  if (!terms.length) return true;
+  const hay = normalizeQuery(
+    [
+      concept.title,
+      concept.summary,
+      concept.que,
+      concept.porque,
+      concept.cuando,
+      ...(concept.senales || []),
+      ...(concept.pasos || []),
+      ...(concept.commands || []),
+    ].join(" "),
+  );
+  return terms.every((term) => hay.includes(term));
+}
+
+function conceptPageHtml(concept, terms) {
+  const prose = (text) => conceptProseHtml(text, terms);
+  const cmds = (concept.commands || []).map((command) => commandCard(command, { edit: true })).join("");
+  const gotoBtn = concept.section
+    ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(concept.section)}">Ver comandos de esta fase &rarr;</button>`
+    : "";
+  const block = (title, body) => (body ? `<section class="concept-block"><h3>${title}</h3><p>${body}</p></section>` : "");
+  const senales = (concept.senales || []).length
+    ? `<section class="concept-block"><h3>Que senales lo delatan</h3><ul class="concept-signals">${concept.senales
+        .map((item) => `<li>${prose(item)}</li>`)
+        .join("")}</ul></section>`
+    : "";
+  const pasos = (concept.pasos || []).length
+    ? `<section class="concept-block"><h3>Pasos</h3><ol class="concept-steps">${concept.pasos
+        .map((item) => `<li>${prose(item)}</li>`)
+        .join("")}</ol></section>`
+    : "";
+  const cmdBlock = cmds ? `<section class="concept-block"><h3>Comandos de ejemplo</h3><div class="guide-cmds">${cmds}</div></section>` : "";
+  return `<header class="guide-head">
+      <span class="detail-phase">${escapeHtml(phaseLabel(concept.phase))}</span>
+      <h2>${highlight(escapeHtml(concept.title), terms)}</h2>
+      <p>${prose(concept.summary)}</p>
+      ${gotoBtn}
+    </header>
+    ${block("Que es", prose(concept.que))}
+    ${block("Por que ocurre", prose(concept.porque))}
+    ${block("Cuando aplica", prose(concept.cuando))}
+    ${senales}
+    ${pasos}
+    ${cmdBlock}`;
+}
+
+function renderConcepts() {
+  const listEl = document.querySelector("[data-guide-list]");
+  const detailEl = document.querySelector("[data-guide-detail]");
+  if (!listEl || !detailEl) return;
+  if (!state.concepts.length) {
+    listEl.innerHTML = "";
+    detailEl.removeAttribute("style");
+    detailEl.innerHTML = `<p class="list-empty">No hay conceptos disponibles.</p>`;
+    return;
+  }
+  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
+  const hlTerms = queryTerms();
+  const matchIds = new Set(state.concepts.filter((concept) => conceptMatches(concept, terms)).map((c) => c.id));
+  if (!matchIds.size) {
+    listEl.innerHTML = `<p class="list-empty">Ningun concepto menciona "${escapeHtml(state.query)}".</p>`;
+    detailEl.removeAttribute("style");
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin concepto para eso</strong><p>Cambia a <b>Practica</b> y busca ahi: tiene el comando concreto aunque no haya teoria.</p></div>`;
+    return;
+  }
+  if (!matchIds.has(state.activeConcept)) {
+    state.activeConcept = state.concepts.find((c) => matchIds.has(c.id)).id;
+  }
+  // Left index: concepts grouped under their ruta, in ruta order; only matches shown.
+  const inPath = new Set();
+  const groups = state.paths
+    .map((path) => {
+      const items = (path.concepts || []).map(conceptById).filter((c) => c && matchIds.has(c.id));
+      items.forEach((c) => inPath.add(c.id));
+      return { title: path.title, summary: path.summary, items };
+    })
+    .filter((group) => group.items.length);
+  const orphans = state.concepts.filter((c) => matchIds.has(c.id) && !inPath.has(c.id));
+  if (orphans.length) groups.push({ title: "Otros conceptos", summary: "", items: orphans });
+  const itemBtn = (concept) => `<button type="button" class="concept-item ${state.activeConcept === concept.id ? "active" : ""}" style="${phaseStyle(concept.phase)}" data-concept="${escapeHtml(concept.id)}">
+        <span class="guide-item-phase">${escapeHtml(phaseLabel(concept.phase))}</span>
+        <strong>${highlight(escapeHtml(concept.title), hlTerms)}</strong>
+        <span class="guide-item-sum">${highlight(escapeHtml(concept.summary), hlTerms)}</span>
+      </button>`;
+  listEl.innerHTML = groups
+    .map(
+      (group) => `<div class="concept-path">
+        <h3 class="concept-path-title">${escapeHtml(group.title)}</h3>
+        ${group.summary ? `<p class="concept-path-sum">${escapeHtml(group.summary)}</p>` : ""}
+        ${group.items.map(itemBtn).join("")}
+      </div>`,
+    )
+    .join("");
+  listEl.querySelectorAll("[data-concept]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeConcept = button.dataset.concept;
+      renderConcepts();
+      detailEl.scrollIntoView({ block: "nearest" });
+    });
+  });
+  const concept = conceptById(state.activeConcept);
+  detailEl.setAttribute("style", phaseStyle(concept.phase));
+  detailEl.innerHTML = conceptPageHtml(concept, hlTerms);
+  detailEl.querySelector("[data-goto-section]")?.addEventListener("click", (event) => {
+    gotoSection(event.currentTarget.dataset.gotoSection);
+  });
+  detailEl.querySelectorAll("[data-concept-link]").forEach((link) => {
+    link.addEventListener("click", () => {
+      state.activeConcept = link.dataset.conceptLink;
+      renderConcepts();
+      detailEl.scrollIntoView({ block: "start" });
+    });
+  });
+  bindCommandToolsIn(detailEl);
+  bindCopyButtons();
+}
+
+function renderGuides() {
   const listEl = document.querySelector("[data-guide-list]");
   const detailEl = document.querySelector("[data-guide-detail]");
   if (!listEl || !detailEl) return;
@@ -1541,19 +1710,7 @@ function renderLearn() {
     </header>
     <div class="guide-steps">${guide.steps.map((step, index) => guideStepHtml(step, index)).join("")}</div>`;
   detailEl.querySelector("[data-goto-section]")?.addEventListener("click", (event) => {
-    const slug = event.currentTarget.dataset.gotoSection;
-    state.query = "";
-    state.tag = "all";
-    state.phase = "all";
-    state.favOnly = false;
-    const search = document.querySelector("[data-search]");
-    if (search) search.value = "";
-    setView("practica");
-    state.activeSlug = slug;
-    pushRecent(slug);
-    writeHash(true);
-    render();
-    document.querySelector("[data-detail]")?.scrollIntoView({ block: "start" });
+    gotoSection(event.currentTarget.dataset.gotoSection);
   });
   bindCommandToolsIn(detailEl);
   bindCopyButtons();
@@ -1577,6 +1734,15 @@ function setView(view) {
 function bindViewTabs() {
   document.querySelectorAll("[data-view-tabs] button").forEach((button) => {
     button.addEventListener("click", () => setView(button.dataset.viewVal));
+  });
+}
+
+function bindLearnTabs() {
+  document.querySelectorAll("[data-learn-tabs] button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.learnMode = button.dataset.learnVal === "concepts" ? "concepts" : "guides";
+      renderLearn();
+    });
   });
 }
 
@@ -1747,6 +1913,9 @@ async function init() {
   state.activeSlug = state.data.sections[0]?.slug || "";
   state.guides = Array.isArray(state.data.guides) ? state.data.guides : [];
   state.activeGuide = state.guides[0]?.id || "";
+  state.concepts = Array.isArray(state.data.concepts) ? state.data.concepts : [];
+  state.paths = Array.isArray(state.data.paths) ? state.data.paths : [];
+  state.activeConcept = state.concepts[0]?.id || "";
   state.profile = loadProfile();
   applyProfile();
   loadFavs();
@@ -1782,6 +1951,7 @@ async function init() {
   bindKeyboard();
   bindExplain();
   bindViewTabs();
+  bindLearnTabs();
   trackTopbarHeight();
   window.addEventListener("popstate", () => {
     applyHashToState();

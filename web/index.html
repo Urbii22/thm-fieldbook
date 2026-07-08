@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260708-pwa-autoupdate" />
+    <link rel="stylesheet" href="./styles.css?v=20260708-concepts" />
   </head>
   <body>
     <div class="scanline" aria-hidden="true"></div>
@@ -136,12 +136,16 @@
         <article class="detail" data-detail aria-live="polite"></article>
       </section>
 
-      <section class="learn" data-learn aria-label="Guias paso a paso" hidden>
-        <aside class="learn-list" data-guide-list aria-label="Guias"></aside>
+      <section class="learn" data-learn aria-label="Aprender" hidden>
+        <div class="learn-tabs" data-learn-tabs role="tablist" aria-label="Tipo de contenido">
+          <button type="button" class="active" data-learn-val="guides" role="tab">Guias paso a paso</button>
+          <button type="button" data-learn-val="concepts" role="tab">Conceptos</button>
+        </div>
+        <aside class="learn-list" data-guide-list aria-label="Indice"></aside>
         <article class="learn-detail" data-guide-detail aria-live="polite"></article>
       </section>
     </main>
 
-    <script type="module" src="./app.mjs?v=20260708-pwa-autoupdate"></script>
+    <script type="module" src="./app.mjs?v=20260708-concepts"></script>
   </body>
 </html>

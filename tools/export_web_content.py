@@ -265,17 +265,29 @@ def merge_master_commands(sections: list[dict[str, Any]]) -> None:
         section["searchText"] = " ".join([section["searchText"], *additions])
 
 
-def load_guides() -> list[dict[str, Any]]:
-    source_path = ROOT / "tools" / "guides.py"
+def _load_literal(filename: str, var_name: str) -> list[dict[str, Any]]:
+    source_path = ROOT / "tools" / filename
     if not source_path.exists():
         return []
     module = ast.parse(source_path.read_text(encoding="utf-8"))
     for node in module.body:
         if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == "GUIDES" for target in node.targets
+            isinstance(target, ast.Name) and target.id == var_name for target in node.targets
         ):
             return ast.literal_eval(node.value)
     return []
+
+
+def load_guides() -> list[dict[str, Any]]:
+    return _load_literal("guides.py", "GUIDES")
+
+
+def load_concepts() -> list[dict[str, Any]]:
+    return _load_literal("concepts.py", "CONCEPTS")
+
+
+def load_paths() -> list[dict[str, Any]]:
+    return _load_literal("concepts.py", "PATHS")
 
 
 def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
@@ -284,6 +296,8 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
     all_tags = sorted({tag for section in normalized_sections for tag in section["tags"]})
     phases = sorted({section["phase"] for section in normalized_sections})
     guides = load_guides()
+    concepts = load_concepts()
+    paths = load_paths()
 
     return {
         "generatedAt": date.today().isoformat(),
@@ -292,12 +306,16 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
             "totalCommands": sum(len(section["commands"]) for section in normalized_sections),
             "totalTags": len(all_tags),
             "totalGuides": len(guides),
+            "totalConcepts": len(concepts),
+            "totalPaths": len(paths),
         },
         "tags": all_tags,
         "phases": phases,
         "shortcuts": SHORTCUTS,
         "sections": normalized_sections,
         "guides": guides,
+        "concepts": concepts,
+        "paths": paths,
     }
 
 
