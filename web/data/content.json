@@ -5,7 +5,7 @@
     "totalCommands": 442,
     "totalTags": 9,
     "totalGuides": 8,
-    "totalConcepts": 22,
+    "totalConcepts": 40,
     "totalPaths": 9
   },
   "tags": [
@@ -4249,7 +4249,7 @@
       "summary": "Toda privesc es lo mismo: algo mas privilegiado ejecuta, lee o confia en algo que tu puedes controlar.",
       "que": "Escalar privilegios es encontrar un punto donde un proceso o usuario mas poderoso (normalmente root) depende de algo que tu puedes modificar o influir: un binario, un script, una ruta, un fichero de config, una variable de entorno. No es magia ni un exploit unico: es esa relacion de confianza rota.",
       "porque": "Los sistemas ejecutan tareas privilegiadas continuamente (cron, servicios, binarios SUID). Si cualquiera de esas tareas toca algo escribible o controlable por tu usuario, heredas su privilegio. La causa raiz siempre es una frontera de confianza mal puesta.",
-      "cuando": "Siempre que tengas una shell de usuario normal y quieras root. Antes de explotar toca enumerar de forma sistematica: [[suid]], [[sudo-abuse]] y [[cron-abuse]] son los tres vectores mas comunes; empieza por los rapidos.",
+      "cuando": "Siempre que tengas una shell de usuario normal y quieras root. Antes de explotar toca enumerar de forma sistematica ([[enum-privesc-linux]]): [[sudo-abuse]], [[suid]] y [[cron-abuse]] son los vectores mas comunes, pero hay muchos mas (capabilities, PATH, wildcard, grupos, NFS, kernel); empieza por los rapidos.",
       "senales": [
         "Perteneces a un grupo potente (docker, lxd, disk, adm): a menudo es root casi directo.",
         "Existe un binario, script o tarea que corre como root y que tu puedes leer o escribir.",
@@ -4681,7 +4681,7 @@
       "summary": "Mismo principio que en Linux, pero los vectores son privilegios de token, servicios mal configurados y credenciales guardadas.",
       "que": "Escalar en Windows es pasar de un usuario normal a SYSTEM/Administrator. La logica es la misma que el [[privesc-modelo]] de Linux (abusar de algo privilegiado que puedes tocar), pero cambian los vectores: privilegios de token (SeImpersonate), servicios con permisos o rutas debiles, tareas programadas, y credenciales guardadas en el sistema.",
       "porque": "Windows delega mucho poder via privilegios y servicios. Un servicio que corre como SYSTEM pero cuyo binario o ruta puedes modificar te da SYSTEM. Y ciertos privilegios de token permiten suplantar cuentas mas potentes ([[token-impersonation]]). WinPEAS automatiza la deteccion, pero hay que saber que mira.",
-      "cuando": "Con una shell de usuario en Windows. Ejecuta whoami /priv y whoami /groups lo primero; a menudo el privilegio de token ya te da el vector sin buscar mas.",
+      "cuando": "Con una shell de usuario en Windows. Enumera de forma sistematica ([[enum-privesc-windows]]) empezando por whoami /priv y whoami /groups; a menudo el privilegio de token ya te da el vector sin buscar mas.",
       "senales": [
         "whoami /priv muestra SeImpersonatePrivilege o SeAssignPrimaryToken (habitual en cuentas de servicio/IIS).",
         "Un servicio con unquoted service path o con binario/carpeta escribible por ti.",
@@ -4766,6 +4766,597 @@
           "out": "Puertos abiertos del host interno. Ve a pocos puertos (es lento por el tunel). Servicios abiertos = una mini-room nueva dentro de la red."
         }
       ]
+    },
+    {
+      "id": "enum-privesc-linux",
+      "title": "Enumeracion para privesc en Linux",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Antes de explotar hay que enumerar en orden fijo; un script automatiza, pero saber que mira cada check es lo que te hace resolver.",
+      "que": "Enumerar para privesc es recorrer de forma sistematica todos los vectores posibles en un orden que va de lo mas rentable a lo mas laborioso. Herramientas como linpeas lo automatizan y colorean los hallazgos, pero entender que representa cada resultado es lo que convierte 'output' en 'vector'. Es el paso previo obligado del [[privesc-modelo]].",
+      "porque": "Adivinar pierde tiempo. Un recorrido fijo (sudo, SUID, capabilities, cron, servicios, credenciales, kernel) garantiza que no te saltas nada. linpeas resalta en rojo/amarillo lo probable, pero da falsos positivos: hay que validar cada pista contra el modelo mental.",
+      "cuando": "Justo tras conseguir shell y estabilizarla ([[tty-stabilization]]). Corre primero los checks rapidos manuales (sudo -l, id) y luego lanza linpeas para lo exhaustivo.",
+      "senales": [
+        "linpeas marca en rojo/amarillo (99% PE vectors) un binario, servicio o fichero.",
+        "pspy muestra procesos o cron que arrancan como root de forma periodica.",
+        "Un hallazgo que encaja con el modelo: algo root que puedes leer/escribir/influir."
+      ],
+      "pasos": [
+        "Checks rapidos manuales: id, sudo -l, SUID ([[suid]]), capabilities ([[capabilities]]).",
+        "Lanza linpeas y lee de arriba a abajo, priorizando lo resaltado.",
+        "Usa pspy para cazar tareas periodicas y procesos que no ves con ps puntual.",
+        "Cada pista -> validala contra un vector concreto (cron, PATH, servicio) antes de explotar."
+      ],
+      "commands": [
+        {
+          "cmd": "./linpeas.sh -a 2>/dev/null | tee linpeas.txt",
+          "why": "Automatiza cientos de checks de privesc en un pase. -a es el modo agresivo; guardar la salida (tee) te deja releerla sin volver a correrlo.",
+          "out": "Fijate en lo marcado en rojo/amarillo, sobre todo 'sudo', 'SUID', 'Capabilities', 'Cron', 'Interesting files'. Valida cada uno; hay falsos positivos."
+        },
+        {
+          "cmd": "./pspy64 -pf -i 1000",
+          "why": "Muestra procesos y comandos que arrancan sin necesitar root, ideal para ver cron y tareas que ps puntual no capta. Revela que ejecuta root de forma periodica.",
+          "out": "Comandos que aparecen cada X segundos con uid=0. Si alguno llama a un script o binario que puedes escribir, tienes un vector tipo [[cron-abuse]]."
+        }
+      ]
+    },
+    {
+      "id": "capabilities",
+      "title": "Linux capabilities",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Permisos finos que dan a un binario poderes de root concretos; cap_setuid sobre un interprete es escalada directa.",
+      "que": "Las capabilities parten los privilegios de root en piezas concretas que se asignan a un binario sin darle SUID completo. Es una version mas granular del [[suid]]: en vez de 'corre como root', es 'puede hacer esta cosa de root'. Algunas capabilities permiten escalar directamente.",
+      "porque": "Se usan para que un binario haga una tarea privilegiada (abrir un puerto bajo, cambiar de uid) sin ser root del todo. Pero cap_setuid permite a un interprete (python, perl) cambiar su uid a 0, y cap_dac_read_search permite leer cualquier fichero. Mal puestas, son root.",
+      "cuando": "En la enumeracion ([[enum-privesc-linux]]), justo despues de SUID. getcap recorre el sistema buscandolas.",
+      "senales": [
+        "getcap lista un binario con cap_setuid+ep (escalada directa via python/perl).",
+        "cap_dac_read_search+ep: lectura de /etc/shadow y cualquier fichero protegido.",
+        "cap_setuid sobre un interprete no estandar puesto a proposito en el reto."
+      ],
+      "pasos": [
+        "Recorre el sistema con getcap -r buscando capabilities en binarios.",
+        "Identifica la capability y el binario en GTFOBins (seccion Capabilities).",
+        "Si es cap_setuid en python/perl, fuerza setuid(0) y lanza una shell.",
+        "Confirma uid=0 y recoge la flag."
+      ],
+      "commands": [
+        {
+          "cmd": "getcap -r / 2>/dev/null",
+          "why": "Lista todos los binarios con capabilities asignadas. -r recorre recursivamente; el ruido de permiso denegado se oculta con 2>/dev/null.",
+          "out": "Lineas 'binario = cap_xxx+ep'. cap_setuid -> escalada directa (GTFOBins). cap_dac_read_search -> lees /etc/shadow. Ignora los del sistema base."
+        },
+        {
+          "cmd": "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/bash\")'",
+          "why": "Si python tiene cap_setuid, setuid(0) cambia tu uid a root y luego lanzas una shell que ya corre como root. Es la receta de GTFOBins para esa capability.",
+          "out": "Prompt de root y id con uid=0. Cambia python por el interprete concreto que getcap marco con cap_setuid."
+        }
+      ]
+    },
+    {
+      "id": "path-hijacking",
+      "title": "Secuestro de PATH",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Si un script o SUID que corre como root llama a un binario sin ruta absoluta, colocas tu propio binario antes en el PATH.",
+      "que": "Cuando un programa privilegiado invoca otro comando por su nombre (por ejemplo 'cat' en vez de '/bin/cat'), el sistema lo busca por el PATH. Si puedes modificar el PATH o escribir en un directorio que aparezca antes, colocas ahi un binario malicioso con ese nombre y el proceso root ejecuta el tuyo. Otro caso del [[privesc-modelo]].",
+      "porque": "El programador uso una ruta relativa por comodidad, confiando en que el PATH apunta a los binarios legitimos. Pero si controlas el PATH (o hay un directorio escribible en el), rompes esa confianza: tu binario se ejecuta con los privilegios del proceso.",
+      "cuando": "Cuando un SUID ([[suid]]) o un script de [[cron-abuse]] que corre como root llama a comandos sin ruta absoluta. strings sobre el binario o leer el script lo revela.",
+      "senales": [
+        "strings de un SUID muestra un comando llamado sin ruta (system(\"service ...\")).",
+        "Un script root usa comandos sin path absoluto.",
+        "Tienes un directorio escribible que puedes anteponer al PATH."
+      ],
+      "pasos": [
+        "Detecta el comando invocado sin ruta absoluta (strings o leyendo el script).",
+        "Crea un binario/script con ese nombre que lance una shell (o ponga SUID a bash).",
+        "Antepon tu directorio al PATH (export PATH=/tmp:$PATH) y dale permiso de ejecucion.",
+        "Ejecuta el binario/script privilegiado; correra tu version. Confirma uid=0."
+      ],
+      "commands": [
+        {
+          "cmd": "strings /ruta/al/suid",
+          "why": "Revela cadenas del binario, incluidos comandos que llama. Un comando sin '/' es candidato a PATH hijacking; con ruta absoluta, no.",
+          "out": "Nombres de comandos invocados. Si ves 'service', 'cat', 'ps' sin ruta, ese es tu punto: crea un binario con ese nombre en un dir que controles."
+        },
+        {
+          "cmd": "cd /tmp && echo '/bin/bash' > cat && chmod +x cat && export PATH=/tmp:$PATH",
+          "why": "Crea un 'cat' falso que lanza bash, y lo pone primero en el PATH. Cuando el proceso root llame a 'cat', ejecutara el tuyo con privilegios de root.",
+          "out": "Al ejecutar despues el binario/script privilegiado, obtienes shell root. Restaura el PATH luego para no romper tu propia sesion."
+        }
+      ]
+    },
+    {
+      "id": "wildcard-injection",
+      "title": "Inyeccion por comodin (wildcard)",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Un comando root con * en un directorio donde puedes crear ficheros: nombras ficheros como flags y el shell los expande a argumentos.",
+      "que": "Cuando un script root ejecuta algo como 'tar czf backup.tar.gz *' en un directorio, el shell expande el * a la lista de ficheros ANTES de pasarla al comando. Si puedes crear ficheros ahi, creas ficheros cuyo nombre es en realidad una opcion del comando (como --checkpoint-action de tar), y el comando ejecuta lo que pongas.",
+      "porque": "El shell no distingue un fichero llamado '--checkpoint-action=exec=sh script.sh' de una opcion legitima: el glob lo expande igual. tar, chown, rsync y otros tienen flags que ejecutan comandos, y asi el proceso root corre tu codigo. Es un [[privesc-modelo]] via nombres de fichero.",
+      "cuando": "Cuando [[cron-abuse]] o un script root usa un comando con * en un directorio escribible por ti. Muy comun con tar en tareas de backup.",
+      "senales": [
+        "Un cron/script root ejecuta tar/chown/rsync con * en una ruta que puedes escribir.",
+        "El directorio del comodin es de tu propiedad o escribible por tu grupo.",
+        "El comando tiene flags conocidas de ejecucion (tar --checkpoint-action)."
+      ],
+      "pasos": [
+        "Identifica el comando con comodin y el directorio (leyendo el cron/script).",
+        "Crea el payload que ejecutara (p. ej. un .sh que ponga SUID a bash).",
+        "Crea ficheros cuyos NOMBRES sean las flags que hacen que el comando ejecute tu payload.",
+        "Espera a que la tarea corra y recoge tu shell/binario root."
+      ],
+      "commands": [
+        {
+          "cmd": "echo 'cp /bin/bash /tmp/rootbash; chmod +s /tmp/rootbash' > shell.sh",
+          "why": "Prepara el payload que el comando privilegiado acabara ejecutando: copia bash con bit SUID para tener luego una shell root.",
+          "out": "El fichero shell.sh en el directorio del comodin. Aun no hace nada: falta que el comando root lo invoque via las flags."
+        },
+        {
+          "cmd": "touch './--checkpoint=1'; touch './--checkpoint-action=exec=sh shell.sh'",
+          "why": "Crea ficheros cuyos nombres son opciones de tar. Cuando el cron ejecute 'tar ... *', el glob los mete como argumentos y tar ejecutara shell.sh como root.",
+          "out": "Tras correr la tarea, /tmp/rootbash existe con bit SUID: lanzalo con -p para shell root. Ajusta las flags al comando concreto (chown/rsync tienen las suyas)."
+        }
+      ]
+    },
+    {
+      "id": "sudo-ld-preload",
+      "title": "Sudo con env_keep (LD_PRELOAD)",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Si sudo conserva LD_PRELOAD, cargas una libreria tuya en un comando permitido y ejecutas codigo como root.",
+      "que": "LD_PRELOAD fuerza al cargador a inyectar una libreria tuya antes que las del sistema en cualquier programa. Si sudo esta configurado con env_keep+=LD_PRELOAD, esa variable sobrevive al sudo y puedes precargar una .so maliciosa en un comando que tengas permitido ejecutar con sudo, corriendo tu codigo como root. Variante avanzada de [[sudo-abuse]].",
+      "porque": "El admin conservo variables de entorno por comodidad sin darse cuenta de que LD_PRELOAD permite inyectar codigo. Tu .so define una funcion (por ejemplo el constructor) que lanza una shell; al cargarla en el proceso privilegiado, esa shell es root.",
+      "cuando": "Cuando sudo -l ([[sudo-abuse]]) muestra 'env_keep+=LD_PRELOAD' (o LD_LIBRARY_PATH) y tienes algun comando permitido con sudo, aunque sea inofensivo.",
+      "senales": [
+        "sudo -l muestra 'env_keep+=LD_PRELOAD' en la politica.",
+        "Tienes al menos un comando ejecutable con sudo.",
+        "Puedes compilar en la maquina (gcc presente) o subir la .so ya compilada."
+      ],
+      "pasos": [
+        "Confirma env_keep+=LD_PRELOAD en sudo -l.",
+        "Escribe una .so minima cuyo constructor lance /bin/bash y quite privilegios (setuid(0)).",
+        "Compilala como shared object.",
+        "Ejecuta un comando permitido con sudo LD_PRELOAD=/ruta/tu.so; obtienes shell root."
+      ],
+      "commands": [
+        {
+          "cmd": "gcc -fPIC -shared -o /tmp/pe.so pe.c -nostartfiles",
+          "why": "Compila tu libreria como shared object. -shared la hace precargable; -nostartfiles evita dependencias que romperian la carga en el proceso victima.",
+          "out": "El fichero /tmp/pe.so. Su codigo (una funcion _init/constructor que hace setuid(0); system(\"/bin/bash\")) se ejecutara al precargarse."
+        },
+        {
+          "cmd": "sudo LD_PRELOAD=/tmp/pe.so <comando_permitido>",
+          "why": "Al ejecutar el comando permitido con sudo, LD_PRELOAD (conservado por env_keep) carga tu .so en el proceso root y dispara tu shell.",
+          "out": "Un prompt de root (id = uid=0). Si da error de carga, revisa que compilaste con -nostartfiles y que env_keep realmente conserva la variable."
+        }
+      ]
+    },
+    {
+      "id": "writable-sensitive-files",
+      "title": "Ficheros sensibles escribibles",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Si puedes escribir /etc/passwd, /etc/shadow o /etc/sudoers, te conviertes en root editando una linea.",
+      "que": "Ciertos ficheros del sistema definen quien es root y quien puede escalar. Si por una mala configuracion de permisos tu usuario puede escribir en /etc/passwd, /etc/shadow o /etc/sudoers, puedes anadir o alterar una cuenta con uid 0 o darte permisos sudo. No hay exploit: es escritura directa a la fuente de la verdad.",
+      "porque": "Estos ficheros deberian ser solo-lectura para usuarios normales. Cuando alguien afloja los permisos (o un script los deja escribibles), rompes la frontera de confianza mas basica del sistema: /etc/passwd todavia permite un hash de password en el segundo campo, asi que puedes crear un root con password conocida.",
+      "cuando": "Cuando la enumeracion ([[enum-privesc-linux]]) marca /etc/passwd, /etc/shadow o /etc/sudoers como escribibles por ti (ls -l o el check de linpeas).",
+      "senales": [
+        "ls -l /etc/passwd muestra permiso de escritura para tu usuario o grupo.",
+        "/etc/shadow legible/escribible (linpeas lo resalta).",
+        "Un fichero en /etc/sudoers.d/ escribible por ti."
+      ],
+      "pasos": [
+        "Comprueba permisos de /etc/passwd, /etc/shadow y /etc/sudoers(.d).",
+        "Si /etc/passwd es escribible, genera un hash (openssl passwd) y anade una linea de usuario con uid 0.",
+        "Cambia a ese usuario con su y la password que pusiste.",
+        "Confirma uid=0. Alternativa: darte una linea NOPASSWD en sudoers."
+      ],
+      "commands": [
+        {
+          "cmd": "ls -l /etc/passwd /etc/shadow /etc/sudoers",
+          "why": "Comprueba de un vistazo si tienes escritura en los ficheros que definen identidad y privilegios. Es un check barato con recompensa enorme.",
+          "out": "Los permisos. Una 'w' para tu usuario/grupo en cualquiera de ellos es escalada directa. Normalmente solo root escribe; si no, hay mala config."
+        },
+        {
+          "cmd": "openssl passwd -1 -salt xyz Passw0rd",
+          "why": "Genera un hash valido para /etc/passwd. Si passwd es escribible, anades una linea 'hacker:HASH:0:0::/root:/bin/bash' y creas un root con password conocida.",
+          "out": "El hash a pegar en el segundo campo. Tras anadir la linea, 'su hacker' con Passw0rd te da uid=0. -1 usa MD5crypt, compatible con /etc/passwd."
+        }
+      ]
+    },
+    {
+      "id": "group-abuse-linux",
+      "title": "Grupos peligrosos (docker, lxd, disk)",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Pertenecer a ciertos grupos es root casi directo: docker/lxd montan el disco del host; disk lo lee crudo.",
+      "que": "Algunos grupos conceden capacidades que equivalen a root aunque tu usuario no lo sea. docker y lxd permiten arrancar un contenedor que monta el sistema de ficheros del host y escribir en el como root. disk da acceso crudo al dispositivo (leer /etc/shadow con debugfs). adm permite leer todos los logs. Es el atajo mas rapido del [[privesc-modelo]].",
+      "porque": "Estos grupos existen para administrar subsistemas, pero su poder se traduce trivialmente en root: si controlas el demonio de contenedores puedes montar / del host; si lees el disco crudo, saltas todos los permisos de fichero. Por eso id/groups es lo primero que se mira.",
+      "cuando": "Nada mas orientarte con id/groups ([[privesc-modelo]]). Si sales en docker/lxd/disk/adm, prioriza este vector sobre todo lo demas.",
+      "senales": [
+        "id muestra tu usuario en docker, lxd/lxc, disk o adm.",
+        "El binario docker/lxc responde (el demonio esta corriendo).",
+        "Para disk: debugfs puede abrir el dispositivo raiz."
+      ],
+      "pasos": [
+        "Mira tus grupos con id.",
+        "docker: arranca un contenedor montando / del host y chroot para escribir como root.",
+        "lxd: importa una imagen y montala con security.privileged para acceder al host.",
+        "disk: usa debugfs sobre el dispositivo raiz para leer /etc/shadow o escribir."
+      ],
+      "commands": [
+        {
+          "cmd": "docker run -v /:/mnt --rm -it alpine chroot /mnt sh",
+          "why": "Si estas en el grupo docker, arrancas un contenedor que monta TODO el disco del host en /mnt y haces chroot: ya eres root sobre los ficheros reales del host.",
+          "out": "Una shell root dentro del chroot con acceso a / del host. Desde ahi lees flags, editas /etc/passwd o pones SUID a bash en el host real."
+        },
+        {
+          "cmd": "debugfs -w /dev/sda1",
+          "why": "Con el grupo disk accedes al dispositivo en crudo, saltando permisos de fichero. debugfs -w permite leer y escribir el sistema de ficheros directamente.",
+          "out": "Un prompt debugfs. 'cat /etc/shadow' desde ahi ignora permisos. Ajusta /dev/sdaX al dispositivo raiz real (mira lsblk/mount)."
+        }
+      ]
+    },
+    {
+      "id": "nfs-no-root-squash",
+      "title": "NFS con no_root_squash",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Un export NFS con no_root_squash te deja crear ficheros SUID como root desde tu maquina y ejecutarlos en la victima.",
+      "que": "no_root_squash es una opcion de NFS que hace que el root de tu maquina sea tratado como root en el servidor NFS (en lugar de degradarlo a nobody). Si un share exportado con esa opcion esta montado en una ruta accesible en la victima, montas el share desde tu Kali (donde SI eres root), creas ahi un binario SUID root, y lo ejecutas en la victima para escalar.",
+      "porque": "Normalmente NFS 'aplasta' (squash) el root remoto para que no pueda actuar como root local. no_root_squash desactiva esa proteccion: los ficheros que creas como root en tu maquina conservan uid 0 en el servidor. Un binario SUID creado asi corre como root al ejecutarlo en la victima.",
+      "cuando": "Cuando ves NFS (2049) o /etc/exports revela un share con no_root_squash. showmount lista los exports disponibles.",
+      "senales": [
+        "showmount -e muestra un export disponible.",
+        "/etc/exports (legible en la victima) contiene 'no_root_squash'.",
+        "El export esta montado o es montable en una ruta util de la victima."
+      ],
+      "pasos": [
+        "Enumera los exports con showmount -e contra la IP.",
+        "Monta el share en tu Kali (como root).",
+        "Crea ahi un binario que lance una shell y ponle el bit SUID (como root de tu Kali).",
+        "En la victima, ejecuta ese binario desde la ruta del share: correra como root."
+      ],
+      "commands": [
+        {
+          "cmd": "showmount -e $IP",
+          "why": "Lista los directorios que el servidor NFS exporta y a quien. Es el primer paso: necesitas saber que share montar y si aplica.",
+          "out": "Rutas exportadas y sus restricciones de host. Un export sin restriccion (*) es montable por ti. Luego confirma no_root_squash en /etc/exports."
+        },
+        {
+          "cmd": "sudo mount -t nfs $IP:/export /mnt/nfs && cd /mnt/nfs",
+          "why": "Monta el share en tu Kali, donde eres root. Los ficheros SUID que crees aqui como root conservaran uid 0 en la victima gracias a no_root_squash.",
+          "out": "El share montado en /mnt/nfs. Ahora compila un binario que lance bash, hazlo chown root:root y chmod +s; luego ejecutalo en la victima desde esa misma ruta."
+        }
+      ]
+    },
+    {
+      "id": "kernel-exploits-linux",
+      "title": "Exploits de kernel (ultimo recurso)",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Si el kernel es viejo, un exploit local eleva a root; deja esto para el final porque puede tumbar la maquina.",
+      "que": "Un exploit de kernel aprovecha un fallo en el propio nucleo de Linux para ejecutar codigo como root desde un usuario normal. Casos famosos: DirtyCow, PwnKit (polkit), DirtyPipe. Funcionan cuando la version del kernel o de un componente del sistema es vulnerable, independientemente de la config.",
+      "porque": "Se dejan para el FINAL por dos razones: los exploits de kernel pueden causar un kernel panic y tumbar la maquina (arruinando la room), y muchas veces hay un vector de config mas limpio y estable. Solo cuando la enumeracion ([[enum-privesc-linux]]) no dio nada mejor, se recurre a esto.",
+      "cuando": "Cuando ningun vector de config (sudo, SUID, cron, capabilities) funciono y uname -r revela un kernel viejo o hay un componente vulnerable (polkit, sudo Baron Samedit).",
+      "senales": [
+        "uname -r muestra un kernel antiguo con CVE conocido.",
+        "linpeas sugiere exploits de kernel aplicables.",
+        "Componentes vulnerables presentes (pkexec para PwnKit, sudo < 1.9.5p2 para Baron Samedit)."
+      ],
+      "pasos": [
+        "Saca la version exacta con uname -a y las versiones de sudo/polkit.",
+        "Busca un exploit para ESA version y leelo antes de ejecutarlo ([[explotar-cve]]).",
+        "Compila en una maquina compatible (o en la victima si hay gcc) y transfierelo.",
+        "Ejecuta con cuidado; confirma uid=0. Si falla o cuelga, vuelve a los vectores de config."
+      ],
+      "commands": [
+        {
+          "cmd": "uname -a; cat /etc/os-release",
+          "why": "La version exacta del kernel y de la distro es lo que decide que exploit aplica. Un exploit para otra version puede no funcionar o tumbar la maquina.",
+          "out": "Version del kernel (ej. 4.4.0) y distro. Cruzalo con searchsploit/CVEs; kernels < ~4.8 huelen a DirtyCow, cualquiera con pkexec vulnerable a PwnKit."
+        },
+        {
+          "cmd": "searchsploit linux kernel <version>",
+          "why": "Busca exploits locales publicos para esa version concreta de kernel. Prioriza los locales (Local Privilege Escalation) sobre los remotos.",
+          "out": "Titulos con su rango de version. Lee el PoC antes de lanzarlo ([[explotar-cve]]); comprueba que la version encaja para no arriesgar un panic."
+        }
+      ]
+    },
+    {
+      "id": "enum-privesc-windows",
+      "title": "Enumeracion para privesc en Windows",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Igual que en Linux pero con otros checks: privilegios de token, servicios, credenciales guardadas y parches faltantes.",
+      "que": "Enumerar para privesc en Windows es recorrer sus vectores tipicos en orden: privilegios de token, grupos, servicios mal configurados, tareas programadas, credenciales guardadas y parches faltantes. WinPEAS lo automatiza; entender cada hallazgo es lo que lo convierte en escalada. Paso previo del [[winprivesc-modelo]].",
+      "porque": "Windows esconde muchos vectores en configuracion (servicios, registro, permisos NTFS) que a mano son tediosos. WinPEAS y las consultas manuales garantizan cobertura, pero dan falsos positivos: hay que validar cada pista.",
+      "cuando": "Nada mas conseguir una shell en Windows. Corre primero whoami /priv y whoami /groups, luego WinPEAS para lo exhaustivo.",
+      "senales": [
+        "whoami /priv revela un privilegio potente (SeImpersonate, SeBackup, SeDebug).",
+        "WinPEAS resalta servicios modificables o rutas sin comillas.",
+        "Credenciales en ficheros de despliegue o en el gestor de credenciales."
+      ],
+      "pasos": [
+        "Checks rapidos: whoami /priv, whoami /groups, systeminfo (parches).",
+        "Lanza WinPEAS y lee lo resaltado (servicios, credenciales, AlwaysInstallElevated).",
+        "Prioriza por rentabilidad: token ([[token-impersonation]]) y servicios ([[service-misconfig-windows]]) primero.",
+        "Deja los exploits de kernel ([[kernel-exploits-windows]]) para el final."
+      ],
+      "commands": [
+        {
+          "cmd": "whoami /priv",
+          "why": "Lista tus privilegios de token, el vector mas rapido en Windows. Varios (SeImpersonate, SeBackup, SeRestore, SeDebug) llevan a SYSTEM casi directo.",
+          "out": "Privilegios y si estan Enabled. SeImpersonate -> [[token-impersonation]]. SeBackup/SeRestore -> [[sebackup-serestore]]. Anota los que esten habilitados."
+        },
+        {
+          "cmd": "systeminfo",
+          "why": "Muestra version de Windows y hotfixes instalados. Comparar los parches con los CVE conocidos revela si hay un exploit de kernel aplicable.",
+          "out": "OS version, build y lista de KB (parches). Pocos KB en un Windows viejo -> candidato a exploit de kernel; pasalo por Watson/wesng."
+        }
+      ]
+    },
+    {
+      "id": "service-misconfig-windows",
+      "title": "Servicios mal configurados",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Un servicio que corre como SYSTEM con permisos flojos: si modificas su binario, su binPath o una ruta sin comillas, ejecutas como SYSTEM.",
+      "que": "Los servicios de Windows suelen correr como SYSTEM. Si tu usuario puede modificar la configuracion del servicio (binPath), reemplazar su ejecutable, o si la ruta del binario no esta entre comillas y hay un directorio escribible en medio, puedes hacer que el servicio ejecute TU binario como SYSTEM. Es el [[winprivesc-modelo]] aplicado a servicios.",
+      "porque": "Instaladores descuidados dejan servicios con permisos NTFS flojos en el .exe o permiten a usuarios normales reconfigurar el servicio. Y una ruta como C:\\Program Files\\My App\\svc.exe sin comillas hace que Windows pruebe C:\\Program.exe primero: si puedes escribir ahi, secuestras el arranque.",
+      "cuando": "En la enumeracion ([[enum-privesc-windows]]). WinPEAS marca servicios modificables, binarios escribibles y unquoted paths.",
+      "senales": [
+        "accesschk o WinPEAS marca SERVICE_CHANGE_CONFIG o WRITE sobre un servicio.",
+        "El .exe del servicio esta en una carpeta escribible por tu usuario.",
+        "Una ruta de servicio con espacios y sin comillas, con un dir intermedio escribible."
+      ],
+      "pasos": [
+        "Enumera servicios y sus permisos (accesschk / sc qc).",
+        "Segun el fallo: reconfigura binPath, reemplaza el .exe, o coloca un exe en la ruta sin comillas.",
+        "Reinicia el servicio (o espera) para que ejecute tu payload como SYSTEM.",
+        "Confirma con whoami que eres nt authority\\system."
+      ],
+      "commands": [
+        {
+          "cmd": "sc qc <servicio>",
+          "why": "Muestra la configuracion del servicio: su BINARY_PATH_NAME y la cuenta con la que corre. Ahi ves si la ruta esta sin comillas y si corre como LocalSystem.",
+          "out": "BINARY_PATH_NAME (mira comillas y espacios) y SERVICE_START_NAME (LocalSystem = SYSTEM). Combinar con accesschk revela si puedes modificarlo."
+        },
+        {
+          "cmd": "sc config <servicio> binPath= \"C:\\Windows\\Temp\\pe.exe\" && sc start <servicio>",
+          "why": "Si tienes SERVICE_CHANGE_CONFIG, reescribes que ejecuta el servicio y lo arrancas: tu binario correra como SYSTEM. Es el abuso mas directo.",
+          "out": "El servicio ejecuta tu pe.exe como SYSTEM (crea un usuario admin o lanza tu shell). Si no puedes cambiar config, prueba reemplazar el .exe o el unquoted path."
+        }
+      ]
+    },
+    {
+      "id": "always-install-elevated",
+      "title": "AlwaysInstallElevated",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Si esta politica esta activa, cualquier .msi se instala como SYSTEM: generas un instalador malicioso y listo.",
+      "que": "AlwaysInstallElevated es una politica de Windows que, si esta activada en las dos claves de registro (HKCU y HKLM), hace que cualquier paquete .msi se instale con privilegios de SYSTEM sin importar quien lo lance. Un atacante genera un .msi malicioso y lo instala para ejecutar codigo como SYSTEM.",
+      "porque": "La politica existe para que usuarios sin privilegios puedan instalar software aprobado, pero abre un agujero enorme: el instalador corre como SYSTEM y el .msi puede hacer cualquier cosa. Es un vector limpio y fiable cuando esta activo. Caso del [[winprivesc-modelo]].",
+      "cuando": "En la enumeracion ([[enum-privesc-windows]]). Se comprueba leyendo las dos claves de registro; WinPEAS lo marca explicitamente.",
+      "senales": [
+        "Ambas claves AlwaysInstallElevated valen 1 (HKCU y HKLM).",
+        "WinPEAS resalta 'AlwaysInstallElevated set to 1'."
+      ],
+      "pasos": [
+        "Comprueba las dos claves de registro; deben valer 1 las dos.",
+        "Genera un .msi malicioso (crea un admin o lanza tu shell).",
+        "Transfierelo e instalalo con msiexec en modo silencioso.",
+        "Confirma privilegios de SYSTEM/admin."
+      ],
+      "commands": [
+        {
+          "cmd": "reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated",
+          "why": "Comprueba la clave de usuario. La escalada solo funciona si tanto HKCU como HKLM tienen AlwaysInstallElevated = 1; una sola no basta.",
+          "out": "El valor (0x1 = activado). Repite la consulta en HKLM. Si ambas son 0x1, el vector aplica."
+        },
+        {
+          "cmd": "msiexec /quiet /qn /i C:\\Windows\\Temp\\pe.msi",
+          "why": "Instala tu .msi en silencio. Con la politica activa, msiexec lo ejecuta como SYSTEM, corriendo el payload que metiste dentro (crear admin o shell).",
+          "out": "El payload se ejecuta como SYSTEM (p. ej. tu usuario nuevo aparece en 'net localgroup administrators'). Genera el .msi con la accion deseada de antemano."
+        }
+      ]
+    },
+    {
+      "id": "stored-credentials-windows",
+      "title": "Credenciales guardadas en Windows",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Windows deja credenciales por todas partes: ficheros de despliegue, gestor de credenciales, registro y backups del SAM.",
+      "que": "Muchas escaladas en Windows no son un exploit, sino encontrar una credencial reutilizable. Windows guarda passwords en ficheros de despliegue (unattend.xml, sysprep), en el gestor de credenciales (cmdkey), en el registro (Winlogon autologon, PuTTY), y en backups del SAM/SYSTEM que se pueden volcar. Cada credencial alimenta [[cracking]] o reuse directo.",
+      "porque": "Los administradores automatizan despliegues y dejan credenciales en claro o cifradas de forma reversible. Y el propio Windows cachea secretos para comodidad. Buscar sistematicamente es de lo mas rentable, igual que en Linux.",
+      "cuando": "En la enumeracion ([[enum-privesc-windows]]), en paralelo a los vectores de servicio/token. WinPEAS busca la mayoria automaticamente.",
+      "senales": [
+        "Ficheros unattend.xml / sysprep.xml / Autounattend.xml en el disco.",
+        "cmdkey /list muestra credenciales cacheadas (runas /savecred).",
+        "Autologon en el registro con DefaultPassword, o hives SAM/SYSTEM accesibles."
+      ],
+      "pasos": [
+        "Busca ficheros de despliegue con credenciales en claro o base64.",
+        "Lista credenciales cacheadas con cmdkey; usa runas /savecred si hay.",
+        "Revisa el registro (autologon, claves de apps) y volca SAM/SYSTEM si puedes.",
+        "Cada credencial -> pruebala (reuse) o crackeala ([[cracking]]); un hash NTLM sirve para [[ntlm-pth]]."
+      ],
+      "commands": [
+        {
+          "cmd": "reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\" /v DefaultPassword",
+          "why": "Si hay autologon configurado, la password del usuario queda en claro en el registro. Es un clasico de rooms Windows.",
+          "out": "DefaultUserName y DefaultPassword en claro si existe. Esa credencial -> pruebala con runas o para RDP/WinRM; a menudo es de un usuario mas privilegiado."
+        },
+        {
+          "cmd": "findstr /si password *.xml *.ini *.txt *.config",
+          "why": "Peina ficheros de configuracion y despliegue buscando 'password'. /s recursivo, /i sin distinguir mayusculas. Barato y muy rentable.",
+          "out": "Lineas con credenciales y su fichero. unattend.xml suele traer la password del admin local (a veces en base64: decodificala)."
+        }
+      ]
+    },
+    {
+      "id": "registry-autoruns",
+      "title": "Autoruns y binarios de arranque",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Si un programa que arranca automaticamente con privilegios apunta a un binario que puedes escribir, lo reemplazas.",
+      "que": "Windows ejecuta programas al inicio o al login desde varias claves de registro (Run, RunOnce) y carpetas de startup, a veces con privilegios altos. Si el binario referenciado es escribible por tu usuario, o la clave de registro es modificable, colocas tu ejecutable y correra con los privilegios del que dispara el autorun. Variante del [[winprivesc-modelo]].",
+      "porque": "El software de terceros registra autoruns sin proteger bien los permisos del binario o de la clave. Si un admin inicia sesion (o el arranque es como SYSTEM), tu binario reemplazado se ejecuta con ese contexto.",
+      "cuando": "En la enumeracion ([[enum-privesc-windows]]). WinPEAS y autorunsc listan los autoruns y marcan los que tienen permisos debiles.",
+      "senales": [
+        "Un binario referenciado en una clave Run es escribible por tu usuario (accesschk).",
+        "Una clave de registro de autorun modificable por ti.",
+        "autorunsc marca un autorun con permisos flojos."
+      ],
+      "pasos": [
+        "Enumera autoruns (registro Run/RunOnce y carpetas startup).",
+        "Comprueba permisos del binario y de la clave (accesschk).",
+        "Reemplaza el binario escribible por tu payload (o apunta la clave al tuyo).",
+        "Espera el proximo login/arranque del usuario privilegiado y recoge la ejecucion."
+      ],
+      "commands": [
+        {
+          "cmd": "reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+          "why": "Lista los programas que arrancan con el sistema desde la clave Run de maquina. Son candidatos si el binario o la clave son escribibles.",
+          "out": "Nombres y rutas de los binarios de autorun. Para cada uno, comprueba con accesschk si puedes escribir el .exe o modificar la clave."
+        },
+        {
+          "cmd": "accesschk.exe /accepteula -wvu \"C:\\ruta\\autorun.exe\"",
+          "why": "Comprueba si tu usuario tiene permiso de escritura sobre el binario de autorun. Esa escritura es lo que te deja reemplazarlo por tu payload.",
+          "out": "Permisos por usuario/grupo. Un FILE_WRITE_DATA/W para tu usuario o un grupo tuyo = puedes reemplazar el .exe. Si no, prueba modificar la clave de registro."
+        }
+      ]
+    },
+    {
+      "id": "dll-hijacking",
+      "title": "Secuestro de DLL",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Una app privilegiada que busca una DLL en un directorio escribible carga la tuya: es el PATH hijacking de Windows.",
+      "que": "Cuando un programa carga una DLL sin ruta absoluta, Windows la busca por un orden de directorios. Si un proceso privilegiado busca una DLL que no existe (o busca antes en un directorio donde puedes escribir), colocas ahi una DLL maliciosa con ese nombre y el proceso la carga y ejecuta tu codigo. Es el analogo Windows del [[path-hijacking]] de Linux.",
+      "porque": "El orden de busqueda de DLLs incluye el directorio del ejecutable y otros; si la app no fija rutas y falta una DLL, el hueco es explotable. Tu DLL (con su DllMain) ejecuta el payload en el contexto del proceso, que puede ser SYSTEM.",
+      "cuando": "Cuando un servicio o app privilegiada tiene una DLL ausente o cargable desde un directorio escribible. ProcMon (filtrando NAME NOT FOUND en .dll) lo revela.",
+      "senales": [
+        "ProcMon muestra un proceso privilegiado con 'NAME NOT FOUND' buscando una .dll.",
+        "El directorio donde busca la DLL es escribible por tu usuario.",
+        "Una app de terceros que carga DLLs desde su propia carpeta escribible."
+      ],
+      "pasos": [
+        "Con ProcMon, caza DLLs que un proceso privilegiado busca y no encuentra.",
+        "Confirma que puedes escribir en un directorio del orden de busqueda.",
+        "Compila una DLL con ese nombre cuyo DllMain lance tu payload.",
+        "Colocala y dispara/espera la carga; confirma la ejecucion privilegiada."
+      ],
+      "commands": [
+        {
+          "cmd": "procmon.exe (filtro: Result is NAME NOT FOUND, Path ends with .dll)",
+          "why": "ProcMon monitoriza en vivo que ficheros abre cada proceso. Filtrando DLLs no encontradas ves exactamente que hueco puedes rellenar con tu DLL.",
+          "out": "Rutas de DLLs que un proceso busca sin exito. Si alguna esta en un directorio escribible por ti y el proceso es privilegiado, ese es tu vector."
+        },
+        {
+          "cmd": "x86_64-w64-mingw32-gcc pe.c -shared -o legit.dll",
+          "why": "Compila (desde Kali) una DLL cuyo DllMain ejecuta tu payload al cargarse. El nombre debe coincidir con la DLL que el proceso busca.",
+          "out": "El fichero legit.dll. Colocalo en el directorio donde el proceso la busca; al reiniciarse/cargarla, ejecuta tu codigo en su contexto (idealmente SYSTEM)."
+        }
+      ]
+    },
+    {
+      "id": "sebackup-serestore",
+      "title": "Privilegios SeBackup / SeRestore",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Estos privilegios saltan las ACL para leer/escribir cualquier fichero: volcas el SAM y sacas el hash del administrador.",
+      "que": "SeBackupPrivilege permite leer cualquier fichero ignorando sus ACL (pensado para software de backup), y SeRestorePrivilege permite escribir cualquiera. Con SeBackup puedes copiar los hives SAM y SYSTEM del registro, llevartelos y extraer los hashes NTLM locales, incluido el del administrador. Caso concreto del [[winprivesc-modelo]] via privilegios de token.",
+      "porque": "El privilegio existe para que las herramientas de copia lean ficheros bloqueados, pero no distingue backup legitimo de robo: si lo tienes, saltas todos los permisos NTFS. El SAM contiene los hashes locales; con ellos, [[ntlm-pth]] te da administrator sin crackear.",
+      "cuando": "Cuando whoami /priv ([[enum-privesc-windows]]) muestra SeBackupPrivilege (habitual en el grupo Backup Operators).",
+      "senales": [
+        "whoami /priv lista SeBackupPrivilege / SeRestorePrivilege habilitado.",
+        "Perteneces al grupo Backup Operators."
+      ],
+      "pasos": [
+        "Confirma SeBackup en whoami /priv.",
+        "Copia los hives SAM y SYSTEM (via reg save o robocopy /b).",
+        "Transfierelos a tu Kali y extrae los hashes con secretsdump.",
+        "Usa el hash NTLM de administrator con [[ntlm-pth]] para shell como admin."
+      ],
+      "commands": [
+        {
+          "cmd": "reg save HKLM\\SAM sam.hive && reg save HKLM\\SYSTEM system.hive",
+          "why": "Con SeBackup puedes exportar los hives del registro que contienen los hashes locales (SAM) y la clave para descifrarlos (SYSTEM), saltando el bloqueo habitual.",
+          "out": "Dos ficheros .hive. Baja ambos a tu Kali; el siguiente paso es extraer los hashes con impacket-secretsdump usando SAM + SYSTEM."
+        },
+        {
+          "cmd": "impacket-secretsdump -sam sam.hive -system system.hive LOCAL",
+          "why": "Extrae los hashes NTLM locales combinando SAM y SYSTEM. Es el paso que convierte los hives robados en credenciales usables.",
+          "out": "Lineas usuario:rid:lm:nt. El NT hash de Administrator -> [[ntlm-pth]] con evil-winrm/psexec para shell como admin sin crackear."
+        }
+      ]
+    },
+    {
+      "id": "uac-bypass",
+      "title": "Bypass de UAC",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Ya eres admin pero con token limitado; un bypass de UAC eleva a integridad alta sin el prompt de consentimiento.",
+      "que": "El Control de Cuentas de Usuario (UAC) hace que, aunque tu usuario sea administrador, ejecutes con un token de integridad media hasta que confirmas la elevacion. Un bypass de UAC aprovecha binarios de Windows que auto-elevan sin pedir consentimiento para lanzar un proceso con integridad alta (admin completo) sin el prompt.",
+      "porque": "Ciertos ejecutables firmados de Microsoft se auto-elevan y leen configuracion del registro de usuario; si secuestras esa clave (fodhelper, eventvwr), Windows lanza tu comando elevado. No es cruzar de usuario a admin, sino de 'admin a medias' a 'admin completo'.",
+      "cuando": "Cuando whoami /groups muestra que estas en Administrators pero con integridad media (no puedes tocar recursos protegidos aun). No aplica si ya eres SYSTEM o integridad alta.",
+      "senales": [
+        "Estas en el grupo Administrators pero el nivel de integridad es Medium.",
+        "Operaciones de admin fallan con acceso denegado pese a ser admin."
+      ],
+      "pasos": [
+        "Confirma que eres admin con integridad media (whoami /groups).",
+        "Elige una tecnica segun la build (fodhelper, eventvwr, computerdefaults).",
+        "Secuestra la clave de registro correspondiente para que apunte a tu comando.",
+        "Dispara el binario auto-elevado; tu comando corre con integridad alta."
+      ],
+      "commands": [
+        {
+          "cmd": "whoami /groups | findstr /i \"Label\"",
+          "why": "Muestra tu nivel de integridad (Mandatory Label). Distingue si necesitas bypass de UAC (Medium) o si ya tienes admin completo (High).",
+          "out": "'Mandatory Label\\Medium' = necesitas UAC bypass. 'High' = ya elevado, no hace falta. Junto con el grupo Administrators define si aplica."
+        },
+        {
+          "cmd": "reg add HKCU\\Software\\Classes\\ms-settings\\Shell\\Open\\command /d \"cmd.exe\" /f",
+          "why": "Prepara el secuestro de fodhelper: al ejecutarse (auto-elevado), lee esta clave de usuario y lanza tu comando con integridad alta, sin prompt de UAC.",
+          "out": "Tras esto, ejecutar fodhelper.exe abre un cmd elevado (integridad High). Ajusta la tecnica/clave a la build de Windows; limpia la clave despues."
+        }
+      ]
+    },
+    {
+      "id": "kernel-exploits-windows",
+      "title": "Exploits de kernel en Windows (ultimo recurso)",
+      "phase": "privesc",
+      "section": "windows-privesc",
+      "summary": "Si faltan parches, un exploit local eleva a SYSTEM; deja esto para el final por inestabilidad.",
+      "que": "Un exploit de kernel de Windows aprovecha un fallo en el nucleo o en un driver para ejecutar codigo como SYSTEM desde un usuario normal. Aplica cuando faltan parches concretos (MS16-032, PrintNightmare, etc.). Se identifican comparando los hotfixes instalados con los CVE conocidos.",
+      "porque": "Como en Linux, se dejan para el FINAL: pueden inestabilizar o tumbar la maquina, y casi siempre hay un vector de config mas limpio. Solo cuando la enumeracion ([[enum-privesc-windows]]) no dio token, servicio ni credencial se recurre a esto.",
+      "cuando": "Cuando ningun vector de config funciono y systeminfo revela un Windows con pocos parches. Watson/wesng cruzan los hotfixes con exploits conocidos.",
+      "senales": [
+        "systeminfo muestra pocos hotfixes o un build viejo.",
+        "Watson/wesng sugieren exploits aplicables a esa build.",
+        "Servicios de impresion vulnerables (PrintNightmare) presentes."
+      ],
+      "pasos": [
+        "Saca version y parches con systeminfo.",
+        "Pasa la salida por wesng/Watson para candidatos.",
+        "Elige uno, leelo ([[explotar-cve]]) y consigue el binario compilado fiable.",
+        "Ejecuta con cuidado; confirma SYSTEM. Si falla o cuelga, vuelve a los vectores de config."
+      ],
+      "commands": [
+        {
+          "cmd": "systeminfo > sysinfo.txt",
+          "why": "Captura version, build y hotfixes. Es la entrada para las herramientas que sugieren que exploit de kernel aplica a esta maquina.",
+          "out": "OS version/build y lista de KB. Guardalo y pasalo por wesng: te dara CVEs sin parchear con exploit publico."
+        },
+        {
+          "cmd": "python wesng.py sysinfo.txt",
+          "why": "Windows Exploit Suggester cruza tu systeminfo con la base de vulnerabilidades y lista exploits candidatos ordenados por relevancia.",
+          "out": "Lista de CVE/MS con enlace al exploit. Prioriza los de 'Elevation of Privilege' con PoC; leelo antes de ejecutar ([[explotar-cve]])."
+        }
+      ]
     }
   ],
   "paths": [
@@ -4792,12 +5383,21 @@
     {
       "id": "privesc-linux-ruta",
       "title": "Escalada de privilegios en Linux",
-      "summary": "De usuario normal a root. Primero el modelo mental, luego los tres vectores mas comunes en orden de rentabilidad.",
+      "summary": "De usuario normal a root, a fondo. Modelo mental, enumeracion, y todos los vectores en orden de rentabilidad (kernel al final).",
       "concepts": [
         "privesc-modelo",
+        "enum-privesc-linux",
         "sudo-abuse",
         "suid",
-        "cron-abuse"
+        "capabilities",
+        "cron-abuse",
+        "path-hijacking",
+        "wildcard-injection",
+        "sudo-ld-preload",
+        "writable-sensitive-files",
+        "group-abuse-linux",
+        "nfs-no-root-squash",
+        "kernel-exploits-linux"
       ]
     },
     {
@@ -4828,10 +5428,19 @@
     {
       "id": "windows-privesc-ruta",
       "title": "Escalada en Windows",
-      "summary": "De usuario a SYSTEM. El modelo de vectores Windows y el rey de la escalada: impersonation de token.",
+      "summary": "De usuario a SYSTEM, a fondo. Modelo, enumeracion, privilegios de token, servicios, credenciales y el resto de vectores (kernel al final).",
       "concepts": [
         "winprivesc-modelo",
-        "token-impersonation"
+        "enum-privesc-windows",
+        "token-impersonation",
+        "service-misconfig-windows",
+        "always-install-elevated",
+        "stored-credentials-windows",
+        "registry-autoruns",
+        "dll-hijacking",
+        "sebackup-serestore",
+        "uac-bypass",
+        "kernel-exploits-windows"
       ]
     },
     {

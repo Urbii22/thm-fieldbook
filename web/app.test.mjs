@@ -149,7 +149,7 @@ for (const path of content.paths) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260708-navpolish/);
+  assert.match(asset, /20260708-privesc-deep/);
 }
 
 assert.match(js, /registration\.update\(\)/);
