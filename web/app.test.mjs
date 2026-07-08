@@ -129,8 +129,12 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260708-linpeas-loot/);
+  assert.match(asset, /20260708-pwa-autoupdate/);
 }
+
+assert.match(js, /registration\.update\(\)/);
+assert.match(js, /controllerchange/);
+assert.match(sw, /SKIP_WAITING/);
 
 assert.match(html, /<h1\b[^>]*>/);
 assert.doesNotMatch(`${html}\n${js}`, /Ã|Â|â[^\s<>"']*/);

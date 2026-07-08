@@ -36,7 +36,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-linpeas-loot";
+const APP_VERSION = "20260708-pwa-autoupdate";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1673,6 +1673,40 @@ function bindModeToggle() {
   });
 }
 
+function bindServiceWorkerUpdates() {
+  if (!("serviceWorker" in navigator)) return;
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
+  const activateWaitingWorker = (registration) => {
+    if (!registration?.waiting) return;
+    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+  };
+
+  const watchRegistration = (registration) => {
+    registration.addEventListener("updatefound", () => {
+      const worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener("statechange", () => {
+        if (worker.state === "installed" && navigator.serviceWorker.controller) {
+          activateWaitingWorker(registration);
+        }
+      });
+    });
+    activateWaitingWorker(registration);
+    registration.update().catch(() => {});
+  };
+
+  const registerSw = () => navigator.serviceWorker.register("./sw.js").then(watchRegistration).catch(() => {});
+  if (document.readyState === "complete") registerSw();
+  else window.addEventListener("load", registerSw, { once: true });
+}
+
 async function init() {
   const response = await fetch(`./data/content.json?v=${APP_VERSION}`);
   state.data = await response.json();
@@ -1728,11 +1762,7 @@ async function init() {
     render();
   });
   render();
-  if ("serviceWorker" in navigator) {
-    const registerSw = () => navigator.serviceWorker.register("./sw.js").catch(() => {});
-    if (document.readyState === "complete") registerSw();
-    else window.addEventListener("load", registerSw, { once: true });
-  }
+  bindServiceWorkerUpdates();
 }
 
 if (typeof document !== "undefined") {

@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v15";
-const VERSION = "20260708-linpeas-loot";
+const CACHE = "thm-fieldbook-v16";
+const VERSION = "20260708-pwa-autoupdate";
 const ASSETS = [
   "./",
   "./index.html",
@@ -24,6 +24,10 @@ self.addEventListener("activate", (event) => {
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("fetch", (event) => {
