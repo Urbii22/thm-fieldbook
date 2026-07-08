@@ -30,6 +30,7 @@ const state = {
   view: "practica",
   guides: [],
   activeGuide: "",
+  hc: { view: "home", catId: null, type: null, id: null },
 };
 
 const PROFILE_KEY = "thm-room";
@@ -1048,8 +1049,7 @@ function trackTopbarHeight() {
   window.addEventListener("resize", set);
 }
 
-function bindSectionNav() {
-  const container = document.querySelector("[data-detail]");
+function bindSectionNav(container = document.querySelector("[data-detail]")) {
   if (!container) return;
   const buttons = [...container.querySelectorAll(".section-toc [data-jump]")];
   buttons.forEach((button) => {
@@ -1126,8 +1126,7 @@ function checklistProgress(section) {
   return { total, done };
 }
 
-function bindChecklist(section) {
-  const container = document.querySelector("[data-detail]");
+function bindChecklist(section, container = document.querySelector("[data-detail]")) {
   const chip = container.querySelector("[data-progress]");
   container.querySelectorAll("[data-check]").forEach((box) => {
     box.addEventListener("change", () => {
@@ -1580,6 +1579,233 @@ function bindViewTabs() {
   });
 }
 
+// ===== Help center (home -> category -> article) =====
+const CATEGORIES = [
+  { id: "empezar", title: "Empezar", icon: "🧭", desc: "Metodologia y como enfrentar una room.", sections: ["ultra-quick-start", "mentalidad-y-preparacion", "mapa-de-decisiones", "arquetipos-de-rooms"], guides: ["metodologia"] },
+  { id: "recon", title: "Reconocimiento", icon: "📡", desc: "Puertos, servicios y enumeracion.", sections: ["recon-y-servicios"], guides: ["recon-paso-a-paso"] },
+  { id: "web", title: "Web y APIs", icon: "🌐", desc: "Discovery, LFI a RCE, SQLi, WordPress y APIs.", sections: ["web-y-apis", "wordpress", "sqli"], guides: ["web-a-shell"] },
+  { id: "creds", title: "Credenciales y loot", icon: "🔑", desc: "Buscar, identificar, crackear y reutilizar.", sections: ["credenciales-y-loot"], guides: ["credenciales"] },
+  { id: "acceso", title: "Acceso y exploits", icon: "🚪", desc: "De hallazgo a shell estable; CVEs con cabeza.", sections: ["acceso-inicial", "cve-y-exploits"], guides: ["cve-metodologia"] },
+  { id: "linux", title: "Linux privesc", icon: "🐧", desc: "De shell normal a root.", sections: ["linux-privesc"], guides: ["privesc-linux"] },
+  { id: "windows", title: "Windows privesc", icon: "🪟", desc: "Escalada local en Windows.", sections: ["windows-privesc"], guides: [] },
+  { id: "ad", title: "Active Directory", icon: "🏰", desc: "Dominio, Kerberos, BloodHound y movimiento.", sections: ["active-directory"], guides: ["active-directory"] },
+  { id: "pivot", title: "Pivoting", icon: "🔀", desc: "Tuneles y alcance a la red interna.", sections: ["pivoting"], guides: ["pivoting"] },
+  { id: "referencia", title: "Referencia y atasco", icon: "🧰", desc: "Errores tipicos, checklist, cierre y equivalencias.", sections: ["errores-tipicos", "checklist-de-atasco", "notas-y-cierre", "equivalencias"], guides: [] },
+];
+
+function sectionBySlug(slug) {
+  return state.data.sections.find((section) => section.slug === slug);
+}
+function guideById(id) {
+  return state.guides.find((guide) => guide.id === id);
+}
+function catForSection(slug) {
+  const cat = CATEGORIES.find((c) => c.sections.includes(slug));
+  return cat ? cat.id : null;
+}
+function catForGuide(id) {
+  const cat = CATEGORIES.find((c) => (c.guides || []).includes(id));
+  return cat ? cat.id : null;
+}
+function categoryArticles(cat) {
+  const arts = [];
+  for (const slug of cat.sections) {
+    const s = sectionBySlug(slug);
+    if (s) arts.push({ type: "section", id: slug, title: s.title, summary: s.summary, count: s.commands.length });
+  }
+  for (const id of cat.guides || []) {
+    const g = guideById(id);
+    if (g) arts.push({ type: "guide", id, title: g.title, summary: g.summary, count: g.steps.length });
+  }
+  return arts;
+}
+
+function goHome() {
+  state.query = "";
+  const search = document.querySelector("[data-search]");
+  if (search) search.value = "";
+  state.hc = { view: "home" };
+  hcHash();
+  renderHC();
+}
+function goCategory(catId) {
+  state.query = "";
+  const search = document.querySelector("[data-search]");
+  if (search) search.value = "";
+  state.hc = { view: "category", catId };
+  hcHash();
+  renderHC();
+}
+function goArticle(type, id, catId) {
+  state.query = "";
+  const search = document.querySelector("[data-search]");
+  if (search) search.value = "";
+  state.hc = { view: "article", type, id, catId: catId || (type === "section" ? catForSection(id) : catForGuide(id)) };
+  hcHash();
+  renderHC();
+  window.scrollTo({ top: 0 });
+}
+
+function hcHash() {
+  let h = "#";
+  if (state.hc.view === "category") h = `#c/${state.hc.catId}`;
+  else if (state.hc.view === "article") h = `#a/${state.hc.type}/${encodeURIComponent(state.hc.id)}/${state.hc.catId || ""}`;
+  if (location.hash !== h) {
+    suppressHash = true;
+    history.pushState(null, "", h);
+    suppressHash = false;
+  }
+}
+function applyHcHash() {
+  const raw = location.hash.replace(/^#/, "");
+  const parts = raw.split("/");
+  if (parts[0] === "c" && parts[1]) state.hc = { view: "category", catId: parts[1] };
+  else if (parts[0] === "a" && parts[2]) state.hc = { view: "article", type: parts[1], id: decodeURIComponent(parts[2]), catId: parts[3] || null };
+  else state.hc = { view: "home" };
+}
+
+function breadcrumb(items) {
+  return `<nav class="hc-crumbs">${items
+    .map(([label, to]) => (to ? `<button type="button" data-crumb="${escapeHtml(to)}">${escapeHtml(label)}</button>` : `<span>${escapeHtml(label)}</span>`))
+    .join('<i aria-hidden="true">/</i>')}</nav>`;
+}
+function wireCrumbs(root) {
+  root.querySelectorAll("[data-crumb]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const to = button.dataset.crumb;
+      if (to === "home") goHome();
+      else if (to.startsWith("cat:")) goCategory(to.slice(4));
+    });
+  });
+}
+
+function renderHome() {
+  const hc = document.querySelector("[data-hc]");
+  hc.removeAttribute("style");
+  hc.innerHTML = `
+    <div class="hc-hero">
+      <h1>Centro de ayuda THM</h1>
+      <p>Elige un tema, o busca arriba lo que necesites (concepto o comando).</p>
+    </div>
+    <div class="hc-grid">${CATEGORIES.map((cat) => {
+      const n = cat.sections.length + (cat.guides || []).length;
+      return `<button type="button" class="hc-card" data-cat="${escapeHtml(cat.id)}">
+        <span class="hc-card-ico" aria-hidden="true">${cat.icon}</span>
+        <strong>${escapeHtml(cat.title)}</strong>
+        <span class="hc-card-desc">${escapeHtml(cat.desc)}</span>
+        <span class="hc-card-n">${n} articulos</span>
+      </button>`;
+    }).join("")}</div>`;
+  hc.querySelectorAll("[data-cat]").forEach((button) => button.addEventListener("click", () => goCategory(button.dataset.cat)));
+}
+
+function articleCardHtml(art, catId) {
+  return `<button type="button" class="hc-article-item" data-art="${art.type}:${escapeHtml(art.id)}:${escapeHtml(catId || "")}">
+    <span class="hc-article-kind kind-${art.type}">${art.type === "guide" ? "Guia" : "Referencia"}</span>
+    <strong>${highlight(escapeHtml(art.title), queryTerms())}</strong>
+    <span class="hc-article-sum">${highlight(escapeHtml(art.summary || ""), queryTerms())}</span>
+    <span class="hc-article-n">${art.count} ${art.type === "guide" ? "pasos" : "comandos"}</span>
+  </button>`;
+}
+function wireArticleCards(root) {
+  root.querySelectorAll("[data-art]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const [type, id, catId] = button.dataset.art.split(":");
+      goArticle(type, id, catId || null);
+    });
+  });
+}
+
+function renderCategory(catId) {
+  const cat = CATEGORIES.find((c) => c.id === catId);
+  const hc = document.querySelector("[data-hc]");
+  if (!cat) return goHome();
+  hc.removeAttribute("style");
+  const arts = categoryArticles(cat);
+  hc.innerHTML = breadcrumb([["Inicio", "home"], [cat.title, null]]) + `
+    <header class="hc-cat-head">
+      <span class="hc-card-ico" aria-hidden="true">${cat.icon}</span>
+      <div><h1>${escapeHtml(cat.title)}</h1><p>${escapeHtml(cat.desc)}</p></div>
+    </header>
+    <div class="hc-articles">${arts.map((art) => articleCardHtml(art, cat.id)).join("")}</div>`;
+  wireCrumbs(hc);
+  wireArticleCards(hc);
+}
+
+function renderArticle(type, id, catId) {
+  const hc = document.querySelector("[data-hc]");
+  const cat = CATEGORIES.find((c) => c.id === catId);
+  const crumbs = [["Inicio", "home"]];
+  if (cat) crumbs.push([cat.title, `cat:${cat.id}`]);
+  if (type === "section") {
+    const s = sectionBySlug(id);
+    if (!s) return goHome();
+    crumbs.push([s.title, null]);
+    hc.setAttribute("style", phaseStyle(s.phase));
+    hc.innerHTML = breadcrumb(crumbs) + `
+      <article class="hc-article">
+        <header class="detail-head">
+          <div class="detail-meta"><span class="detail-phase">${escapeHtml(phaseLabel(s.phase))}</span><span class="detail-count">${s.commands.length} comandos</span></div>
+          <h2>${escapeHtml(s.title)}</h2>
+          <p>${escapeHtml(s.summary)}</p>
+        </header>
+        <div class="detail-body">${commandsHtml(s)}${sectionBodyHtml(s)}</div>
+      </article>`;
+    const article = hc.querySelector(".hc-article");
+    wireCrumbs(hc);
+    bindChecklist(s, article);
+    bindCommandToolsIn(article);
+    bindSectionNav(article);
+  } else {
+    const g = guideById(id);
+    if (!g) return goHome();
+    crumbs.push([g.title, null]);
+    hc.setAttribute("style", phaseStyle(g.phase));
+    const gotoBtn = g.section ? `<button type="button" class="guide-goto" data-goto-art="${escapeHtml(g.section)}">Ver la referencia de comandos →</button>` : "";
+    hc.innerHTML = breadcrumb(crumbs) + `
+      <article class="hc-article">
+        <header class="guide-head">
+          <span class="detail-phase">${escapeHtml(phaseLabel(g.phase))}</span>
+          <h2>${escapeHtml(g.title)}</h2>
+          <p>${escapeHtml(g.summary)}</p>
+          ${gotoBtn}
+        </header>
+        <div class="guide-steps">${g.steps.map((step, index) => guideStepHtml(step, index)).join("")}</div>
+      </article>`;
+    const article = hc.querySelector(".hc-article");
+    wireCrumbs(hc);
+    article.querySelector("[data-goto-art]")?.addEventListener("click", (event) => goArticle("section", event.currentTarget.dataset.gotoArt));
+    bindCommandToolsIn(article);
+  }
+}
+
+function renderHcSearch() {
+  const hc = document.querySelector("[data-hc]");
+  hc.removeAttribute("style");
+  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
+  const sections = filterSections(state.data.sections, { query: state.query, tag: "all", phase: "all" });
+  const guides = state.guides.filter((guide) => guideMatches(guide, terms));
+  const results = [
+    ...guides.map((g) => ({ type: "guide", id: g.id, title: g.title, summary: g.summary, count: g.steps.length, catId: catForGuide(g.id) })),
+    ...sections.map((s) => ({ type: "section", id: s.slug, title: s.title, summary: s.summary, count: s.commands.length, catId: catForSection(s.slug) })),
+  ];
+  const body = results.length
+    ? `<div class="hc-articles">${results.map((art) => articleCardHtml(art, art.catId)).join("")}</div>`
+    : `<div class="empty"><span class="empty-mark">?</span><strong>Sin resultados</strong><p>Prueba otro termino o vuelve al <b>inicio</b>.</p></div>`;
+  hc.innerHTML = breadcrumb([["Inicio", "home"], [`Buscar "${state.query}"`, null]]) + `<p class="hc-search-count">${results.length} articulos</p>` + body;
+  wireCrumbs(hc);
+  wireArticleCards(hc);
+}
+
+function renderHC() {
+  const hc = document.querySelector("[data-hc]");
+  if (!hc) return;
+  if (state.query.trim()) return renderHcSearch();
+  if (state.hc.view === "category") return renderCategory(state.hc.catId);
+  if (state.hc.view === "article") return renderArticle(state.hc.type, state.hc.id, state.hc.catId);
+  return renderHome();
+}
+
 function render() {
   applyProfile();
   let sections = filterSections(state.data.sections, state);
@@ -1610,6 +1836,7 @@ function render() {
   renderRoomBadge();
   renderRevshell();
   if (state.view === "aprender") renderLearn();
+  renderHC();
   bindCopyButtons();
 }
 
@@ -1782,11 +2009,17 @@ async function init() {
   bindKeyboard();
   bindExplain();
   bindViewTabs();
+  document.querySelector(".brand")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    goHome();
+  });
   trackTopbarHeight();
   window.addEventListener("popstate", () => {
     applyHashToState();
+    applyHcHash();
     render();
   });
+  applyHcHash();
   render();
   bindServiceWorkerUpdates();
 }

@@ -2263,6 +2263,177 @@ tr:last-child td {
   }
 }
 
+/* ===== Help center ===== */
+.hc-hero {
+  text-align: center;
+  padding: 28px 16px 20px;
+}
+.hc-hero h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+.hc-hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.hc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.hc-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 20px;
+  transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+}
+.hc-card:hover {
+  border-color: var(--green);
+  transform: translateY(-2px);
+  background: var(--panel-hi);
+}
+.hc-card-ico {
+  font-size: 28px;
+  line-height: 1;
+}
+.hc-card strong {
+  font-size: 16px;
+}
+.hc-card-desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.hc-card-n {
+  margin-top: 4px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.hc-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.hc-crumbs button {
+  border: 0;
+  background: transparent;
+  color: var(--green-hi);
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+.hc-crumbs button:hover {
+  text-decoration: underline;
+}
+.hc-crumbs span {
+  color: var(--muted);
+}
+.hc-crumbs i {
+  color: var(--faint);
+  font-style: normal;
+}
+
+.hc-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.hc-cat-head .hc-card-ico {
+  font-size: 34px;
+}
+.hc-cat-head h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+.hc-cat-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.hc-articles {
+  display: grid;
+  gap: 10px;
+}
+.hc-article-item {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.hc-article-item:hover {
+  border-color: var(--faint);
+  background: var(--panel-hi);
+}
+.hc-article-kind {
+  justify-self: start;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hc-article-kind.kind-guide {
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--blue);
+}
+.hc-article-kind.kind-section {
+  background: rgba(63, 185, 80, 0.14);
+  color: var(--green-hi);
+}
+.hc-article-item strong {
+  font-size: 15.5px;
+}
+.hc-article-sum {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.hc-article-n {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.hc-search-count {
+  margin: 0 0 12px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.hc-article {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 24px;
+}
+.hc-article .guide-head {
+  margin-top: 0;
+}
+
 /* ===== Command explain modal ===== */
 .cmd-modal-backdrop {
   position: fixed;

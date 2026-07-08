@@ -94,12 +94,14 @@
     </header>
 
     <main class="shell" id="top">
-      <div class="view-tabs" data-view-tabs role="tablist" aria-label="Modo de la app">
+      <section class="hc" data-hc aria-label="Centro de ayuda"></section>
+
+      <div class="view-tabs" data-view-tabs role="tablist" aria-label="Modo de la app" hidden>
         <button type="button" class="active" data-view-val="practica" role="tab">Practica</button>
         <button type="button" data-view-val="aprender" role="tab">Aprender</button>
       </div>
 
-      <section class="quickbar" aria-label="Accesos rapidos por situacion">
+      <section class="quickbar" aria-label="Accesos rapidos por situacion" hidden>
         <div class="stats" aria-label="Resumen de contenido">
           <span class="stat"><b data-total>0</b><small>temas</small></span>
           <span class="stat"><b data-command-total>0</b><small>comandos</small></span>
@@ -108,7 +110,7 @@
         <div class="shortcuts" data-shortcuts aria-label="Atajos por situacion"></div>
       </section>
 
-      <section class="workbench">
+      <section class="workbench" hidden>
         <aside class="finder" aria-label="Filtros y resultados">
           <div class="filter-block">
             <h2>Fase</h2>
