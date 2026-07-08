@@ -149,7 +149,7 @@ for (const path of content.paths) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260708-rutas/);
+  assert.match(asset, /20260708-fullwiki/);
 }
 
 assert.match(js, /registration\.update\(\)/);
