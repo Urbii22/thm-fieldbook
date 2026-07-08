@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260708-edge-cases" />
+    <link rel="stylesheet" href="./styles.css?v=20260708-learn-mode" />
   </head>
   <body>
     <div class="scanline" aria-hidden="true"></div>
@@ -94,6 +94,11 @@
     </header>
 
     <main class="shell" id="top">
+      <div class="view-tabs" data-view-tabs role="tablist" aria-label="Modo de la app">
+        <button type="button" class="active" data-view-val="practica" role="tab">Practica</button>
+        <button type="button" data-view-val="aprender" role="tab">Aprender</button>
+      </div>
+
       <section class="quickbar" aria-label="Accesos rapidos por situacion">
         <div class="stats" aria-label="Resumen de contenido">
           <span class="stat"><b data-total>0</b><small>temas</small></span>
@@ -130,8 +135,13 @@
 
         <article class="detail" data-detail aria-live="polite"></article>
       </section>
+
+      <section class="learn" data-learn aria-label="Guias paso a paso" hidden>
+        <aside class="learn-list" data-guide-list aria-label="Guias"></aside>
+        <article class="learn-detail" data-guide-detail aria-live="polite"></article>
+      </section>
     </main>
 
-    <script type="module" src="./app.mjs?v=20260708-edge-cases"></script>
+    <script type="module" src="./app.mjs?v=20260708-learn-mode"></script>
   </body>
 </html>

@@ -265,11 +265,25 @@ def merge_master_commands(sections: list[dict[str, Any]]) -> None:
         section["searchText"] = " ".join([section["searchText"], *additions])
 
 
+def load_guides() -> list[dict[str, Any]]:
+    source_path = ROOT / "tools" / "guides.py"
+    if not source_path.exists():
+        return []
+    module = ast.parse(source_path.read_text(encoding="utf-8"))
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "GUIDES" for target in node.targets
+        ):
+            return ast.literal_eval(node.value)
+    return []
+
+
 def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
     normalized_sections = [normalize_section(section, index) for index, section in enumerate(sections, 1)]
     merge_master_commands(normalized_sections)
     all_tags = sorted({tag for section in normalized_sections for tag in section["tags"]})
     phases = sorted({section["phase"] for section in normalized_sections})
+    guides = load_guides()
 
     return {
         "generatedAt": date.today().isoformat(),
@@ -277,11 +291,13 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
             "totalSections": len(normalized_sections),
             "totalCommands": sum(len(section["commands"]) for section in normalized_sections),
             "totalTags": len(all_tags),
+            "totalGuides": len(guides),
         },
         "tags": all_tags,
         "phases": phases,
         "shortcuts": SHORTCUTS,
         "sections": normalized_sections,
+        "guides": guides,
     }
 
 

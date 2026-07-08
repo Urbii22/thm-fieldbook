@@ -27,6 +27,9 @@ const state = {
   favs: new Set(),
   recent: [],
   favOnly: false,
+  view: "practica",
+  guides: [],
+  activeGuide: "",
 };
 
 const PROFILE_KEY = "thm-room";
@@ -1458,6 +1461,81 @@ function renderModeToggle() {
   }
 }
 
+function guideStepHtml(step, index) {
+  const cmds = (step.commands || []).map((command) => commandCard(command, { edit: true })).join("");
+  return `<article class="guide-step">
+    <div class="guide-step-num">${index + 1}</div>
+    <div class="guide-step-main">
+      <h3>${escapeHtml(step.title)}</h3>
+      <p class="guide-idea">${escapeHtml(step.idea)}</p>
+      ${cmds ? `<div class="guide-cmds">${cmds}</div>` : ""}
+      ${step.look ? `<p class="guide-note guide-look"><b>Que buscar</b><span>${escapeHtml(step.look)}</span></p>` : ""}
+      ${step.decide ? `<p class="guide-note guide-decide"><b>Segun lo que veas</b><span>${escapeHtml(step.decide)}</span></p>` : ""}
+    </div>
+  </article>`;
+}
+
+function renderLearn() {
+  const listEl = document.querySelector("[data-guide-list]");
+  const detailEl = document.querySelector("[data-guide-detail]");
+  if (!listEl || !detailEl) return;
+  if (!state.guides.length) {
+    detailEl.innerHTML = `<p class="list-empty">No hay guias disponibles.</p>`;
+    return;
+  }
+  if (!state.guides.some((guide) => guide.id === state.activeGuide)) {
+    state.activeGuide = state.guides[0].id;
+  }
+  listEl.innerHTML = state.guides
+    .map(
+      (guide) => `<button type="button" class="guide-item ${state.activeGuide === guide.id ? "active" : ""}" style="${phaseStyle(guide.phase)}" data-guide="${escapeHtml(guide.id)}">
+        <span class="guide-item-phase">${escapeHtml(phaseLabel(guide.phase))}</span>
+        <strong>${escapeHtml(guide.title)}</strong>
+        <span class="guide-item-sum">${escapeHtml(guide.summary)}</span>
+        <span class="guide-item-steps">${guide.steps.length} pasos</span>
+      </button>`,
+    )
+    .join("");
+  listEl.querySelectorAll("[data-guide]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeGuide = button.dataset.guide;
+      renderLearn();
+      detailEl.scrollIntoView({ block: "nearest" });
+    });
+  });
+  const guide = state.guides.find((item) => item.id === state.activeGuide);
+  detailEl.setAttribute("style", phaseStyle(guide.phase));
+  detailEl.innerHTML = `<header class="guide-head">
+      <span class="detail-phase">${escapeHtml(phaseLabel(guide.phase))}</span>
+      <h2>${escapeHtml(guide.title)}</h2>
+      <p>${escapeHtml(guide.summary)}</p>
+    </header>
+    <div class="guide-steps">${guide.steps.map((step, index) => guideStepHtml(step, index)).join("")}</div>`;
+  bindCommandToolsIn(detailEl);
+  bindCopyButtons();
+}
+
+function setView(view) {
+  state.view = view === "aprender" ? "aprender" : "practica";
+  const isLearn = state.view === "aprender";
+  const learn = document.querySelector("[data-learn]");
+  const quickbar = document.querySelector(".quickbar");
+  const workbench = document.querySelector(".workbench");
+  if (learn) learn.hidden = !isLearn;
+  if (quickbar) quickbar.hidden = isLearn;
+  if (workbench) workbench.hidden = isLearn;
+  document.querySelectorAll("[data-view-tabs] button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.viewVal === state.view);
+  });
+  if (isLearn) renderLearn();
+}
+
+function bindViewTabs() {
+  document.querySelectorAll("[data-view-tabs] button").forEach((button) => {
+    button.addEventListener("click", () => setView(button.dataset.viewVal));
+  });
+}
+
 function render() {
   applyProfile();
   let sections = filterSections(state.data.sections, state);
@@ -1587,6 +1665,8 @@ async function init() {
     STABILIZE = [];
   }
   state.activeSlug = state.data.sections[0]?.slug || "";
+  state.guides = Array.isArray(state.data.guides) ? state.data.guides : [];
+  state.activeGuide = state.guides[0]?.id || "";
   state.profile = loadProfile();
   applyProfile();
   loadFavs();
@@ -1620,6 +1700,7 @@ async function init() {
   renderShortcuts(state.data);
   bindKeyboard();
   bindExplain();
+  bindViewTabs();
   trackTopbarHeight();
   window.addEventListener("popstate", () => {
     applyHashToState();

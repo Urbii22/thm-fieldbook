@@ -2020,6 +2020,222 @@ tr:last-child td {
   margin-top: 0;
 }
 
+/* ===== View tabs + Learn mode ===== */
+.view-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.view-tabs button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 8px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.view-tabs button.active {
+  background: var(--green);
+  color: #05080c;
+}
+
+.learn {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.learn-list {
+  position: sticky;
+  top: calc(var(--topbar-h, 64px) + 12px);
+  display: grid;
+  gap: 10px;
+  max-height: calc(100vh - var(--topbar-h, 64px) - 40px);
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.guide-item {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--phase, var(--line));
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 12px 14px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.guide-item:hover {
+  border-color: var(--faint);
+}
+
+.guide-item.active {
+  background: var(--panel-hi);
+  border-left-color: var(--green);
+}
+
+.guide-item-phase {
+  color: var(--phase, var(--faint));
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.guide-item strong {
+  font-size: 15px;
+}
+
+.guide-item-sum {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.guide-item-steps {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.learn-detail {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 24px;
+}
+
+.guide-head {
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.guide-head h2 {
+  margin: 8px 0 6px;
+  font-size: 22px;
+}
+
+.guide-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.guide-steps {
+  display: grid;
+  gap: 20px;
+}
+
+.guide-step {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+.guide-step:not(:first-child) {
+  border-top: 1px solid var(--line-soft);
+}
+
+.guide-step-num {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #05080c;
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.guide-step-main {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.guide-step-main h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.guide-idea {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.guide-cmds {
+  display: grid;
+  gap: 8px;
+}
+
+.guide-note {
+  margin: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--panel-2);
+}
+
+.guide-note b {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.guide-note span {
+  color: var(--muted);
+}
+
+.guide-look {
+  border-left: 3px solid var(--blue);
+}
+
+.guide-look b {
+  color: var(--blue);
+}
+
+.guide-decide {
+  border-left: 3px solid var(--amber);
+}
+
+.guide-decide b {
+  color: var(--amber);
+}
+
+@media (max-width: 1080px) {
+  .learn {
+    grid-template-columns: 1fr;
+  }
+  .learn-list {
+    position: static;
+    max-height: none;
+  }
+}
+
 /* ===== Command explain modal ===== */
 .cmd-modal-backdrop {
   position: fixed;

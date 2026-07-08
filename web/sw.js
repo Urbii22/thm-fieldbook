@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v12";
-const VERSION = "20260708-edge-cases";
+const CACHE = "thm-fieldbook-v13";
+const VERSION = "20260708-learn-mode";
 const ASSETS = [
   "./",
   "./index.html",
