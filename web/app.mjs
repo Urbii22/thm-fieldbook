@@ -1464,17 +1464,31 @@ function renderModeToggle() {
 }
 
 function guideStepHtml(step, index) {
+  const terms = queryTerms();
+  const hl = (text) => highlight(escapeHtml(text), terms);
   const cmds = (step.commands || []).map((command) => commandCard(command, { edit: true })).join("");
   return `<article class="guide-step">
     <div class="guide-step-num">${index + 1}</div>
     <div class="guide-step-main">
-      <h3>${escapeHtml(step.title)}</h3>
-      <p class="guide-idea">${escapeHtml(step.idea)}</p>
+      <h3>${hl(step.title)}</h3>
+      <p class="guide-idea">${hl(step.idea)}</p>
       ${cmds ? `<div class="guide-cmds">${cmds}</div>` : ""}
-      ${step.look ? `<p class="guide-note guide-look"><b>Que buscar</b><span>${escapeHtml(step.look)}</span></p>` : ""}
-      ${step.decide ? `<p class="guide-note guide-decide"><b>Segun lo que veas</b><span>${escapeHtml(step.decide)}</span></p>` : ""}
+      ${step.look ? `<p class="guide-note guide-look"><b>Que buscar</b><span>${hl(step.look)}</span></p>` : ""}
+      ${step.decide ? `<p class="guide-note guide-decide"><b>Segun lo que veas</b><span>${hl(step.decide)}</span></p>` : ""}
     </div>
   </article>`;
+}
+
+function guideMatches(guide, terms) {
+  if (!terms.length) return true;
+  const hay = normalizeQuery(
+    [
+      guide.title,
+      guide.summary,
+      ...guide.steps.flatMap((step) => [step.title, step.idea, step.look, step.decide, ...(step.commands || [])]),
+    ].join(" "),
+  );
+  return terms.every((term) => hay.includes(term));
 }
 
 function renderLearn() {
@@ -1485,15 +1499,24 @@ function renderLearn() {
     detailEl.innerHTML = `<p class="list-empty">No hay guias disponibles.</p>`;
     return;
   }
-  if (!state.guides.some((guide) => guide.id === state.activeGuide)) {
-    state.activeGuide = state.guides[0].id;
+  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
+  const matches = state.guides.filter((guide) => guideMatches(guide, terms));
+  if (!matches.length) {
+    listEl.innerHTML = `<p class="list-empty">Ninguna guia menciona "${escapeHtml(state.query)}".</p>`;
+    detailEl.removeAttribute("style");
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin guia para eso</strong><p>Cambia a <b>Practica</b> y busca ahi: tiene el comando concreto aunque no haya guia teorica.</p></div>`;
+    return;
   }
-  listEl.innerHTML = state.guides
+  if (!matches.some((guide) => guide.id === state.activeGuide)) {
+    state.activeGuide = matches[0].id;
+  }
+  const hlTerms = queryTerms();
+  listEl.innerHTML = matches
     .map(
       (guide) => `<button type="button" class="guide-item ${state.activeGuide === guide.id ? "active" : ""}" style="${phaseStyle(guide.phase)}" data-guide="${escapeHtml(guide.id)}">
         <span class="guide-item-phase">${escapeHtml(phaseLabel(guide.phase))}</span>
-        <strong>${escapeHtml(guide.title)}</strong>
-        <span class="guide-item-sum">${escapeHtml(guide.summary)}</span>
+        <strong>${highlight(escapeHtml(guide.title), hlTerms)}</strong>
+        <span class="guide-item-sum">${highlight(escapeHtml(guide.summary), hlTerms)}</span>
         <span class="guide-item-steps">${guide.steps.length} pasos</span>
       </button>`,
     )
@@ -1650,7 +1673,8 @@ function bindKeyboard() {
         search.value = "";
         state.query = "";
         writeHash(false);
-        render();
+        if (state.view === "aprender") renderLearn();
+        else render();
       } else {
         search.blur();
       }
@@ -1736,7 +1760,8 @@ async function init() {
   document.querySelector("[data-search]").addEventListener("input", (event) => {
     state.query = event.target.value;
     writeHash(false);
-    render();
+    if (state.view === "aprender") renderLearn();
+    else render();
   });
   const ipInput = document.querySelector("[data-room-ip]");
   ipInput.value = state.profile.ip;

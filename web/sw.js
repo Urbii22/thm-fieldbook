@@ -1,4 +1,4 @@
-const CACHE = "thm-fieldbook-v18";
+const CACHE = "thm-fieldbook-v19";
 const VERSION = "20260708-pwa-autoupdate";
 const ASSETS = [
   "./",
