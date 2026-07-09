@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260709-guided-start" />
+    <link rel="stylesheet" href="./styles.css?v=20260709-topbar-layout" />
   </head>
   <body>
     <div class="scanline" aria-hidden="true"></div>
@@ -32,20 +32,22 @@
           <kbd class="search-kbd">/</kbd>
         </label>
 
-        <div class="target" data-target-state="idle">
-          <span class="target-led" aria-hidden="true"></span>
-          <div class="target-fields">
-            <span class="target-label">Target</span>
-            <input data-room-ip type="text" inputmode="decimal" placeholder="10.10.145.23" autocomplete="off" spellcheck="false" />
+        <div class="topbar-right">
+          <div class="target" data-target-state="idle">
+            <span class="target-led" aria-hidden="true"></span>
+            <div class="target-fields">
+              <span class="target-label">Target</span>
+              <input data-room-ip type="text" inputmode="decimal" placeholder="10.10.145.23" autocomplete="off" spellcheck="false" />
+            </div>
+            <small data-room-status>sin IP</small>
           </div>
-          <small data-room-status>sin IP</small>
-        </div>
 
-        <button type="button" class="room-toggle" data-room-toggle aria-expanded="false" aria-controls="roompanel" title="Variables y notas de la room">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-          <span>room</span>
-          <b class="room-count" data-room-count hidden></b>
-        </button>
+          <button type="button" class="room-toggle" data-room-toggle aria-expanded="false" aria-controls="roompanel" title="Variables y notas de la room">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <span>room</span>
+            <b class="room-count" data-room-count hidden></b>
+          </button>
+        </div>
       </div>
 
       <section class="roompanel" id="roompanel" data-roompanel aria-label="Variables y notas de la room" hidden>
@@ -146,6 +148,6 @@
       </section>
     </main>
 
-    <script type="module" src="./app.mjs?v=20260709-guided-start"></script>
+    <script type="module" src="./app.mjs?v=20260709-topbar-layout"></script>
   </body>
 </html>

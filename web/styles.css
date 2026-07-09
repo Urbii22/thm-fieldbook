@@ -124,6 +124,12 @@ a:focus-visible {
   padding: 12px 22px;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1875,10 +1881,15 @@ tr:last-child td {
 
 /* ===== Responsive ===== */
 @media (max-width: 1080px) {
+  /* Search gets its own full-width row; brand + target/room share the top row. */
   .topbar-inner {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "brand right" "search search";
+    gap: 10px 16px;
   }
+  .brand { grid-area: brand; }
+  .search { grid-area: search; }
+  .topbar-right { grid-area: right; justify-content: flex-end; }
 
   .quickbar,
   .workbench {
@@ -1909,7 +1920,8 @@ tr:last-child td {
   .roompanel-inner { padding: 16px 14px; }
   .shortcuts { grid-template-columns: 1fr 1fr; }
   .stats { flex-wrap: wrap; }
-  .target { width: 100%; }
+  .topbar-right { flex: 1; gap: 8px; }
+  .target { flex: 1; min-width: 0; }
   .target input { width: 100%; }
   .vars { grid-template-columns: 1fr; }
 }
