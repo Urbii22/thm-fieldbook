@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-encoding-hardening";
+const APP_VERSION = "20260709-copy-toast";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -61,6 +61,11 @@ const ROOM_VARS = [
 // Known placeholders to highlight when still unresolved after adaptCommand.
 const UNRESOLVED_RE =
   /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|LHOST|LPORT|RHOST)\b|&lt;(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|LHOST|LPORT|RHOST)&gt;|\bATTACKER_IP\b)/g;
+
+// Same placeholders but over RAW text (as copied to the clipboard), so we can
+// warn which variable is still unresolved after a copy.
+const UNRESOLVED_RAW_RE =
+  /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|LHOST|LPORT|RHOST)\b|<(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|LHOST|LPORT|RHOST)>|\bATTACKER_IP\b)/g;
 
 const COPY_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
@@ -1228,22 +1233,56 @@ async function copyText(text) {
   }
 }
 
+let toastEl = null;
+let toastTimer = null;
+
+function showToast(message, kind = "ok") {
+  if (!toastEl) {
+    toastEl = document.createElement("div");
+    toastEl.className = "toast";
+    toastEl.setAttribute("role", "status");
+    toastEl.setAttribute("aria-live", "polite");
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = message;
+  toastEl.dataset.kind = kind;
+  toastEl.classList.add("show");
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl.classList.remove("show"), kind === "warn" ? 3200 : 1600);
+}
+
 function bindCopyButtons() {
   document.querySelectorAll("[data-copy]").forEach((button) => {
     if (button.dataset.copyBound) return;
     button.dataset.copyBound = "1";
     button.addEventListener("click", async (event) => {
       event.stopPropagation();
-      const ok = await copyText(button.dataset.copy);
-      if (!ok) return;
-      const label = button.querySelector(".copy-label") || button;
-      const original = label.textContent;
+      const text = button.dataset.copy;
+      const ok = await copyText(text);
+      if (!ok) {
+        showToast("No se pudo copiar", "warn");
+        return;
+      }
+      const missing = [...new Set(text.match(UNRESOLVED_RAW_RE) || [])];
+      if (missing.length) {
+        showToast(`Copiado - falta resolver: ${missing.join(", ")}`, "warn");
+      } else {
+        showToast("Copiado", "ok");
+      }
+      // Brief in-button state; only swap the label when there is a dedicated one
+      // (otherwise we'd overwrite the command text itself).
+      const label = button.querySelector(".copy-label");
       button.classList.add("copied");
-      label.textContent = "copiado";
-      window.setTimeout(() => {
-        button.classList.remove("copied");
-        label.textContent = original;
-      }, 1100);
+      if (label) {
+        const original = label.textContent;
+        label.textContent = "copiado";
+        window.setTimeout(() => {
+          button.classList.remove("copied");
+          label.textContent = original;
+        }, 1100);
+      } else {
+        window.setTimeout(() => button.classList.remove("copied"), 1100);
+      }
     });
   });
 }

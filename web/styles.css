@@ -2262,6 +2262,49 @@ tr:last-child td {
   color: var(--ink);
 }
 
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 12px);
+  z-index: 90;
+  max-width: min(92vw, 520px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-hi);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--mono);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast[data-kind="ok"] {
+  border-left: 3px solid var(--green);
+}
+
+.toast[data-kind="ok"]::before {
+  content: "\2713  ";
+  color: var(--green);
+}
+
+.toast[data-kind="warn"] {
+  border-left: 3px solid var(--amber, #d9a441);
+}
+
+.toast[data-kind="warn"]::before {
+  content: "\26A0  ";
+  color: var(--amber, #d9a441);
+}
+
 .theory-row {
   display: flex;
   flex-wrap: wrap;
