@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v28";
-const VERSION = "20260709-brute-necesitas";
+const CACHE = "thm-fieldbook-v29";
+const VERSION = "20260709-python-hijack";
 const ASSETS = [
   "./",
   "./index.html",

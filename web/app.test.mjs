@@ -205,7 +205,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260709-brute-necesitas/);
+  assert.match(asset, /20260709-python-hijack/);
 }
 
 assert.match(js, /registration\.update\(\)/);

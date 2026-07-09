@@ -1349,6 +1349,50 @@ CONCEPTS = [
             },
         ],
     },
+    {
+        "id": "python-library-hijacking",
+        "title": "Python library hijacking",
+        "phase": "privesc",
+        "section": "linux-privesc",
+        "summary": "Un script Python que corre como root importa un modulo; si puedes escribir ese modulo (o uno que Python busque antes), tu codigo corre como root.",
+        "que": "Cuando un script de Python que se ejecuta como root hace 'import modulo', Python busca ese modulo recorriendo una lista de directorios (sys.path) en orden. Si puedes colocar un fichero .py con ese nombre en un directorio que se busque ANTES que el modulo real, o sobrescribir el propio modulo, tu codigo se ejecuta con privilegios de root al importarse. Es el [[path-hijacking]] aplicado al sistema de imports de Python.",
+        "porque": "sys.path incluye, y normalmente en primer lugar, el directorio del propio script; ademas de PYTHONPATH y los site-packages. El programador confia en que se importara el modulo legitimo, pero Python simplemente coge el primero que encuentra. Si el directorio del script es escribible, o el modulo importado lo es, o sudo conserva PYTHONPATH, rompes esa confianza. Misma logica que el [[privesc-modelo]].",
+        "cuando": "Cuando puedes ejecutar un script Python como root (via [[sudo-abuse]]) o un cron root lo ejecuta, Y puedes escribir uno de los sitios donde Python busca sus modulos. Es un vector muy comun en rooms de escalada Linux.",
+        "necesitas": [
+            "Un script Python que corre como root (sudo -l con un .py, o un cron).",
+            "Que el script haga 'import <algo>' de un modulo (idealmente no estandar).",
+            "Poder ESCRIBIR uno de: el directorio del script, el fichero del modulo importado, un directorio que aparezca antes en sys.path, o controlar PYTHONPATH (sudo env_keep).",
+        ],
+        "senales": [
+            "sudo -l te deja ejecutar un script .py como root.",
+            "El directorio del script (o un modulo que importa) es escribible por tu usuario.",
+            "El script hace 'import' de un modulo con nombre poco comun que vive junto a el.",
+            "sudo -l muestra env_keep+=PYTHONPATH.",
+        ],
+        "pasos": [
+            "Lee el script root e identifica que modulos importa.",
+            "Mira sys.path y los permisos: ¿puedes escribir el dir del script, el modulo, o un dir que preceda al real?",
+            "Crea un fichero con el nombre del modulo importado que ejecute tu payload (os.setuid(0) + shell).",
+            "Ejecuta el script como root; al importar tu modulo, corre como root. Confirma con id (uid=0).",
+        ],
+        "commands": [
+            {
+                "cmd": "sudo -l",
+                "why": "Punto de partida: ver si puedes ejecutar un script .py como root. Una entrada NOPASSWD sobre un python es el candidato tipico de este vector.",
+                "out": "Lineas '(root) NOPASSWD: /usr/bin/python3 /ruta/script.py'. Abre y lee ese script: te dice que modulos importa y donde vive.",
+            },
+            {
+                "cmd": "python3 -c 'import sys; print(sys.path)'",
+                "why": "Muestra el orden en que Python busca modulos. El primer directorio escribible que preceda al modulo real es tu hueco para inyectar.",
+                "out": "Lista de directorios. Si el dir del script (o '' = dir actual) va primero y es escribible, tienes hijacking directo. Cruza esto con los permisos.",
+            },
+            {
+                "cmd": "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo.py",
+                "why": "Crea un modulo malicioso con el MISMO nombre que el que importa el script. Al ejecutarse el script como root, importa el tuyo y ejecuta tu codigo con uid 0.",
+                "out": "Al lanzar 'sudo python3 /ruta/script.py', obtienes una shell root (id = uid=0). Ajusta el nombre del fichero al modulo exacto que importa el script.",
+            },
+        ],
+    },
 ]
 
 
@@ -1377,6 +1421,7 @@ PATHS = [
             "capabilities",
             "cron-abuse",
             "path-hijacking",
+            "python-library-hijacking",
             "wildcard-injection",
             "sudo-ld-preload",
             "writable-sensitive-files",

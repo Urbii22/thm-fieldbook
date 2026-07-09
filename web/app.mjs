@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-brute-necesitas";
+const APP_VERSION = "20260709-python-hijack";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -118,6 +118,8 @@ const ALIASES = {
   wordpress: ["wpscan", "wp-login", "wp"],
   sqli: ["sqlmap", "union", "injection", "inyeccion"],
   linux: ["suid", "sudo", "cron", "gtfobins", "linpeas"],
+  python: ["library hijacking", "pythonpath", "sys.path", "import", "modulo", "hijack"],
+  hijack: ["library hijacking", "python", "pythonpath", "path hijacking"],
   windows: ["winpeas", "powershell", "servicios", "registry", "winrm"],
 };
 
