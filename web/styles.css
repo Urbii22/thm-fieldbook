@@ -465,6 +465,13 @@ input[type="search"]:focus {
   color: var(--coral);
 }
 
+.reset-room.armed {
+  border-color: var(--coral);
+  color: var(--coral);
+  background: rgba(240, 90, 90, 0.1);
+  font-weight: 600;
+}
+
 /* ===== Shell ===== */
 .shell {
   position: relative;
@@ -2068,7 +2075,22 @@ tr:last-child td {
   gap: 7px;
 }
 
+.roomtrack-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.roomtrack-count {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
 .roomtrack-bar {
+  flex: 1;
   height: 3px;
   border-radius: 999px;
   background: var(--line);

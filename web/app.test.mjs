@@ -205,7 +205,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260709-room-progress/);
+  assert.match(asset, /20260709-review-fixes/);
 }
 
 assert.match(js, /registration\.update\(\)/);

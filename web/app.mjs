@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-room-progress";
+const APP_VERSION = "20260709-review-fixes";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -584,10 +584,10 @@ function openCmdModal(raw) {
         .join("")}</ul></div>`
     : "";
   const riskHtml = risk
-    ? `<p class="cmd-modal-risk risk-${risk.level}">${risk.level === "danger" ? "⚠" : "📡"} ${escapeHtml(risk.reason)}</p>`
+    ? `<p class="cmd-modal-risk risk-${risk.level}">${risk.level === "danger" ? "&#9888;" : "📡"} ${escapeHtml(risk.reason)}</p>`
     : "";
   box.innerHTML = `
-    <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">×</button>
+    <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">&times;</button>
     <code class="cmd-modal-cmd">${escapeHtml(adapted)}</code>
     <p class="cmd-modal-purpose">${escapeHtml(info.purpose)}</p>
     ${riskHtml}
@@ -605,7 +605,7 @@ function commandCard(rawCommand, opts = {}) {
   const esc = escapeHtml(command);
   const risk = detectRisk(rawCommand);
   const riskMark = risk
-    ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}" aria-label="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "⚠" : "📡"}</span>`
+    ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}" aria-label="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "&#9888;" : "📡"}</span>`
     : "";
   const infoMark = infoMarkFor(rawCommand);
   const editBtn = opts.edit
@@ -890,7 +890,7 @@ function renderCommandResults() {
       const value = escapeHtml(command);
       const risk = detectRisk(entry.command);
       const riskMark = risk
-        ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "⚠" : "📡"}</span>`
+        ? `<span class="risk-badge risk-${risk.level}" title="${escapeHtml(risk.reason)}">${risk.level === "danger" ? "&#9888;" : "📡"}</span>`
         : "";
       const infoMark = infoMarkFor(entry.command);
       return `<button type="button" class="cmd-result" style="${phaseStyle(entry.section.phase)}" data-copy="${value}" data-slug="${escapeHtml(entry.section.slug)}" title="Copiar comando">
@@ -1513,7 +1513,10 @@ function renderRoomTrack() {
   const prog = state.profile.progress || {};
   const done = ROOM_STAGES.filter((stage) => prog[stage.key]).length;
   el.innerHTML = `
-    <div class="roomtrack-bar" aria-hidden="true"><span style="width:${(done / ROOM_STAGES.length) * 100}%"></span></div>
+    <div class="roomtrack-top">
+      <div class="roomtrack-bar" aria-hidden="true"><span style="width:${(done / ROOM_STAGES.length) * 100}%"></span></div>
+      <span class="roomtrack-count" aria-live="polite">${done}/${ROOM_STAGES.length} completado</span>
+    </div>
     <div class="roomtrack-pills">
       ${ROOM_STAGES.map(
         (stage) => `<button type="button" class="roomtrack-pill ${prog[stage.key] ? "done" : ""}" data-stage="${stage.key}" title="${escapeHtml(stage.hint)}" aria-pressed="${prog[stage.key] ? "true" : "false"}"><span class="roomtrack-dot" aria-hidden="true"></span>${escapeHtml(stage.label)}</button>`,
@@ -1549,7 +1552,30 @@ function bindRoomPanel() {
     });
   }
   const reset = document.querySelector("[data-reset-room]");
-  if (reset) reset.addEventListener("click", resetRoom);
+  if (reset) {
+    let armed = false;
+    let armTimer = null;
+    const disarm = () => {
+      armed = false;
+      reset.classList.remove("armed");
+      reset.textContent = "Reset room";
+      window.clearTimeout(armTimer);
+    };
+    reset.addEventListener("click", () => {
+      if (!armed) {
+        // Two-step confirm so a stray click can't wipe notes/progress.
+        armed = true;
+        reset.classList.add("armed");
+        reset.textContent = "Pulsa otra vez para borrar";
+        armTimer = window.setTimeout(disarm, 3500);
+        return;
+      }
+      disarm();
+      resetRoom();
+      showToast("Room reiniciada", "ok");
+    });
+    reset.addEventListener("blur", disarm);
+  }
 
   const revType = document.querySelector("[data-rev-type]");
   if (revType) {
