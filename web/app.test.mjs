@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import {
   adaptCommand,
   buildRoomContext,
+  commandOf,
+  commandText,
   filterCommandEntries,
   filterSections,
   getTopCommands,
@@ -106,6 +108,14 @@ assert.equal(
   true,
 );
 
+// Learn commands are string | {cmd, why, out}; the renderer and search rely on
+// commandOf/commandText normalizing both shapes.
+assert.equal(commandOf("nmap -sV $IP"), "nmap -sV $IP");
+assert.equal(commandOf({ cmd: "id", why: "quien soy", out: "uid" }), "id");
+assert.equal(commandText("nmap -sV $IP"), "nmap -sV $IP");
+assert.equal(commandText({ cmd: "id", why: "quien soy", out: "uid=0" }), "id quien soy uid=0");
+assert.equal(commandText({ cmd: "id" }), "id");
+
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
 const sw = readFileSync(new URL("./sw.js", import.meta.url), "utf8");
@@ -128,23 +138,63 @@ for (const guide of content.guides) {
   assert.ok(guide.steps.length >= 3);
 }
 
+// ---- Concept wiki integrity (guards against future content-authoring breaks) ----
+const KNOWN_PHASES = new Set(["access", "closeout", "enumeration", "pivot", "privesc", "recon", "reference"]);
+const sectionSlugs = new Set(content.sections.map((section) => section.slug));
+
+const isValidCommand = (command) =>
+  typeof command === "string"
+    ? command.length > 0
+    : Boolean(command && typeof command.cmd === "string" && command.cmd.length > 0);
+
 assert.equal(content.stats.totalConcepts, content.concepts.length);
 assert.equal(content.stats.totalPaths, content.paths.length);
 assert.ok(content.concepts.length >= 1);
-const conceptIds = new Set(content.concepts.map((concept) => concept.id));
+
+const conceptIds = new Set();
 for (const concept of content.concepts) {
-  assert.ok(concept.id);
-  assert.ok(concept.title);
-  assert.ok(concept.summary);
-  assert.ok(concept.que);
-  assert.ok(concept.section);
+  assert.ok(concept.id, "concepto sin id");
+  assert.ok(!conceptIds.has(concept.id), `id de concepto duplicado: ${concept.id}`);
+  conceptIds.add(concept.id);
+  for (const field of ["title", "summary", "que", "porque", "cuando", "section", "phase"]) {
+    assert.ok(concept[field], `concepto ${concept.id} sin ${field}`);
+  }
+  assert.ok(Array.isArray(concept.senales) && concept.senales.length, `concepto ${concept.id} sin senales`);
+  assert.ok(Array.isArray(concept.pasos) && concept.pasos.length, `concepto ${concept.id} sin pasos`);
+  assert.ok(KNOWN_PHASES.has(concept.phase), `concepto ${concept.id} con phase invalida: ${concept.phase}`);
+  assert.ok(sectionSlugs.has(concept.section), `concepto ${concept.id} apunta a seccion inexistente: ${concept.section}`);
+  for (const command of concept.commands || []) {
+    assert.ok(isValidCommand(command), `concepto ${concept.id} con comando invalido`);
+  }
 }
+
+// Every [[link]] in concept prose must resolve to an existing concept.
+for (const concept of content.concepts) {
+  const prose = [concept.summary, concept.que, concept.porque, concept.cuando, ...(concept.senales || []), ...(concept.pasos || [])].join(" ");
+  for (const match of prose.matchAll(/\[\[([^\]]+)\]\]/g)) {
+    const target = match[1].trim();
+    assert.ok(conceptIds.has(target), `concepto ${concept.id} enlaza a [[${target}]] inexistente`);
+  }
+}
+
+const pathIds = new Set();
 for (const path of content.paths) {
-  assert.ok(path.id);
+  assert.ok(path.id, "ruta sin id");
+  assert.ok(!pathIds.has(path.id), `id de ruta duplicado: ${path.id}`);
+  pathIds.add(path.id);
   assert.ok(path.title);
   assert.ok(Array.isArray(path.concepts) && path.concepts.length);
   for (const id of path.concepts) {
     assert.ok(conceptIds.has(id), `ruta ${path.id} referencia concepto inexistente: ${id}`);
+  }
+}
+
+// Guides share the same command shape; validate it too.
+for (const guide of content.guides) {
+  for (const step of guide.steps) {
+    for (const command of step.commands || []) {
+      assert.ok(isValidCommand(command), `guia ${guide.id} con comando invalido`);
+    }
   }
 }
 

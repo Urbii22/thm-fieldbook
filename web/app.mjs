@@ -1492,11 +1492,11 @@ function renderModeToggle() {
 
 // A learn command is either a plain string or {cmd, why, out}: why = por que /
 // cuando usarlo, out = que detalles buscar en su salida.
-function commandOf(command) {
+export function commandOf(command) {
   return typeof command === "string" ? command : command.cmd;
 }
 
-function commandText(command) {
+export function commandText(command) {
   return typeof command === "string"
     ? command
     : [command.cmd, command.why, command.out].filter(Boolean).join(" ");
