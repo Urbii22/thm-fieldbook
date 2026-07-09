@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-privesc-deep";
+const APP_VERSION = "20260708-hublink";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1100,6 +1100,7 @@ function renderDetail(section) {
       <h2>${escapeHtml(section.title)}</h2>
       <p>${escapeHtml(section.summary)}</p>
       <div class="tag-row">${section.tags.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}</div>
+      ${theoryRowHtml(section.slug)}
     </header>
     <section class="detail-body">${commandsHtml(section)}${sectionBodyHtml(section)}</section>
   `;
@@ -1108,6 +1109,9 @@ function renderDetail(section) {
       state.tag = button.dataset.tag;
       render();
     });
+  });
+  container.querySelectorAll("[data-goto-concept]").forEach((button) => {
+    button.addEventListener("click", () => gotoConcept(button.dataset.gotoConcept));
   });
   container.querySelector("[data-fav-detail]")?.addEventListener("click", () => {
     toggleFav(section.slug);
@@ -1233,7 +1237,14 @@ function bindCopyButtons() {
 
 function writeHash(push) {
   const q = state.query ? `?q=${encodeURIComponent(state.query)}` : "";
-  const target = state.activeSlug ? `#${state.activeSlug}${q}` : q ? `#${q}` : "#";
+  let target;
+  if (state.view === "aprender") {
+    // #aprender/<mode>/<id> so a concept/guide is shareable and survives reload.
+    const id = state.learnMode === "concepts" ? state.activeConcept : state.activeGuide;
+    target = `#aprender/${state.learnMode}${id ? `/${encodeURIComponent(id)}` : ""}${q}`;
+  } else {
+    target = state.activeSlug ? `#${state.activeSlug}${q}` : q ? `#${q}` : "#";
+  }
   if (location.hash === target) return;
   suppressHash = true;
   if (push) history.pushState(null, "", target);
@@ -1244,13 +1255,25 @@ function writeHash(push) {
 function applyHashToState() {
   const raw = location.hash.replace(/^#/, "");
   if (!raw) return;
-  const [slugPart, qs] = raw.split("?");
-  const slug = decodeURIComponent(slugPart || "");
+  const [pathPart, qs] = raw.split("?");
   const query = new URLSearchParams(qs || "").get("q") || "";
   state.query = query;
   const search = document.querySelector("[data-search]");
   if (search) search.value = query;
-  if (slug) state.activeSlug = slug;
+  if (pathPart.startsWith("aprender")) {
+    const parts = pathPart.split("/");
+    state.view = "aprender";
+    state.learnMode = parts[1] === "concepts" ? "concepts" : "guides";
+    const id = decodeURIComponent(parts[2] || "");
+    if (id) {
+      if (state.learnMode === "concepts") state.activeConcept = id;
+      else state.activeGuide = id;
+    }
+  } else {
+    state.view = "practica";
+    const slug = decodeURIComponent(pathPart || "");
+    if (slug) state.activeSlug = slug;
+  }
 }
 
 function loadFavs() {
@@ -1531,6 +1554,39 @@ function gotoSection(slug) {
   document.querySelector("[data-detail]")?.scrollIntoView({ block: "start" });
 }
 
+// Reverse of gotoSection: jump from a practice section to its theory concept.
+function gotoConcept(id) {
+  state.query = "";
+  const search = document.querySelector("[data-search]");
+  if (search) search.value = "";
+  state.learnMode = "concepts";
+  state.activeConcept = id;
+  setView("aprender");
+  writeHash(true);
+  document.querySelector("[data-learn]")?.scrollIntoView({ block: "start" });
+}
+
+function conceptsForSection(slug) {
+  return state.concepts.filter((concept) => concept.section === slug);
+}
+
+// Reverse hub link: chips in a practice section pointing to its theory concepts.
+function theoryRowHtml(slug) {
+  const concepts = conceptsForSection(slug);
+  if (!concepts.length) return "";
+  // Cap chips so sections with many concepts (privesc) don't flood the header;
+  // a trailing chip jumps to the first concept, whose ruta stepper reaches the rest.
+  const CAP = 4;
+  const shown = concepts.slice(0, CAP);
+  const chips = shown
+    .map((concept) => `<button type="button" class="theory-chip" data-goto-concept="${escapeHtml(concept.id)}">${escapeHtml(concept.title)}</button>`)
+    .join("");
+  const more = concepts.length > CAP
+    ? `<button type="button" class="theory-chip theory-more" data-goto-concept="${escapeHtml(concepts[0].id)}">+${concepts.length - CAP} mas</button>`
+    : "";
+  return `<div class="theory-row"><span class="theory-row-label">Teoria</span>${chips}${more}</div>`;
+}
+
 function renderLearn() {
   document.querySelectorAll("[data-learn-tabs] button").forEach((button) => {
     button.classList.toggle("active", button.dataset.learnVal === state.learnMode);
@@ -1710,6 +1766,7 @@ function renderConcepts() {
     button.addEventListener("click", () => {
       state.activeConcept = button.dataset.concept;
       renderConcepts();
+      writeHash(false);
       detailEl.scrollIntoView({ block: "nearest" });
     });
   });
@@ -1723,6 +1780,7 @@ function renderConcepts() {
     link.addEventListener("click", () => {
       state.activeConcept = link.dataset.conceptLink;
       renderConcepts();
+      writeHash(false);
       detailEl.scrollIntoView({ block: "start" });
     });
   });
@@ -1764,6 +1822,7 @@ function renderGuides() {
     button.addEventListener("click", () => {
       state.activeGuide = button.dataset.guide;
       renderLearn();
+      writeHash(false);
       detailEl.scrollIntoView({ block: "nearest" });
     });
   });
@@ -1803,7 +1862,10 @@ function setView(view) {
 
 function bindViewTabs() {
   document.querySelectorAll("[data-view-tabs] button").forEach((button) => {
-    button.addEventListener("click", () => setView(button.dataset.viewVal));
+    button.addEventListener("click", () => {
+      setView(button.dataset.viewVal);
+      writeHash(true);
+    });
   });
 }
 
@@ -1812,6 +1874,7 @@ function bindLearnTabs() {
     button.addEventListener("click", () => {
       state.learnMode = button.dataset.learnVal === "concepts" ? "concepts" : "guides";
       renderLearn();
+      writeHash(false);
     });
   });
 }
@@ -2026,8 +2089,10 @@ async function init() {
   window.addEventListener("popstate", () => {
     applyHashToState();
     render();
+    setView(state.view);
   });
   render();
+  setView(state.view);
   bindServiceWorkerUpdates();
 }
 

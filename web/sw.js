@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v25";
-const VERSION = "20260708-privesc-deep";
+const CACHE = "thm-fieldbook-v26";
+const VERSION = "20260708-hublink";
 const ASSETS = [
   "./",
   "./index.html",

@@ -2237,6 +2237,56 @@ tr:last-child td {
   color: var(--ink);
 }
 
+.theory-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.theory-row-label {
+  font-size: 10.5px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--faint);
+}
+
+.theory-chip {
+  border: 1px solid var(--green);
+  background: transparent;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 12.5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.theory-chip::before {
+  content: "\1F4D8  ";
+}
+
+.theory-chip:hover {
+  background: var(--green);
+  color: var(--bg, #0b0f14);
+}
+
+.theory-more {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.theory-more::before {
+  content: "";
+}
+
+.theory-more:hover {
+  background: var(--panel-hi);
+  color: var(--ink);
+}
+
 .concept-chips {
   display: flex;
   flex-wrap: wrap;
