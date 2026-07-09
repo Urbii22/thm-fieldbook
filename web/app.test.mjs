@@ -205,7 +205,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260709-python-hijack/);
+  assert.match(asset, /20260709-encoding-hardening/);
 }
 
 assert.match(js, /registration\.update\(\)/);
@@ -213,4 +213,11 @@ assert.match(js, /controllerchange/);
 assert.match(sw, /SKIP_WAITING/);
 
 assert.match(html, /<h1\b[^>]*>/);
-assert.doesNotMatch(`${html}\n${js}`, /Ã|Â|â[^\s<>"']*/);
+
+// Mojibake guard across every shipped text asset (UTF-8 accidentally re-encoded
+// shows up as these Latin-1 lead bytes). Keeps "vÃ­ctima / â˜…"-style breakage out.
+const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+const contentRaw = readFileSync(new URL("./data/content.json", import.meta.url), "utf8");
+for (const [name, text] of [["index.html", html], ["app.mjs", js], ["sw.js", sw], ["styles.css", css], ["content.json", contentRaw]]) {
+  assert.doesNotMatch(text, /Ã[\x80-\xbf]|Â[\x80-\xbf]|â€|â†|â˜|ï¿½/, `mojibake en ${name}`);
+}

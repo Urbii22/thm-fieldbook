@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-python-hijack";
+const APP_VERSION = "20260709-encoding-hardening";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -791,7 +791,7 @@ function renderResults(sections) {
           <span class="result-summary">${highlight(escapeHtml(section.summary), terms)}</span>
           <span class="result-tags">${section.tags.slice(0, 4).map((tag) => `<b>${escapeHtml(tag)}</b>`).join("")}</span>
         </button>
-        <button type="button" class="fav-star ${fav ? "on" : ""}" data-fav="${escapeHtml(section.slug)}" title="${fav ? "Quitar de favoritos" : "Anadir a favoritos"}" aria-label="Favorito">${fav ? "★" : "☆"}</button>
+        <button type="button" class="fav-star ${fav ? "on" : ""}" data-fav="${escapeHtml(section.slug)}" title="${fav ? "Quitar de favoritos" : "Anadir a favoritos"}" aria-label="Favorito">${fav ? "&#9733;" : "&#9734;"}</button>
       </div>`;
     })
     .join("");
@@ -1108,7 +1108,7 @@ function renderDetail(section) {
         <span class="detail-phase">${escapeHtml(phaseLabel(section.phase))}</span>
         <span class="detail-count">${section.commands.length} comandos</span>
         ${progressChip}
-        <button type="button" class="detail-fav ${state.favs.has(section.slug) ? "on" : ""}" data-fav-detail title="Favorito">${state.favs.has(section.slug) ? "★ guardada" : "☆ guardar"}</button>
+        <button type="button" class="detail-fav ${state.favs.has(section.slug) ? "on" : ""}" data-fav-detail title="Favorito">${state.favs.has(section.slug) ? "&#9733; guardada" : "&#9734; guardar"}</button>
       </div>
       <h2>${escapeHtml(section.title)}</h2>
       <p>${escapeHtml(section.summary)}</p>
@@ -1849,7 +1849,7 @@ function renderGuides() {
   const guide = state.guides.find((item) => item.id === state.activeGuide);
   detailEl.setAttribute("style", phaseStyle(guide.phase));
   const gotoBtn = guide.section
-    ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(guide.section)}">Ver todos los comandos de esta fase →</button>`
+    ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(guide.section)}">Ver todos los comandos de esta fase &rarr;</button>`
     : "";
   detailEl.innerHTML = `<header class="guide-head">
       <span class="detail-phase">${escapeHtml(phaseLabel(guide.phase))}</span>
