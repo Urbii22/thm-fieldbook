@@ -27,7 +27,7 @@ const state = {
   favs: new Set(),
   recent: [],
   favOnly: false,
-  view: "practica",
+  view: "aprender",
   guides: [],
   activeGuide: "",
   concepts: [],
@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260708-hublink";
+const APP_VERSION = "20260709-learn-default";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
