@@ -22,6 +22,10 @@ CONCEPTS = [
         "que": "Una LFI ocurre cuando una pagina construye la ruta de un fichero a incluir usando un valor que viene del usuario (tipicamente un parametro como ?page=), sin comprobar que ese valor sea uno de los permitidos. El servidor entonces lee y a veces ejecuta el fichero que tu le pidas, no el que el programador esperaba.",
         "porque": "El codigo hace algo como include($_GET['page'].'.php'). El programador asume que page siempre sera 'home' o 'about', pero nada lo obliga. Si metes ../../../../etc/passwd, la funcion de inclusion resuelve esa ruta relativa y sirve el fichero. La causa raiz es confiar en la entrada del usuario para decidir que fichero abrir.",
         "cuando": "Sospecha LFI en cualquier parametro que parezca nombrar una vista, una plantilla, un idioma o un documento: page, file, view, template, lang, doc, include. Sobre todo si el valor aparece reflejado en la URL y el contenido de la pagina cambia segun ese valor.",
+        "necesitas": [
+            "Un parametro que la pagina use para nombrar un fichero (page, file, view, template, lang, doc).",
+            "Poder inyectar ../ o rutas; si el codigo anade una extension (.php), un wrapper como php://filter para leer el fuente.",
+        ],
         "senales": [
             "Un parametro cuyo valor parece un nombre de fichero o de pagina (?page=home, ?file=report).",
             "La respuesta cambia de forma coherente al pedir rutas: ../ te acerca a la raiz, un fichero inexistente da un error de include con la ruta.",
@@ -84,6 +88,11 @@ CONCEPTS = [
         "que": "Una SQLi ocurre cuando la aplicacion construye una consulta SQL concatenando texto que viene del usuario. Como el motor no distingue tu 'dato' del 'codigo' de la consulta, puedes cerrar la cadena original e inyectar tu propia logica: saltarte un login, volcar tablas o, segun el motor, ejecutar comandos.",
         "porque": "El codigo hace query = \"SELECT * FROM users WHERE name='\" + input + \"'\". Si tu input es ' OR '1'='1, la consulta final siempre es verdadera. La causa raiz es la misma que en [[lfi]]: mezclar datos no confiables con la instruccion, en vez de usar consultas parametrizadas que separan ambos.",
         "cuando": "En cualquier campo que alimente una busqueda, un login, un filtro o un id: formularios, parametros de URL, cabeceras. Sospecha si al meter una comilla la aplicacion se rompe o cambia de comportamiento.",
+        "necesitas": [
+            "Un campo que llegue a una consulta SQL: parametro de URL, formulario, cabecera o id.",
+            "Ver como reacciona a una comilla ' (error o cambio); para extraer por UNION, el numero de columnas.",
+            "Un diccionario o sqlmap si vas a automatizar; paciencia si es a ciegas (blind).",
+        ],
         "senales": [
             "Una comilla simple ' provoca un error de SQL o una pagina en blanco/500.",
             "Payloads logicos cambian el resultado: ' OR '1'='1 devuelve mas filas o entra sin password.",
@@ -113,6 +122,11 @@ CONCEPTS = [
         "que": "Una bind shell abre un puerto EN LA VICTIMA y tu te conectas a el. Una reverse shell hace lo contrario: la victima se conecta HACIA TI, a un listener que tienes abierto. En ambos casos acabas con una shell del objetivo, pero la direccion de la conexion cambia cual es viable.",
         "porque": "Los firewalls casi siempre bloquean conexiones entrantes a la victima pero permiten las salientes. Por eso la reverse shell (victima -> atacante) funciona donde la bind shell (atacante -> victima) falla: la conexion de salida rara vez esta filtrada. Por defecto, piensa siempre en reverse.",
         "cuando": "Reverse: el caso normal, sobre todo si la victima esta tras NAT o firewall. Bind: solo cuando TU no puedes recibir conexiones (estas tras NAT sin port-forward) pero la victima si acepta entrantes. Tras conseguirla, casi siempre toca [[tty-stabilization]].",
+        "necesitas": [
+            "Ejecucion de comandos en la victima (RCE, una inyeccion, un exploit).",
+            "Tu IP de atacante (la de la VPN/tun0, no la local) como LHOST y un puerto libre.",
+            "El listener abierto ANTES de disparar el payload.",
+        ],
         "senales": [
             "Tienes ejecucion de comandos (RCE, [[lfi-a-rce]], una inyeccion) pero aun no una shell interactiva.",
             "Tu listener no recibe nada: revisa que LHOST sea TU IP de atacante (VPN, no la local) y que el puerto no este ocupado ni filtrado.",
@@ -202,6 +216,10 @@ CONCEPTS = [
         "que": "El bit SUID hace que un ejecutable corra siempre como su propietario, sin importar quien lo lance. Si el dueno es root y el binario permite ejecutar comandos, leer/escribir ficheros o lanzar otra shell, puedes abusar de el para actuar como root. Es una aplicacion directa del [[privesc-modelo]].",
         "porque": "SUID existe para casos legitimos (passwd necesita tocar /etc/shadow). El problema es cuando un binario con SUID tiene una funcion que permite salir a una shell o leer ficheros arbitrarios: entonces esa capacidad se ejecuta como root. GTFOBins cataloga exactamente que binarios son abusables y como.",
         "cuando": "En la fase de privesc Linux, justo despues de mirar [[sudo-abuse]]. Busca binarios SUID que NO sean del sistema base o cuya version sea conocida por ser abusable.",
+        "necesitas": [
+            "Una shell de usuario en la maquina.",
+            "Un binario con bit SUID que NO sea del sistema base (o uno abusable segun GTFOBins).",
+        ],
         "senales": [
             "find de SUID devuelve binarios raros (nmap, find, cp, python, vim, tar) fuera de los tipicos.",
             "Un binario a medida del reto con el bit SUID puesto.",
@@ -573,6 +591,11 @@ CONCEPTS = [
         "que": "Cuando encuentras un hash (en una BD, un fichero, un volcado), crackearlo es recuperar la password en claro probando candidatos offline. La clave esta en tres cosas: identificar el tipo de hash para usar el modo correcto, elegir un buen diccionario, y despues reutilizar la password (el reuse es la norma, no la excepcion).",
         "porque": "Cada tipo de hash usa un algoritmo distinto; hashcat necesita el modo (-m) exacto o no encuentra nada aunque la password este en rockyou. Y los ficheros protegidos (zip, KeePass, claves SSH) no se crackean directos: se convierten a hash con los *2john. La mayoria de rooms usan passwords de rockyou, asi que empezar por ahi ahorra horas.",
         "cuando": "Tras hacer loot y encontrar hashes o ficheros protegidos. Los hashes de Kerberos vienen de [[asrep-kerberoast]]; los NTLM se pueden usar sin crackear via [[ntlm-pth]].",
+        "necesitas": [
+            "El hash (o el fichero protegido: .kdbx, id_rsa con passphrase, zip).",
+            "Saber el TIPO de hash para elegir el modo de hashcat (hashid / name-that-hash).",
+            "Un diccionario (rockyou.txt) y, para ficheros protegidos, el *2john correspondiente.",
+        ],
         "senales": [
             "Un hash cuya longitud/formato hashid asocia a un tipo (NTLM, bcrypt, sha512crypt).",
             "Un fichero .kdbx, id_rsa con passphrase o zip protegido: conviertelo con *2john.",
@@ -639,6 +662,11 @@ CONCEPTS = [
         "que": "SeImpersonatePrivilege permite a un proceso actuar con el token de seguridad de otro cliente que se conecte a el. Los exploits de la familia Potato (JuicyPotato, PrintSpoofer, GodPotato) enganan a un servicio privilegiado para que se autentique contra ellos y asi capturan y suplantan el token de SYSTEM, obteniendo una shell SYSTEM.",
         "porque": "Las cuentas de servicio (IIS, MSSQL) suelen tener SeImpersonate por diseno para funcionar, pero ese mismo privilegio permite robar el token de SYSTEM. Es tan comun que ver SeImpersonate en whoami /priv casi garantiza la escalada. Es un caso concreto del [[winprivesc-modelo]].",
         "cuando": "En cuanto whoami /priv muestre SeImpersonatePrivilege o SeAssignPrimaryTokenPrivilege como Enabled, tipico tras comprometer una web (IIS) o un servicio en Windows.",
+        "necesitas": [
+            "Una shell en Windows (a menudo como cuenta de servicio: IIS, MSSQL).",
+            "SeImpersonatePrivilege o SeAssignPrimaryTokenPrivilege habilitado (whoami /priv).",
+            "El binario adecuado a la version: PrintSpoofer o GodPotato (subelo a la maquina).",
+        ],
         "senales": [
             "SeImpersonatePrivilege = Enabled en whoami /priv.",
             "Tu usuario es un service account (iis apppool\\..., mssql, local service).",
@@ -1282,6 +1310,45 @@ CONCEPTS = [
             },
         ],
     },
+    {
+        "id": "fuerza-bruta-online",
+        "title": "Fuerza bruta a logins (online)",
+        "phase": "access",
+        "section": "credenciales-y-loot",
+        "summary": "Probar muchas credenciales contra un login vivo (ssh, ftp, un panel web) con hydra, sin crackear nada offline.",
+        "que": "La fuerza bruta online lanza intentos de login reales contra un servicio en marcha, probando usuarios y passwords de un diccionario hasta que uno entra. A diferencia del [[cracking]] (que trabaja offline sobre un hash), aqui atacas el servicio directamente: cada intento es una conexion de verdad. La herramienta estandar es hydra.",
+        "porque": "Muchos logins usan passwords debiles o por defecto y no limitan los intentos. Si tienes un usuario valido (o una lista) y un buen diccionario, probar en automatico es mas rapido que a mano. La clave del ataque web es que hydra necesita saber distinguir un fallo de un acierto, y eso se lo das tu con el mensaje de error.",
+        "cuando": "Cuando hay un servicio de login accesible (ssh, ftp, smb, un formulario web) y no tienes credenciales, o tienes un usuario pero no su password. No lo uses a lo loco en AD: el spraying agresivo bloquea cuentas.",
+        "necesitas": [
+            "Un servicio de login accesible: ssh, ftp, smb, o un formulario web.",
+            "Al menos un usuario, o una lista users.txt (sacala de enum: [[smb-enum]], la web, OSINT).",
+            "Un diccionario de passwords (rockyou.txt cubre la mayoria de rooms).",
+            "Para un login WEB: el metodo (GET/POST), los nombres exactos de los campos usuario/password, y el mensaje EXACTO que sale al fallar (hydra lo usa para saber que un intento fallo).",
+        ],
+        "senales": [
+            "Hay un panel de login, un ssh o un ftp expuesto y no tienes con que entrar.",
+            "Enum te dio usuarios validos pero no sus passwords.",
+            "El login no parece limitar intentos ni tener captcha.",
+        ],
+        "pasos": [
+            "Consigue el/los usuario(s) y elige el diccionario.",
+            "Para un servicio directo (ssh/ftp) apunta hydra al modulo correspondiente.",
+            "Para un login web, captura la peticion (Burp/DevTools): metodo, campos y el mensaje de fallo; montalos en http-post-form.",
+            "Lanza, valida el primer acierto a mano, y esa credencial -> reutilizala en todo ([[cracking]] cubre el reuse).",
+        ],
+        "commands": [
+            {
+                "cmd": "hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP ssh",
+                "why": "Fuerza bruta directa contra ssh: -l usuario fijo, -P diccionario. Para servicios con protocolo propio (ssh/ftp/smb) hydra ya sabe cuando un login funciona, no hace falta mensaje de fallo.",
+                "out": "Una linea '[22][ssh] host: ... login: admin password: ...' cuando acierta. Si va lentisimo o bloquea, baja hilos con -t 4. Nada = usuario o diccionario equivocados.",
+            },
+            {
+                "cmd": "hydra -l admin -P rockyou.txt $IP http-post-form \"/login:user=^USER^&pass=^PASS^:F=Invalid\"",
+                "why": "Login web por POST. La cadena tiene 3 partes separadas por ':' -> ruta, cuerpo con ^USER^/^PASS^, y la condicion de fallo F=texto. Sin la F correcta, hydra marca todo como valido.",
+                "out": "El par usuario:password que NO dispara el mensaje de fallo. Si TODO sale como valido, tu F= no coincide con el mensaje real: copialo exacto de la respuesta. Usa S= si prefieres marcar el exito.",
+            },
+        ],
+    },
 ]
 
 
@@ -1327,8 +1394,8 @@ PATHS = [
     {
         "id": "credenciales-ruta",
         "title": "Credenciales y hashes",
-        "summary": "Que hacer cuando encuentras un hash o un fichero protegido: identificar, crackear y sobre todo reutilizar.",
-        "concepts": ["cracking"],
+        "summary": "Conseguir credenciales: fuerza bruta online a un login, o crackear un hash offline; y sobre todo reutilizarlas.",
+        "concepts": ["fuerza-bruta-online", "cracking"],
     },
     {
         "id": "cve-ruta",

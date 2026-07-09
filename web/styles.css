@@ -2175,6 +2175,31 @@ tr:last-child td {
   color: var(--ink-soft, var(--ink));
 }
 
+.concept-needs {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber, #d9a441);
+  background: var(--panel-hi);
+  border-radius: 0 12px 12px 0;
+  padding: 14px 16px;
+}
+
+.concept-needs h3 {
+  color: var(--amber, #d9a441);
+}
+
+.concept-needs-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+  line-height: 1.5;
+}
+
+.concept-needs-list li::marker {
+  content: "\2713  ";
+  color: var(--amber, #d9a441);
+}
+
 .concept-signals,
 .concept-steps {
   margin: 0;

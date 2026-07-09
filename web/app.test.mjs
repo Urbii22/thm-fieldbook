@@ -161,6 +161,12 @@ for (const concept of content.concepts) {
   }
   assert.ok(Array.isArray(concept.senales) && concept.senales.length, `concepto ${concept.id} sin senales`);
   assert.ok(Array.isArray(concept.pasos) && concept.pasos.length, `concepto ${concept.id} sin pasos`);
+  if (concept.necesitas !== undefined) {
+    assert.ok(Array.isArray(concept.necesitas) && concept.necesitas.length, `concepto ${concept.id} con necesitas vacio`);
+    for (const item of concept.necesitas) {
+      assert.ok(typeof item === "string" && item.length, `concepto ${concept.id} con item de necesitas invalido`);
+    }
+  }
   assert.ok(KNOWN_PHASES.has(concept.phase), `concepto ${concept.id} con phase invalida: ${concept.phase}`);
   assert.ok(sectionSlugs.has(concept.section), `concepto ${concept.id} apunta a seccion inexistente: ${concept.section}`);
   for (const command of concept.commands || []) {
@@ -199,7 +205,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260709-learn-default/);
+  assert.match(asset, /20260709-brute-necesitas/);
 }
 
 assert.match(js, /registration\.update\(\)/);
