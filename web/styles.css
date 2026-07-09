@@ -2262,6 +2262,85 @@ tr:last-child td {
   color: var(--ink);
 }
 
+.guided {
+  padding: 8px 4px;
+}
+
+.guided h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.guided > p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.guided-block {
+  margin-bottom: 18px;
+}
+
+.guided-label {
+  display: block;
+  font-size: 11px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+
+.guided-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guided-phase {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--phase, var(--line));
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.guided-phase:hover {
+  background: var(--panel-hi);
+  border-color: var(--faint);
+}
+
+.guided-example {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.guided-example::before {
+  content: "\1F50D  ";
+}
+
+.guided-example:hover {
+  color: var(--ink);
+  border-color: var(--green);
+}
+
+.guided-hint {
+  margin: 22px 0 0;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
 .toast {
   position: fixed;
   left: 50%;

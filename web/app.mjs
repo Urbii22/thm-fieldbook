@@ -34,13 +34,14 @@ const state = {
   paths: [],
   activeConcept: "",
   learnMode: "guides",
+  practicaSeen: false,
 };
 
 const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-copy-toast";
+const APP_VERSION = "20260709-guided-start";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -763,6 +764,7 @@ function renderShortcuts(data) {
     .join("");
   container.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
+      markPracticaSeen();
       state.mode = "sections";
       state.query = button.dataset.query;
       state.activeSlug = button.dataset.target;
@@ -803,6 +805,7 @@ function renderResults(sections) {
   bindInlineCommandMatches(container);
   container.querySelectorAll(".result").forEach((button) => {
     button.addEventListener("click", () => {
+      markPracticaSeen();
       state.activeSlug = button.dataset.slug;
       pushRecent(button.dataset.slug);
       writeHash(true);
@@ -1324,6 +1327,8 @@ function applyHashToState() {
   } else {
     state.view = "practica";
     const slug = decodeURIComponent(pathPart || "");
+    // A practica deep-link (or ?q=) is an explicit entry point -> skip the guided screen.
+    if (slug || query) state.practicaSeen = true;
     if (slug) state.activeSlug = slug;
   }
 }
@@ -1393,6 +1398,7 @@ function renderRecent() {
       .join("");
   row.querySelectorAll("[data-recent-slug]").forEach((chip) => {
     chip.addEventListener("click", () => {
+      markPracticaSeen();
       state.activeSlug = chip.dataset.recentSlug;
       pushRecent(state.activeSlug);
       writeHash(true);
@@ -1599,6 +1605,7 @@ function gotoSection(slug) {
   const search = document.querySelector("[data-search]");
   if (search) search.value = "";
   setView("practica");
+  markPracticaSeen();
   state.activeSlug = slug;
   pushRecent(slug);
   writeHash(true);
@@ -1917,6 +1924,7 @@ function setView(view) {
     button.classList.toggle("active", button.dataset.viewVal === state.view);
   });
   if (isLearn) renderLearn();
+  else render();
 }
 
 function bindViewTabs() {
@@ -1938,6 +1946,48 @@ function bindLearnTabs() {
   });
 }
 
+function markPracticaSeen() {
+  state.practicaSeen = true;
+}
+
+// Guided first screen for Practica: instead of dumping the first section's full
+// command list, offer phases + example searches to reduce the initial wall.
+function renderGuidedPractica() {
+  const container = document.querySelector("[data-detail]");
+  if (!container) return;
+  container.style.removeProperty("--phase");
+  const phases = (state.data.phases || []).map(
+    (phase) => `<button type="button" class="guided-phase" style="${phaseStyle(phase)}" data-guided-phase="${escapeHtml(phase)}">${escapeHtml(phaseLabel(phase))}</button>`,
+  ).join("");
+  const examples = ["nmap", "hydra", "sqli", "smb", "privesc", "reverse shell"]
+    .map((q) => `<button type="button" class="guided-example" data-guided-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
+    .join("");
+  container.innerHTML = `<div class="guided">
+      <h2>Por donde empiezas?</h2>
+      <p>Elige una fase, usa un atajo de arriba, o busca un comando o herramienta.</p>
+      <div class="guided-block"><span class="guided-label">Fases</span><div class="guided-row">${phases}</div></div>
+      <div class="guided-block"><span class="guided-label">Ejemplos de busqueda</span><div class="guided-row">${examples}</div></div>
+      <p class="guided-hint">Tambien tienes la pestana <b>Aprender</b> para la teoria de cada tecnica.</p>
+    </div>`;
+  container.querySelectorAll("[data-guided-phase]").forEach((button) => {
+    button.addEventListener("click", () => {
+      markPracticaSeen();
+      state.phase = button.dataset.guidedPhase;
+      render();
+    });
+  });
+  container.querySelectorAll("[data-guided-q]").forEach((button) => {
+    button.addEventListener("click", () => {
+      markPracticaSeen();
+      state.query = button.dataset.guidedQ;
+      const search = document.querySelector("[data-search]");
+      if (search) search.value = state.query;
+      writeHash(false);
+      render();
+    });
+  });
+}
+
 function render() {
   applyProfile();
   let sections = filterSections(state.data.sections, state);
@@ -1949,10 +1999,12 @@ function render() {
   const active = sections.find((section) => section.slug === state.activeSlug);
   document.querySelector("[data-count]").textContent = String(sections.length);
   renderOptions(document.querySelector("[data-tags]"), state.data.tags, state.tag, (tag) => tag, (value) => {
+    markPracticaSeen();
     state.tag = value;
     render();
   });
   renderOptions(document.querySelector("[data-phases]"), state.data.phases, state.phase, phaseLabel, (value) => {
+    markPracticaSeen();
     state.phase = value;
     render();
   });
@@ -1962,7 +2014,12 @@ function render() {
   if (favBtn) favBtn.classList.toggle("active", state.favOnly);
   if (state.mode === "commands") renderCommandResults();
   else renderResults(sections);
-  if (!renderCommandSearchDetail()) renderDetail(active);
+  const pristine = !state.query && state.tag === "all" && state.phase === "all" && !state.favOnly;
+  if (state.view === "practica" && !state.practicaSeen && pristine) {
+    renderGuidedPractica();
+  } else if (!renderCommandSearchDetail()) {
+    renderDetail(active);
+  }
   renderRoomConfig();
   renderNotes();
   renderRoomBadge();
@@ -1977,6 +2034,7 @@ function moveActive(delta) {
   if (!sections.length) return;
   const current = sections.findIndex((section) => section.slug === state.activeSlug);
   const next = Math.max(0, Math.min(sections.length - 1, (current < 0 ? 0 : current) + delta));
+  markPracticaSeen();
   state.activeSlug = sections[next].slug;
   writeHash(false);
   render();
@@ -2120,6 +2178,7 @@ async function init() {
   document.querySelector("[data-command-total]").textContent = String(state.data.stats.totalCommands);
   document.querySelector("[data-search]").addEventListener("input", (event) => {
     state.query = event.target.value;
+    if (state.query) markPracticaSeen();
     writeHash(false);
     if (state.view === "aprender") renderLearn();
     else render();
@@ -2136,6 +2195,7 @@ async function init() {
   bindRoomPanel();
   bindModeToggle();
   document.querySelector("[data-fav-only]")?.addEventListener("click", () => {
+    markPracticaSeen();
     state.favOnly = !state.favOnly;
     render();
   });
