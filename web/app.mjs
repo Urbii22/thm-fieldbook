@@ -11,6 +11,7 @@ const BLANK_PROFILE = {
   revType: "bash",
   revLport: "4444",
   checks: {},
+  progress: {},
 };
 
 const state = {
@@ -41,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-topbar-layout";
+const APP_VERSION = "20260709-room-progress";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1420,6 +1421,7 @@ function loadProfile() {
     ...BLANK_PROFILE,
     ...stored,
     checks: { ...(stored.checks || {}) },
+    progress: { ...(stored.progress || {}) },
   };
 }
 
@@ -1484,7 +1486,7 @@ function renderNotes() {
 }
 
 function resetRoom() {
-  state.profile = { ...BLANK_PROFILE, checks: {} };
+  state.profile = { ...BLANK_PROFILE, checks: {}, progress: {} };
   saveProfile();
   applyProfile();
   const ipInput = document.querySelector("[data-room-ip]");
@@ -1493,7 +1495,39 @@ function resetRoom() {
   if (notes) notes.value = "";
   renderVarsPanel();
   renderRoomBadge();
+  renderRoomTrack();
   render();
+}
+
+const ROOM_STAGES = [
+  { key: "recon", label: "Puertos", hint: "Recon: puertos y servicios enumerados" },
+  { key: "creds", label: "Creds", hint: "Credenciales validas conseguidas" },
+  { key: "foothold", label: "Foothold", hint: "Shell o acceso inicial estable" },
+  { key: "privesc", label: "Root", hint: "Privesc: root / SYSTEM" },
+];
+
+// Operational progress tracker for the current room, persisted in the profile.
+function renderRoomTrack() {
+  const el = document.querySelector("[data-roomtrack]");
+  if (!el) return;
+  const prog = state.profile.progress || {};
+  const done = ROOM_STAGES.filter((stage) => prog[stage.key]).length;
+  el.innerHTML = `
+    <div class="roomtrack-bar" aria-hidden="true"><span style="width:${(done / ROOM_STAGES.length) * 100}%"></span></div>
+    <div class="roomtrack-pills">
+      ${ROOM_STAGES.map(
+        (stage) => `<button type="button" class="roomtrack-pill ${prog[stage.key] ? "done" : ""}" data-stage="${stage.key}" title="${escapeHtml(stage.hint)}" aria-pressed="${prog[stage.key] ? "true" : "false"}"><span class="roomtrack-dot" aria-hidden="true"></span>${escapeHtml(stage.label)}</button>`,
+      ).join("")}
+    </div>`;
+  el.querySelectorAll("[data-stage]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.stage;
+      state.profile.progress = { ...(state.profile.progress || {}) };
+      state.profile.progress[key] = !state.profile.progress[key];
+      saveProfile();
+      renderRoomTrack();
+    });
+  });
 }
 
 function bindRoomPanel() {
@@ -2192,6 +2226,7 @@ async function init() {
     render();
   });
   renderVarsPanel();
+  renderRoomTrack();
   bindRoomPanel();
   bindModeToggle();
   document.querySelector("[data-fav-only]")?.addEventListener("click", () => {

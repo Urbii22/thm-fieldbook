@@ -2042,14 +2042,95 @@ tr:last-child td {
 }
 
 /* ===== View tabs + Learn mode ===== */
+.viewbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
 .view-tabs {
   display: inline-flex;
   gap: 4px;
-  margin-bottom: 18px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);
+}
+
+.roomtrack {
+  flex: 1;
+  min-width: 260px;
+  max-width: 560px;
+  display: grid;
+  gap: 7px;
+}
+
+.roomtrack-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.roomtrack-bar span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  transition: width 220ms ease;
+}
+
+.roomtrack-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.roomtrack-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.roomtrack-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.roomtrack-pill:hover {
+  border-color: var(--faint);
+  color: var(--ink);
+}
+
+.roomtrack-pill.done {
+  color: var(--green-hi);
+  border-color: rgba(63, 185, 80, 0.45);
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.roomtrack-pill.done .roomtrack-dot {
+  background: var(--green-hi);
+  box-shadow: 0 0 8px var(--green);
+}
+
+@media (max-width: 560px) {
+  .roomtrack { min-width: 100%; max-width: none; }
+  .roomtrack-pill { font-size: 11px; padding: 5px 4px; }
 }
 
 .view-tabs button {
