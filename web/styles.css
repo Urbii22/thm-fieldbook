@@ -343,6 +343,13 @@ input[type="search"]:focus {
   padding: 0 5px;
 }
 
+.room-note-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
 /* ===== Room panel ===== */
 .roompanel {
   border-top: 1px solid var(--line);
@@ -361,6 +368,46 @@ input[type="search"]:focus {
 .notes-block h2 {
   margin: 0 0 4px;
   font-size: 14px;
+}
+
+.notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.notes-head h2 {
+  margin: 0;
+}
+
+.notes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notes-meta {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.notes-btn {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 9px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.notes-btn:hover {
+  border-color: var(--green);
+  color: var(--text);
 }
 
 .roompanel-head p {
@@ -1587,6 +1634,24 @@ code {
 
 .cmd-edit-btn:hover {
   border-color: var(--blue);
+  color: var(--text);
+}
+
+.cmd-note-btn {
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.cmd-note-btn:hover {
+  border-color: var(--green);
   color: var(--text);
 }
 

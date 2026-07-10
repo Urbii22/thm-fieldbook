@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v45";
-const VERSION = "20260710-payloads-sqli";
+const CACHE = "thm-fieldbook-v46";
+const VERSION = "20260710-bloc-notas";
 const ASSETS = [
   "./",
   "./index.html",

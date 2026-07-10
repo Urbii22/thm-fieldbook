@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-payloads-sqli";
+const APP_VERSION = "20260710-bloc-notas";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -752,7 +752,10 @@ function commandCard(rawCommand, opts = {}) {
   const editBtn = opts.edit
     ? `<button type="button" class="cmd-edit-btn" data-edit title="Editar antes de copiar" aria-label="Editar">✎</button>`
     : "";
-  const tools = riskMark || infoMark || editBtn ? `<div class="cmd-tools">${riskMark}${infoMark}${editBtn}</div>` : "";
+  const noteBtn = opts.edit
+    ? `<button type="button" class="cmd-note-btn" data-note="${esc}" title="Guardar en notas" aria-label="Guardar en notas">+nota</button>`
+    : "";
+  const tools = riskMark || infoMark || noteBtn || editBtn ? `<div class="cmd-tools">${riskMark}${infoMark}${noteBtn}${editBtn}</div>` : "";
   return `<div class="cmd ${risk ? `risk-${risk.level}` : ""}">
     <div class="cmd-view">
       <button type="button" class="cmd-copy" data-copy="${esc}" title="Copiar comando"><code>${highlight(markPlaceholders(esc), opts.terms || [])}</code><span class="copy-btn">${COPY_ICON}<span class="copy-label">copy</span></span></button>
@@ -1677,10 +1680,48 @@ function renderVarsPanel() {
   });
 }
 
+// Anade una linea al bloc de notas sin pisar lo que ya hay; recorta espacios
+// finales para no acumular lineas en blanco. Puro para poder testearlo.
+export function appendToNotes(existing, text) {
+  const line = String(text || "").trim();
+  if (!line) return existing || "";
+  const base = existing || "";
+  return base ? `${base.replace(/\s+$/, "")}\n${line}` : line;
+}
+
+function noteLineCount(notes) {
+  const trimmed = String(notes || "").trim();
+  return trimmed ? trimmed.split("\n").length : 0;
+}
+
+function renderNotesMeta() {
+  const lines = noteLineCount(state.profile.notes);
+  const meta = document.querySelector("[data-notes-meta]");
+  if (meta) meta.textContent = `${lines} ${lines === 1 ? "linea" : "lineas"}`;
+  const dot = document.querySelector("[data-note-dot]");
+  if (dot) dot.hidden = lines === 0;
+}
+
 function renderNotes() {
   const notes = document.querySelector("[data-notes]");
-  if (!notes) return;
-  if (document.activeElement !== notes) notes.value = state.profile.notes || "";
+  if (notes && document.activeElement !== notes) notes.value = state.profile.notes || "";
+  renderNotesMeta();
+}
+
+function bindNoteButtons() {
+  document.querySelectorAll("[data-note]").forEach((button) => {
+    if (button.dataset.noteBound) return;
+    button.dataset.noteBound = "1";
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      state.profile.notes = appendToNotes(state.profile.notes, button.dataset.note);
+      saveProfile();
+      const notes = document.querySelector("[data-notes]");
+      if (notes && document.activeElement !== notes) notes.value = state.profile.notes;
+      renderNotesMeta();
+      showToast("Guardado en notas", "ok");
+    });
+  });
 }
 
 function resetRoom() {
@@ -1747,6 +1788,39 @@ function bindRoomPanel() {
     notes.addEventListener("input", (event) => {
       state.profile.notes = event.target.value;
       saveProfile();
+      renderNotesMeta();
+    });
+  }
+  const notesCopy = document.querySelector("[data-notes-copy]");
+  if (notesCopy) {
+    notesCopy.addEventListener("click", async () => {
+      const text = state.profile.notes || "";
+      if (!text.trim()) {
+        showToast("No hay notas que copiar", "warn");
+        return;
+      }
+      const ok = await copyText(text);
+      showToast(ok ? "Notas copiadas" : "No se pudo copiar", ok ? "ok" : "warn");
+    });
+  }
+  const notesDownload = document.querySelector("[data-notes-download]");
+  if (notesDownload) {
+    notesDownload.addEventListener("click", () => {
+      const text = state.profile.notes || "";
+      if (!text.trim()) {
+        showToast("No hay notas que descargar", "warn");
+        return;
+      }
+      const ip = (state.profile.ip || "room").replace(/[^a-z0-9.-]/gi, "_");
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `notas-${ip}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     });
   }
   const reset = document.querySelector("[data-reset-room]");
@@ -2295,6 +2369,7 @@ function render() {
   renderRevshell();
   if (state.view === "aprender") renderLearn();
   bindCopyButtons();
+  bindNoteButtons();
 }
 
 function moveActive(delta) {

@@ -14,7 +14,15 @@ import {
   SLUG_REDIRECTS,
   PORT_DB,
   lookupPort,
+  appendToNotes,
 } from "./app.mjs";
+
+// ---- Bloc de notas: capturar comandos sin pisar lo escrito ----
+assert.equal(appendToNotes("", "nmap -sV $IP"), "nmap -sV $IP");
+assert.equal(appendToNotes("linea1", "linea2"), "linea1\nlinea2");
+assert.equal(appendToNotes("linea1\n", "linea2"), "linea1\nlinea2", "no debe dejar lineas en blanco al anadir");
+assert.equal(appendToNotes("previo", "   "), "previo", "texto vacio no cambia las notas");
+assert.equal(appendToNotes(undefined, "x"), "x");
 
 const sections = [
   {
@@ -303,7 +311,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-payloads-sqli/);
+  assert.match(asset, /20260710-bloc-notas/);
 }
 
 assert.match(js, /registration\.update\(\)/);
