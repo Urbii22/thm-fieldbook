@@ -303,7 +303,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-buscador-puertos/);
+  assert.match(asset, /20260710-payloads-sqli/);
 }
 
 assert.match(js, /registration\.update\(\)/);

