@@ -306,7 +306,7 @@ SECTIONS = [
         ],
     },
     {
-        "title": "3. Reconocimiento y enumeracion de servicios",
+        "title": "3. Reconocimiento y enumeración de servicios",
         "short": "Recon y servicios",
         "summary": "Encontrar superficie, nombres, versiones y rutas de entrada.",
         "blocks": [
@@ -318,7 +318,7 @@ SECTIONS = [
             ]),
             ("bullets", [
                 "Usa -Pn si la maquina filtra ping.",
-                "Primero descubre puertos; despues enumera versiones y scripts.",
+                "Primero descubre puertos; después enumera versiones y scripts.",
                 "UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS.",
             ]),
             ("h2", "HTTP / Web (80, 443, 8080)"),
@@ -443,9 +443,9 @@ SECTIONS = [
         ],
     },
     {
-        "title": "4b. Web APIs y autorizacion",
-        "short": "Web APIs y autorizacion",
-        "summary": "Metodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: donde vive el bug de autorizacion.",
+        "title": "4b. Web APIs y autorización",
+        "short": "Web APIs y autorización",
+        "summary": "Métodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: dónde vive el fallo de autorización.",
         "blocks": [
             ("h2", "APIs REST y metodos HTTP"),
             ("p", "Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON."),

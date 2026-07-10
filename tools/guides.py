@@ -727,7 +727,7 @@ GUIDES = [
     },
     {
         "id": "api-paso-a-paso",
-        "title": "APIs: del inventario a la autorizacion",
+        "title": "APIs: del inventario a la autorización",
         "phase": "enumeration",
         "section": "web-apis-y-autorizacion",
         "summary": "Una secuencia corta para mapear endpoints, validar sesiones y probar permisos sin perder el hilo.",

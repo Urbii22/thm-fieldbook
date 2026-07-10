@@ -7,6 +7,7 @@ class ExportWebContentTests(unittest.TestCase):
     def test_slugify_keeps_lookup_urls_stable(self):
         self.assertEqual(export_web_content.slugify("Windows local privilege escalation"), "windows-local-privilege-escalation")
         self.assertEqual(export_web_content.slugify("Web y APIs"), "web-y-apis")
+        self.assertEqual(export_web_content.slugify("Enumeración de servicios"), "enumeracion-de-servicios")
 
     def test_normalize_sections_extracts_searchable_cards_and_commands(self):
         sections = [

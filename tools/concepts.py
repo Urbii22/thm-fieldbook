@@ -2369,7 +2369,7 @@ CONCEPTS = [
     },
     {
         "id": "database-enumeration",
-        "title": "Enumeracion de bases de datos",
+        "title": "Enumeración de bases de datos",
         "phase": "enumeration",
         "section": "recon-y-servicios",
         "summary": "Reconocer motores, autenticacion, bases visibles y credenciales de servicios de datos.",
@@ -2411,7 +2411,7 @@ CONCEPTS = [
     },
     {
         "id": "shell-troubleshooting",
-        "title": "Diagnostico de shells",
+        "title": "Diagnóstico de shells",
         "phase": "access",
         "section": "acceso-inicial",
         "summary": "Resolver timeouts, listeners incorrectos, TTY rota y sesiones que mueren.",
@@ -2451,7 +2451,7 @@ CONCEPTS = [
     },
     {
         "id": "credential-reuse",
-        "title": "Reutilizacion de credenciales",
+        "title": "Reutilización de credenciales",
         "phase": "access",
         "section": "credenciales-y-acceso",
         "summary": "Convertir una credencial validada en nuevas pistas sin hacer spraying indiscriminado.",
@@ -2471,7 +2471,7 @@ CONCEPTS = [
     },
     {
         "id": "pivot-troubleshooting",
-        "title": "Diagnostico de pivoting",
+        "title": "Diagnóstico de pivoting",
         "phase": "pivot",
         "section": "pivoting",
         "summary": "Comprobar rutas, listeners y alcance cuando el tunel existe pero no llega al servicio interno.",
@@ -2502,13 +2502,13 @@ PATHS = [
     },
     {
         "id": "web-inyecciones-ruta",
-        "title": "Web: inyecciones y ejecucion",
+        "title": "Web: inyecciones y ejecución",
         "summary": "SSTI, SSRF, XXE, XSS, subida de ficheros y command injection.",
         "concepts": ["ssti", "ssrf", "xxe", "xss", "file-upload", "command-injection"],
     },
     {
         "id": "web-autorizacion-apis-ruta",
-        "title": "Web: autorizacion y APIs",
+        "title": "Web: autorización y APIs",
         "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
         "concepts": ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security"],
     },

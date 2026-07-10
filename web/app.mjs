@@ -385,9 +385,9 @@ function phaseLabel(phase) {
   const labels = {
     access: "Acceso",
     closeout: "Cierre",
-    enumeration: "Enumeracion",
+    enumeration: "Enumeración",
     pivot: "Pivot",
-    privesc: "Privesc",
+    privesc: "Escalada de privilegios",
     recon: "Recon",
     reference: "Referencia",
   };
@@ -1567,9 +1567,9 @@ function resetRoom() {
 
 const ROOM_STAGES = [
   { key: "recon", label: "Puertos", hint: "Recon: puertos y servicios enumerados" },
-  { key: "creds", label: "Creds", hint: "Credenciales validas conseguidas" },
+  { key: "creds", label: "Credenciales", hint: "Credenciales válidas conseguidas" },
   { key: "foothold", label: "Foothold", hint: "Shell o acceso inicial estable" },
-  { key: "privesc", label: "Root", hint: "Privesc: root / SYSTEM" },
+  { key: "privesc", label: "Root", hint: "Escalada: root / SYSTEM" },
 ];
 
 // Operational progress tracker for the current room, persisted in the profile.
@@ -1690,7 +1690,7 @@ function annotatedCommandHtml(command, terms) {
   const card = commandCard(commandOf(command), { edit: true });
   if (typeof command === "string" || (!command.why && !command.out)) return card;
   const hl = (text) => highlight(escapeHtml(text), terms);
-  const why = command.why ? `<p class="cmd-why"><b>Por que</b><span>${hl(command.why)}</span></p>` : "";
+  const why = command.why ? `<p class="cmd-why"><b>Por qué</b><span>${hl(command.why)}</span></p>` : "";
   const out = command.out ? `<p class="cmd-out"><b>En la salida busca</b><span>${hl(command.out)}</span></p>` : "";
   return `<div class="cmd-with-note">${card}<div class="cmd-annot">${why}${out}</div></div>`;
 }
@@ -1705,7 +1705,7 @@ function guideStepHtml(step, index) {
       <h3>${hl(step.title)}</h3>
       <p class="guide-idea">${hl(step.idea)}</p>
       ${cmds ? `<div class="guide-cmds">${cmds}</div>` : ""}
-      ${step.look ? `<p class="guide-note guide-look"><b>Que buscar</b><span>${hl(step.look)}</span></p>` : ""}
+      ${step.look ? `<p class="guide-note guide-look"><b>Qué buscar</b><span>${hl(step.look)}</span></p>` : ""}
       ${step.decide ? `<p class="guide-note guide-decide"><b>Segun lo que veas</b><span>${hl(step.decide)}</span></p>` : ""}
     </div>
   </article>`;

@@ -706,7 +706,7 @@
           "bullets",
           [
             "Usa -Pn si la maquina filtra ping.",
-            "Primero descubre puertos; despues enumera versiones y scripts.",
+            "Primero descubre puertos; después enumera versiones y scripts.",
             "UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS."
           ]
         ],
@@ -888,7 +888,7 @@
           ]
         ]
       ],
-      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; despues enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. HTTP / Web (80, 443, 8080) whatweb $URL curl -sSI $URL curl -sS $URL/robots.txt nikto -h $URL gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40 ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -H 'Host: FUZZ.$DOMAIN' -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ SMB (139, 445) nxc smb $IP nxc smb $IP -u '' -p '' --shares nxc smb $IP -u 'guest' -p '' --shares smbclient -L //$IP -N smbclient //$IP/share -N smbmap -H $IP enum4linux-ng -A $IP nxc smb $IP -u 'guest' -p '' --rid-brute RPC / NetBIOS (135, 137) rpcclient -U '' -N $IP rpcclient -U '' -N $IP -c 'enumdomusers' rpcclient -U '' -N $IP -c 'querydominfo' nmblookup -A $IP FTP (21) ftp $IP nmap --script ftp-anon -p 21 $IP wget -m --no-passive ftp://anonymous:anonymous@$IP DNS (53) dig @$IP $DOMAIN dig axfr @$IP $DOMAIN dnsrecon -d $DOMAIN -n $IP nslookup -type=any $DOMAIN $IP SNMP (161/udp) snmpwalk -v2c -c public $IP snmpbulkwalk -v2c -c public $IP onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP NFS (2049) showmount -e $IP mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock LDAP (389, 636) ldapsearch -x -H ldap://$IP -s base namingContexts ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' nxc ldap $IP -u '' -p '' Bases de datos (3306, 1433, 5432, 6379) mysql -h $IP -u root -p impacket-mssqlclient $USER:$PASS@$IP -windows-auth psql -h $IP -U postgres redis-cli -h $IP SMTP (25) / RDP (3389) nc -nv $IP 25 smtp-user-enum -M VRFY -U users.txt -t $IP swaks --to test@$DOMAIN --server $IP xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution nmap --script rdp-enum-encryption -p 3389 $IP Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
+      "searchText": "Recon y servicios Encontrar superficie, nombres, versiones y rutas de entrada. Escaneo inicial nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt Usa -Pn si la maquina filtra ping. Primero descubre puertos; después enumera versiones y scripts. UDP merece una pasada si sospechas DNS, SNMP, TFTP o NFS. HTTP / Web (80, 443, 8080) whatweb $URL curl -sSI $URL curl -sS $URL/robots.txt nikto -h $URL gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -t 40 ffuf -u $URL/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ ffuf -u $URL -H 'Host: FUZZ.$DOMAIN' -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -H 'Host: FUZZ.$DOMAIN' -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ SMB (139, 445) nxc smb $IP nxc smb $IP -u '' -p '' --shares nxc smb $IP -u 'guest' -p '' --shares smbclient -L //$IP -N smbclient //$IP/share -N smbmap -H $IP enum4linux-ng -A $IP nxc smb $IP -u 'guest' -p '' --rid-brute RPC / NetBIOS (135, 137) rpcclient -U '' -N $IP rpcclient -U '' -N $IP -c 'enumdomusers' rpcclient -U '' -N $IP -c 'querydominfo' nmblookup -A $IP FTP (21) ftp $IP nmap --script ftp-anon -p 21 $IP wget -m --no-passive ftp://anonymous:anonymous@$IP DNS (53) dig @$IP $DOMAIN dig axfr @$IP $DOMAIN dnsrecon -d $DOMAIN -n $IP nslookup -type=any $DOMAIN $IP SNMP (161/udp) snmpwalk -v2c -c public $IP snmpbulkwalk -v2c -c public $IP onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt $IP NFS (2049) showmount -e $IP mkdir -p /mnt/nfs && sudo mount -t nfs $IP:/share /mnt/nfs -o nolock LDAP (389, 636) ldapsearch -x -H ldap://$IP -s base namingContexts ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' nxc ldap $IP -u '' -p '' Bases de datos (3306, 1433, 5432, 6379) mysql -h $IP -u root -p impacket-mssqlclient $USER:$PASS@$IP -windows-auth psql -h $IP -U postgres redis-cli -h $IP SMTP (25) / RDP (3389) nc -nv $IP 25 smtp-user-enum -M VRFY -U users.txt -t $IP swaks --to test@$DOMAIN --server $IP xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution nmap --script rdp-enum-encryption -p 3389 $IP Servicios tipicos Servicio Comandos utiles SMB smbclient -L //$IP -N; smbmap -H $IP; nxc smb $IP --shares FTP ftp $IP; probar anonymous; wget -m ftp://anonymous:anonymous@$IP/ DNS dig @$IP dominio; dig axfr @$IP dominio; dnsrecon -d dominio -n $IP SNMP snmpwalk -v2c -c public $IP; onesixtyone -c community.txt $IP NFS showmount -e $IP; mount -t nfs $IP:/share /mnt/share SSH probar claves, usuarios filtrados y passphrases con ssh2john."
     },
     {
       "id": "section-06",
@@ -985,8 +985,8 @@
       "id": "section-07",
       "order": 7,
       "slug": "web-apis-y-autorizacion",
-      "title": "Web APIs y autorizacion",
-      "summary": "Metodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: donde vive el bug de autorizacion.",
+      "title": "Web APIs y autorización",
+      "summary": "Métodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: dónde vive el fallo de autorización.",
       "phase": "enumeration",
       "tags": [
         "web"
@@ -1129,7 +1129,7 @@
           ]
         ]
       ],
-      "searchText": "Web APIs y autorizacion Metodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: donde vive el bug de autorizacion. APIs REST y metodos HTTP Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON. curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" IDOR / BOLA La prueba mas rentable de toda esta seccion: cambiar IDs y comparar la respuesta entre dos usuarios o dos recursos. curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\" curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\" Crea dos cuentas si la room lo permite; compara respuestas del mismo endpoint con cada token. Prueba IDs numericos secuenciales, UUIDs filtrados, emails, usernames y slugs. No basta con que el frontend oculte el boton: prueba la llamada a la API directamente. Senal fuerte: 200 con datos de otro usuario, o una accion aceptada sobre un recurso ajeno. JWT jwt_tool TOKEN python3 -c \"import jwt; print(jwt.get_unverified_header('TOKEN')); print(jwt.decode('TOKEN', options={'verify_signature': False}))\" Mira alg, kid, jku, exp, role, isAdmin, user_id en el payload decodificado. Prueba manipulacion solo en lab: alg none, secreto debil (rockyou contra HS256), confusion HS/RS si el reto apunta a ello. Si el rol cambia en el cliente pero el servidor no revalida firma/autorizacion del token, hay bug. GraphQL curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}' curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}' Prueba introspection primero; si esta activa, enumera tipos y queries/mutations disponibles. Busca queries con id, userId, file, path, admin, debug en el nombre o los argumentos. El IDOR tambien aplica aqui: cambia variables en queries/mutations entre usuarios. Bug Senales y prueba inicial IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug."
+      "searchText": "Web APIs y autorización Métodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: dónde vive el fallo de autorización. APIs REST y metodos HTTP Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON. curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" IDOR / BOLA La prueba mas rentable de toda esta seccion: cambiar IDs y comparar la respuesta entre dos usuarios o dos recursos. curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\" curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\" Crea dos cuentas si la room lo permite; compara respuestas del mismo endpoint con cada token. Prueba IDs numericos secuenciales, UUIDs filtrados, emails, usernames y slugs. No basta con que el frontend oculte el boton: prueba la llamada a la API directamente. Senal fuerte: 200 con datos de otro usuario, o una accion aceptada sobre un recurso ajeno. JWT jwt_tool TOKEN python3 -c \"import jwt; print(jwt.get_unverified_header('TOKEN')); print(jwt.decode('TOKEN', options={'verify_signature': False}))\" Mira alg, kid, jku, exp, role, isAdmin, user_id en el payload decodificado. Prueba manipulacion solo en lab: alg none, secreto debil (rockyou contra HS256), confusion HS/RS si el reto apunta a ello. Si el rol cambia en el cliente pero el servidor no revalida firma/autorizacion del token, hay bug. GraphQL curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}' curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}' Prueba introspection primero; si esta activa, enumera tipos y queries/mutations disponibles. Busca queries con id, userId, file, path, admin, debug en el nombre o los argumentos. El IDOR tambien aplica aqui: cambia variables en queries/mutations entre usuarios. Bug Senales y prueba inicial IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug."
     },
     {
       "id": "section-08",
@@ -4558,7 +4558,7 @@
     },
     {
       "id": "api-paso-a-paso",
-      "title": "APIs: del inventario a la autorizacion",
+      "title": "APIs: del inventario a la autorización",
       "phase": "enumeration",
       "section": "web-apis-y-autorizacion",
       "summary": "Una secuencia corta para mapear endpoints, validar sesiones y probar permisos sin perder el hilo.",
@@ -7125,7 +7125,7 @@
     },
     {
       "id": "database-enumeration",
-      "title": "Enumeracion de bases de datos",
+      "title": "Enumeración de bases de datos",
       "phase": "enumeration",
       "section": "recon-y-servicios",
       "summary": "Reconocer motores, autenticacion, bases visibles y credenciales de servicios de datos.",
@@ -7221,7 +7221,7 @@
     },
     {
       "id": "shell-troubleshooting",
-      "title": "Diagnostico de shells",
+      "title": "Diagnóstico de shells",
       "phase": "access",
       "section": "acceso-inicial",
       "summary": "Resolver timeouts, listeners incorrectos, TTY rota y sesiones que mueren.",
@@ -7308,7 +7308,7 @@
     },
     {
       "id": "credential-reuse",
-      "title": "Reutilizacion de credenciales",
+      "title": "Reutilización de credenciales",
       "phase": "access",
       "section": "credenciales-y-acceso",
       "summary": "Convertir una credencial validada en nuevas pistas sin hacer spraying indiscriminado.",
@@ -7351,7 +7351,7 @@
     },
     {
       "id": "pivot-troubleshooting",
-      "title": "Diagnostico de pivoting",
+      "title": "Diagnóstico de pivoting",
       "phase": "pivot",
       "section": "pivoting",
       "summary": "Comprobar rutas, listeners y alcance cuando el tunel existe pero no llega al servicio interno.",
@@ -7412,7 +7412,7 @@
     },
     {
       "id": "web-inyecciones-ruta",
-      "title": "Web: inyecciones y ejecucion",
+      "title": "Web: inyecciones y ejecución",
       "summary": "SSTI, SSRF, XXE, XSS, subida de ficheros y command injection.",
       "concepts": [
         "ssti",
@@ -7425,7 +7425,7 @@
     },
     {
       "id": "web-autorizacion-apis-ruta",
-      "title": "Web: autorizacion y APIs",
+      "title": "Web: autorización y APIs",
       "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
       "concepts": [
         "api-testing-model",
