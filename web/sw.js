@@ -1,5 +1,5 @@
 const CACHE = "thm-fieldbook-v43";
-const VERSION = "20260710-alias-densidad";
+const VERSION = "20260710-content-depth";
 const ASSETS = [
   "./",
   "./index.html",

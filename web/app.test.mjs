@@ -276,7 +276,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-alias-densidad/);
+  assert.match(asset, /20260710-content-depth/);
 }
 
 assert.match(js, /registration\.update\(\)/);
