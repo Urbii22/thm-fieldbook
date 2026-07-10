@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-bloc-notas";
+const APP_VERSION = "20260710-notas-drawer";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1698,8 +1698,11 @@ function renderNotesMeta() {
   const lines = noteLineCount(state.profile.notes);
   const meta = document.querySelector("[data-notes-meta]");
   if (meta) meta.textContent = `${lines} ${lines === 1 ? "linea" : "lineas"}`;
-  const dot = document.querySelector("[data-note-dot]");
-  if (dot) dot.hidden = lines === 0;
+  const fab = document.querySelector("[data-notes-fab]");
+  if (fab) {
+    fab.textContent = String(lines);
+    fab.hidden = lines === 0;
+  }
 }
 
 function renderNotes() {
@@ -1823,6 +1826,28 @@ function bindRoomPanel() {
       URL.revokeObjectURL(url);
     });
   }
+  const notesDrawer = document.querySelector("[data-notes-drawer]");
+  const notesToggle = document.querySelector("[data-notes-toggle]");
+  const setNotesOpen = (open) => {
+    if (!notesDrawer || !notesToggle) return;
+    if (open) notesDrawer.removeAttribute("hidden");
+    else notesDrawer.setAttribute("hidden", "");
+    notesToggle.setAttribute("aria-expanded", String(open));
+    notesToggle.classList.toggle("active", open);
+    if (open) {
+      const ta = document.querySelector("[data-notes]");
+      if (ta) ta.focus();
+    }
+  };
+  if (notesToggle) {
+    notesToggle.addEventListener("click", () => {
+      setNotesOpen(notesDrawer?.hasAttribute("hidden") ?? false);
+    });
+  }
+  document.querySelector("[data-notes-close]")?.addEventListener("click", () => setNotesOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && notesDrawer && !notesDrawer.hasAttribute("hidden")) setNotesOpen(false);
+  });
   const reset = document.querySelector("[data-reset-room]");
   if (reset) {
     let armed = false;

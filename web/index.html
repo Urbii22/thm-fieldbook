@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260710-bloc-notas" />
+    <link rel="stylesheet" href="./styles.css?v=20260710-notas-drawer" />
   </head>
   <body>
     <div class="scanline" aria-hidden="true"></div>
@@ -46,7 +46,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
             <span>room</span>
             <b class="room-count" data-room-count hidden></b>
-            <span class="room-note-dot" data-note-dot title="Tienes notas guardadas" hidden></span>
           </button>
         </div>
       </div>
@@ -58,17 +57,6 @@
             <p>Se sustituyen en cada comando. Persisten al recargar. Lo que dejes en <b>rojo</b> sigue sin resolver.</p>
           </div>
           <div class="vars" data-vars></div>
-          <div class="notes-block">
-            <div class="notes-head">
-              <h2>Notas / loot</h2>
-              <div class="notes-toolbar">
-                <span class="notes-meta" data-notes-meta>0 lineas</span>
-                <button type="button" class="notes-btn" data-notes-copy title="Copiar todas las notas">copiar</button>
-                <button type="button" class="notes-btn" data-notes-download title="Descargar como .txt">.txt</button>
-              </div>
-            </div>
-            <textarea data-notes rows="7" spellcheck="false" placeholder="Puertos abiertos, hostnames, creds encontradas, siguiente paso... (o pulsa +nota en cualquier comando)"></textarea>
-          </div>
 
           <div class="revshell-block">
             <div class="revshell-head">
@@ -159,6 +147,25 @@
       </section>
     </main>
 
-    <script type="module" src="./app.mjs?v=20260710-bloc-notas"></script>
+    <button type="button" class="notes-fab" data-notes-toggle aria-expanded="false" aria-controls="notesdrawer" title="Bloc de notas de la room">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h6"/></svg>
+      <span>Notas</span>
+      <b class="notes-fab-count" data-notes-fab hidden>0</b>
+    </button>
+
+    <aside class="notes-drawer" id="notesdrawer" data-notes-drawer aria-label="Bloc de notas de la room" hidden>
+      <div class="notes-drawer-head">
+        <h2>Notas / loot</h2>
+        <span class="notes-meta" data-notes-meta>0 lineas</span>
+        <div class="notes-drawer-actions">
+          <button type="button" class="notes-btn" data-notes-copy title="Copiar todas las notas">copiar</button>
+          <button type="button" class="notes-btn" data-notes-download title="Descargar como .txt">.txt</button>
+          <button type="button" class="notes-close" data-notes-close title="Cerrar" aria-label="Cerrar">&#10005;</button>
+        </div>
+      </div>
+      <textarea data-notes spellcheck="false" placeholder="Puertos abiertos, hostnames, creds encontradas, siguiente paso... (o pulsa +nota en cualquier comando)"></textarea>
+    </aside>
+
+    <script type="module" src="./app.mjs?v=20260710-notas-drawer"></script>
   </body>
 </html>

@@ -311,7 +311,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-bloc-notas/);
+  assert.match(asset, /20260710-notas-drawer/);
 }
 
 assert.match(js, /registration\.update\(\)/);
