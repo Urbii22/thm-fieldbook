@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v42";
-const VERSION = "20260710-guia-winprivesc";
+const CACHE = "thm-fieldbook-v43";
+const VERSION = "20260710-alias-densidad";
 const ASSETS = [
   "./",
   "./index.html",

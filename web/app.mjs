@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-guia-winprivesc";
+const APP_VERSION = "20260710-alias-densidad";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -140,6 +140,31 @@ const ALIASES = {
   python: ["library hijacking", "pythonpath", "sys.path", "import", "modulo", "hijack"],
   hijack: ["library hijacking", "python", "pythonpath", "path hijacking"],
   windows: ["winpeas", "powershell", "servicios", "registry", "winrm"],
+
+  // Alias por puerto y por situacion/sintoma (PLAN_IMPLEMENTACION_CONTENIDOS.md
+  // fase 8): buscar "445" o "shell muere" debe llevar a la seccion relevante
+  // aunque el usuario no sepa el nombre de la herramienta.
+  "21": ["ftp", "anonymous", "ftp-enum"],
+  ftp: ["anonymous", "ftp-enum"],
+  "88": ["kerberos", "active directory", "as-rep"],
+  "25": ["smtp", "smtp-enum", "vrfy"],
+  smtp: ["vrfy", "expn", "smtp-enum"],
+  "53": ["dns", "axfr", "dns-enum"],
+  dns: ["axfr", "zona", "dns-enum", "subdominios"],
+  "161": ["snmp", "snmpwalk", "snmp-enum", "community"],
+  snmp: ["snmpwalk", "community", "snmp-enum"],
+  "389": ["ldap", "dominio", "ldap-enum", "naming context"],
+  ldap: ["naming context", "bind anonimo", "ldap-enum"],
+  "2049": ["nfs", "showmount", "nfs-enum", "no_root_squash"],
+  nfs: ["showmount", "no_root_squash", "nfs-enum"],
+  tengo: ["credenciales", "hash", "shell"],
+  muere: ["tty", "estabilizar", "pty", "troubleshooting"],
+  "200": ["wildcard", "ffuf", "filtro", "falso positivo"],
+  denied: ["permisos", "formato de usuario", "credenciales", "acceso denegado"],
+  denegado: ["permisos", "formato de usuario", "credenciales"],
+  reloj: ["kerberos", "clock skew", "sincronizar", "ntpdate"],
+  interno: ["pivoting", "forwarding", "socks", "proxychains"],
+  version: ["cve", "searchsploit", "poc", "exploit"],
 };
 
 const COMMAND_QUERY_TERMS = new Set([
@@ -1033,11 +1058,17 @@ function leftoverCommands(section) {
   return (section.commands || []).filter((command) => !inBlocks.has(String(command).trim()));
 }
 
+// Groups whose title reads as secondary/advanced content start collapsed, so
+// they don't compete with the primary flow for screen space (PLAN_IMPLEMENTACION
+// _CONTENIDOS.md fase 9: "alternativas y contenido avanzado colapsados").
+const SECONDARY_GROUP_RE = /referencia|alternativ|avanzad/i;
+
 function sectionBodyHtml(section) {
   const groups = buildSectionGroups(section);
   const toc = [];
   const parts = [];
   let k = 0;
+  let firstNamedGroupSeen = false;
 
   for (const group of groups) {
     const body = group.blocks
@@ -1050,8 +1081,12 @@ function sectionBodyHtml(section) {
     const id = `sec-grp-${k++}`;
     const count = countGroupCommands(group);
     toc.push({ id, title: group.title, count });
+    // Only the first named group opens by default; secondary/advanced groups
+    // (matched by title) stay closed even if they happen to be first.
+    const openByDefault = !firstNamedGroupSeen && !SECONDARY_GROUP_RE.test(group.title);
+    firstNamedGroupSeen = true;
     parts.push(
-      `<details class="cmd-group" open id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">${escapeHtml(group.title)}</span>${count ? `<b>${count} cmd</b>` : ""}<span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body">${body}</div></details>`,
+      `<details class="cmd-group" ${openByDefault ? "open" : ""} id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">${escapeHtml(group.title)}</span>${count ? `<b>${count} cmd</b>` : ""}<span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body">${body}</div></details>`,
     );
   }
 
@@ -1062,7 +1097,7 @@ function sectionBodyHtml(section) {
     const terms = queryTerms();
     const cards = leftover.map((command) => commandCard(command, { edit: true, terms })).join("");
     parts.push(
-      `<details class="cmd-group" open id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">Mas comandos</span><b>${leftover.length} cmd</b><span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body"><div class="code-stack">${cards}</div></div></details>`,
+      `<details class="cmd-group" id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">Mas comandos</span><b>${leftover.length} cmd</b><span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body"><div class="code-stack">${cards}</div></div></details>`,
     );
   }
 

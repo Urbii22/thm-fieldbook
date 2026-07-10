@@ -226,8 +226,51 @@ for (const guide of content.guides) {
   }
 }
 
+// ---- Search alias guard (PLAN_IMPLEMENTACION_CONTENIDOS.md fase 8) ----
+// Every alias query in the plan's table must return results, and the
+// section it names must actually be reachable (present in the result set),
+// not necessarily #1 — short/generic terms (e.g. plain "version") also match
+// unrelated sections honestly, and the ALIASES fallback only fires when a
+// term has zero score elsewhere, so it cannot out-rank a broad literal hit.
+const ALIAS_QUERIES = [
+  { query: "21", mustInclude: "recon-y-servicios" },
+  { query: "25", mustInclude: "recon-y-servicios" },
+  { query: "53", mustInclude: "recon-y-servicios" },
+  { query: "88", mustInclude: "active-directory" },
+  { query: "161", mustInclude: "recon-y-servicios" },
+  { query: "389", mustInclude: "recon-y-servicios" },
+  { query: "445", mustInclude: "recon-y-servicios" },
+  { query: "2049", mustInclude: "recon-y-servicios" },
+  { query: "tengo hash", mustInclude: "hashes-y-cracking" },
+  { query: "tengo credenciales", mustInclude: "credenciales-y-acceso" },
+  { query: "shell muere", mustInclude: "acceso-inicial" },
+  { query: "todo devuelve 200", mustInclude: "web-discovery" },
+  { query: "access denied", mustInclude: "credenciales-y-acceso" },
+  { query: "reloj", mustInclude: "active-directory" },
+  { query: "servicio interno", mustInclude: "pivoting" },
+  { query: "version", mustInclude: "cve-y-exploits" },
+  // Accent-insensitive equivalence: normalizeQuery strips accents, so the
+  // Spanish spelling must return the identical result set as the ASCII one.
+  { query: "versión", mustInclude: "cve-y-exploits" },
+];
+
+for (const { query, mustInclude } of ALIAS_QUERIES) {
+  const results = filterSections(content.sections, { query, tag: "all", phase: "all" });
+  assert.ok(results.length > 0, `alias query "${query}" no devuelve resultados`);
+  assert.ok(
+    results.some((section) => section.slug === mustInclude),
+    `alias query "${query}" no incluye la seccion esperada "${mustInclude}" (obtuvo: ${results.map((s) => s.slug).join(", ")})`,
+  );
+}
+
+assert.deepEqual(
+  filterSections(content.sections, { query: "version", tag: "all", phase: "all" }).map((s) => s.slug),
+  filterSections(content.sections, { query: "versión", tag: "all", phase: "all" }).map((s) => s.slug),
+  "busqueda con y sin tilde debe devolver el mismo resultado",
+);
+
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-guia-winprivesc/);
+  assert.match(asset, /20260710-alias-densidad/);
 }
 
 assert.match(js, /registration\.update\(\)/);
