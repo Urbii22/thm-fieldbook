@@ -109,7 +109,7 @@ class ExportWebContentTests(unittest.TestCase):
 
         self.assertEqual(
             paths["web-inyecciones-ruta"]["concepts"],
-            ["ssti", "ssrf", "xxe", "xss", "file-upload", "command-injection"],
+            ["ssti", "ssrf", "xxe", "xss", "file-upload", "filtros-incompletos", "command-injection"],
         )
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],

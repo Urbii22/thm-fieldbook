@@ -5,7 +5,7 @@
     "totalCommands": 441,
     "totalTags": 9,
     "totalGuides": 10,
-    "totalConcepts": 66,
+    "totalConcepts": 69,
     "totalPaths": 14
   },
   "tags": [
@@ -6716,6 +6716,135 @@
       ]
     },
     {
+      "id": "keepass-kdbx",
+      "title": "Vaults KeePass (.kdbx)",
+      "phase": "access",
+      "section": "hashes-y-cracking",
+      "summary": "Un .kdbx es un vault cifrado con credenciales de varios servicios: se extrae con autorizacion, se ataca offline y se revisa con contexto.",
+      "que": "KDBX es el formato de base de datos de KeePass. No es un hash de usuario ni una password reutilizable por si mismo: contiene entradas cifradas y protegidas por una master password, archivo-clave u otros factores.",
+      "porque": "Backups, homes de administradores y shares pueden contener vaults de infraestructura. Si recuperas la master password de forma offline, una sola base puede revelar usuarios, passwords, URLs, claves y notas que deben validarse servicio por servicio.",
+      "cuando": "Cuando encuentres un fichero .kdbx en un backup, share, home o repositorio y tengas autorizacion para copiarlo y analizarlo.",
+      "necesitas": [
+        "El fichero .kdbx y permiso para extraerlo al entorno de laboratorio.",
+        "keepass2john o una herramienta equivalente, un diccionario y un visor KeePass compatible."
+      ],
+      "no_aplica": [
+        "No confundas un .kdbx con una credencial lista para probar en SSH/SMB.",
+        "No ataques un vault ni copies datos sensibles fuera del alcance autorizado."
+      ],
+      "confirmacion": "keepass2john produce un hash utilizable y el crack o la master password conocida permite abrir el vault.",
+      "resultado": "Un inventario de entradas con usuario, servicio y secreto; cada una se valida de forma acotada mediante [[credential-reuse]].",
+      "senales": [
+        "Ficheros con extension .kdbx en backups o directorios de usuarios.",
+        "README o notas que mencionan KeePass, vault, infraestructura o backup.",
+        "Una herramienta de hash reconoce la base como KeePass."
+      ],
+      "pasos": [
+        "Copia el vault al equipo de laboratorio y conserva su origen/ruta como evidencia.",
+        "Extrae el hash de la master password y prueba primero un diccionario offline.",
+        "Abre la base solo tras recuperar o recibir la master password autorizada.",
+        "Clasifica cada entrada por servicio y valida una credencial concreta; no hagas spraying indiscriminado."
+      ],
+      "commands": [
+        {
+          "cmd": "keepass2john vault.kdbx > vault.hash",
+          "why": "Convierte la proteccion del vault a un formato que John puede atacar offline.",
+          "out": "Un hash de KeePass en vault.hash; si no se genera, revisa la herramienta y el tipo de vault."
+        },
+        {
+          "cmd": "john --wordlist=/usr/share/wordlists/rockyou.txt vault.hash",
+          "why": "Prueba una master password con un diccionario sin interactuar mas con el objetivo.",
+          "out": "Password recuperada o resultado negativo para orientar una pista mejor."
+        },
+        {
+          "cmd": "keepassxc-cli ls vault.kdbx",
+          "why": "Lista las entradas del vault despues de desbloquearlo para clasificar que servicio representa cada una.",
+          "out": "Grupos y nombres de entradas; revisa secretos solo dentro del alcance autorizado."
+        }
+      ]
+    },
+    {
+      "id": "fingerprinting-servicios",
+      "title": "Fingerprinting antes que el nombre del puerto",
+      "phase": "recon",
+      "section": "recon-y-servicios",
+      "summary": "El nombre asignado a un puerto es una pista, no una identidad: confirma protocolo, producto y version antes de elegir la enumeracion.",
+      "que": "IANA y Nmap pueden asociar un puerto a un nombre habitual, pero cualquier proceso puede escuchar ahi. Fingerprinting es identificar lo que realmente responde mediante handshake, cabeceras, banner, TLS y deteccion de version.",
+      "porque": "Asumir que 5050 es 'mmcc' puede hacer que ignores una web Flask o Werkzeug. El servicio real determina tus siguientes pruebas: HTTP se enumera con rutas, formularios y cabeceras; SSH con usuarios y credenciales; no con el nombre historico del puerto.",
+      "cuando": "Siempre que encuentres un puerto no estandar, un banner incompleto o una asociacion de Nmap que no encaje con la respuesta observada.",
+      "necesitas": [
+        "IP y puerto abiertos.",
+        "Una comprobacion de version o de protocolo antes de elegir herramientas especificas."
+      ],
+      "no_aplica": [
+        "No sustituyas una identificacion de version fiable por el nombre del puerto.",
+        "No concluyas que un servicio esta ausente solo porque no usa su puerto por defecto."
+      ],
+      "confirmacion": "Nmap -sV, curl o una conexion de protocolo devuelve una respuesta coherente con el servicio real.",
+      "resultado": "Tienes protocolo, producto y version para decidir la enumeracion y buscar vulnerabilidades aplicables.",
+      "senales": [
+        "Un puerto alto o raro responde con cabeceras HTTP.",
+        "El nombre de servicio de Nmap no coincide con el banner o con el comportamiento.",
+        "-sV identifica un producto/framework distinto de la asociacion por puerto."
+      ],
+      "pasos": [
+        "Registra el puerto abierto sin asumir su funcion.",
+        "Ejecuta deteccion de version y observa la respuesta de protocolo.",
+        "Enumera segun el servicio confirmado y no segun el alias del puerto.",
+        "Guarda producto y version exactos como evidencia para el siguiente paso."
+      ],
+      "commands": [
+        {
+          "cmd": "nmap -sC -sV -Pn -p <PUERTO> $IP",
+          "why": "Confirma que habla realmente el puerto y recoge scripts/banners utiles.",
+          "out": "Servicio, producto, version y pistas como titulos HTTP o certificados."
+        },
+        {
+          "cmd": "curl -i http://$IP:<PUERTO>/",
+          "why": "Una comprobacion HTTP directa separa una aplicacion web real de una etiqueta de puerto equivocada.",
+          "out": "Status, cabeceras y posiblemente framework o rutas a enumerar."
+        }
+      ]
+    },
+    {
+      "id": "filtros-incompletos",
+      "title": "Filtros incompletos y normalizacion de entrada",
+      "phase": "enumeration",
+      "section": "web-inyecciones",
+      "summary": "Bloquear unos pocos caracteres no elimina una inyeccion: valida la estructura permitida despues de decodificar y normalizar la entrada.",
+      "que": "Un filtro incompleto bloquea simbolos concretos (;, |, &, etc.) pero deja otras representaciones o separadores que el backend interpreta despues de URL-decodificar. La seguridad no puede depender de una lista negra de caracteres.",
+      "porque": "La aplicacion puede validar el texto codificado y despues convertir %0A en un salto de linea; para una shell Unix, ese LF separa comandos. El fallo sigue siendo que la entrada controla una cadena ejecutada por una shell, no que falte un simbolo en la lista negra.",
+      "cuando": "Cuando una funcion administrativa concatena entrada en comandos del sistema y responde de manera distinta tras URL encoding, espacios, saltos de linea u otras normalizaciones.",
+      "necesitas": [
+        "Un campo que llegue a una operacion del sistema y un entorno autorizado para probarlo.",
+        "Una prueba inocua y visible (id, whoami o hostname) para confirmar sin alterar estado."
+      ],
+      "no_aplica": [
+        "No intentes evadir filtros fuera de un laboratorio o alcance autorizado.",
+        "No aplica si la app valida una IP con una libreria tipada y ejecuta argumentos como lista sin shell."
+      ],
+      "confirmacion": "Una variante codificada que pasa el filtro se normaliza en el backend y produce una salida inocua observable.",
+      "resultado": "Distingues un filtro cosmetico de una validacion estructural y sabes documentar el separador aceptado.",
+      "senales": [
+        "La respuesta bloquea algunos caracteres pero no todos los separadores del shell.",
+        "El valor llega por URL o formulario y el servidor lo decodifica antes de ejecutar.",
+        "Hay limite de longitud, pero no una validacion estricta de IP/hostname."
+      ],
+      "pasos": [
+        "Confirma primero el flujo normal y guarda la respuesta de referencia.",
+        "Prueba una unica variacion inocua dentro de los limites del laboratorio.",
+        "Comprueba si el backend decodifica o normaliza antes de invocar el sistema.",
+        "Tras confirmar, prioriza lectura acotada de configuracion o evidencia visible; una reverse shell no es necesaria si ya tienes salida."
+      ],
+      "commands": [
+        {
+          "cmd": "target=127.0.0.1%0Aid",
+          "why": "En un laboratorio vulnerable, verifica si %0A se decodifica a LF y actua como separador de comandos.",
+          "out": "La salida de id junto a la respuesta de ping confirma que el filtro era incompleto."
+        }
+      ]
+    },
+    {
       "id": "command-injection",
       "title": "Command Injection (inyeccion de comandos de SO)",
       "phase": "enumeration",
@@ -6742,8 +6871,8 @@
       "pasos": [
         "Identifica el campo que sospechas que llega a una llamada de sistema.",
         "Confirma con un comando inocuo primero (id/whoami/hostname); si no ves output, usa sleep/ping hacia tu maquina para confirmar a ciegas.",
-        "Prueba distintos separadores segun el shell del backend: ; && | ` $() en Linux, & | en Windows cmd.",
-        "Confirmada la ejecucion, escala a una reverse shell: mira [[reverse-vs-bind]]."
+        "Si hay una blacklist parcial, revisa [[filtros-incompletos]] y como normaliza la entrada antes de ejecutar.",
+        "Si la salida ya es visible, prioriza una lectura acotada de configuracion o una credencial reutilizable; solo pasa a [[reverse-vs-bind]] si una shell aporta algo."
       ],
       "commands": [
         {
@@ -7500,6 +7629,7 @@
         "xxe",
         "xss",
         "file-upload",
+        "filtros-incompletos",
         "command-injection"
       ]
     },
@@ -7560,6 +7690,7 @@
       "summary": "La primera fase de toda room: de puertos a servicios identificados, antes de enumerar cada uno.",
       "concepts": [
         "recon-metodologia",
+        "fingerprinting-servicios",
         "tcp-vs-udp"
       ]
     },
@@ -7584,6 +7715,7 @@
       "summary": "Conseguir credenciales: fuerza bruta online a un login, o crackear un hash offline; y sobre todo reutilizarlas.",
       "concepts": [
         "secrets-and-loot",
+        "keepass-kdbx",
         "cracking",
         "fuerza-bruta-online",
         "credential-reuse"
