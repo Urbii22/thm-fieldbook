@@ -227,7 +227,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-privesc-rutas/);
+  assert.match(asset, /20260710-web-concepts/);
 }
 
 assert.match(js, /registration\.update\(\)/);

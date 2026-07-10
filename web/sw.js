@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v39";
-const VERSION = "20260710-privesc-rutas";
+const CACHE = "thm-fieldbook-v40";
+const VERSION = "20260710-web-concepts";
 const ASSETS = [
   "./",
   "./index.html",
