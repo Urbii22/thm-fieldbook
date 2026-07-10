@@ -184,6 +184,7 @@ for (const concept of content.concepts) {
 }
 
 const pathIds = new Set();
+const conceptsInPaths = new Set();
 for (const path of content.paths) {
   assert.ok(path.id, "ruta sin id");
   assert.ok(!pathIds.has(path.id), `id de ruta duplicado: ${path.id}`);
@@ -192,11 +193,20 @@ for (const path of content.paths) {
   assert.ok(Array.isArray(path.concepts) && path.concepts.length);
   for (const id of path.concepts) {
     assert.ok(conceptIds.has(id), `ruta ${path.id} referencia concepto inexistente: ${id}`);
+    conceptsInPaths.add(id);
   }
 }
 
-// Guides share the same command shape; validate it too.
+// Every concept must belong to at least one ruta, or it is unreachable from
+// the guided "Conceptos relacionados" / ruta-stepper navigation.
+for (const concept of content.concepts) {
+  assert.ok(conceptsInPaths.has(concept.id), `concepto huerfano (sin ruta): ${concept.id}`);
+}
+
+// Guides share the same command shape; validate it too, plus that guide.section
+// points at a real practice section.
 for (const guide of content.guides) {
+  assert.ok(sectionSlugs.has(guide.section), `guia ${guide.id} apunta a seccion inexistente: ${guide.section}`);
   for (const step of guide.steps) {
     for (const command of step.commands || []) {
       assert.ok(isValidCommand(command), `guia ${guide.id} con comando invalido`);

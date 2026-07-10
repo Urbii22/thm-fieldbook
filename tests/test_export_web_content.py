@@ -116,6 +116,19 @@ class ExportWebContentTests(unittest.TestCase):
         self.assertEqual(phases["Windows privesc"], "privesc")
         self.assertEqual(phases["Pivoting"], "pivot")
 
+    def test_every_concept_belongs_to_a_ruta(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        concept_ids = {c["id"] for c in payload["concepts"]}
+        in_paths = {cid for p in payload["paths"] for cid in p["concepts"]}
+        orphans = concept_ids - in_paths
+        self.assertFalse(orphans, f"conceptos huerfanos (sin ruta): {sorted(orphans)}")
+
+    def test_every_guide_section_exists(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        section_slugs = {s["slug"] for s in payload["sections"]}
+        for guide in payload["guides"]:
+            self.assertIn(guide["section"], section_slugs, f"guia {guide['id']} apunta a seccion inexistente")
+
     def test_curated_tags_keep_filters_focused(self):
         payload = export_web_content.build_payload(
             [
