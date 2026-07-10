@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260709-review-fixes";
+const APP_VERSION = "20260710-plantilla-minima";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1771,7 +1771,10 @@ function conceptMatches(concept, terms) {
       concept.que,
       concept.porque,
       concept.cuando,
+      concept.confirmacion,
+      concept.resultado,
       ...(concept.necesitas || []),
+      ...(concept.no_aplica || []),
       ...(concept.senales || []),
       ...(concept.pasos || []),
       ...(concept.commands || []).map(commandText),
@@ -1787,16 +1790,19 @@ function conceptPageHtml(concept, terms) {
     ? `<button type="button" class="guide-goto" data-goto-section="${escapeHtml(concept.section)}">Ver comandos de esta fase &rarr;</button>`
     : "";
   const block = (title, body) => (body ? `<section class="concept-block"><h3>${title}</h3><p>${body}</p></section>` : "");
-  const necesitas = (concept.necesitas || []).length
-    ? `<section class="concept-block concept-needs"><h3>Necesitas</h3><ul class="concept-needs-list">${concept.necesitas
-        .map((item) => `<li>${prose(item)}</li>`)
-        .join("")}</ul></section>`
-    : "";
-  const senales = (concept.senales || []).length
-    ? `<section class="concept-block"><h3>Que senales lo delatan</h3><ul class="concept-signals">${concept.senales
-        .map((item) => `<li>${prose(item)}</li>`)
-        .join("")}</ul></section>`
-    : "";
+  const list = (title, items, cls) =>
+    (items || []).length
+      ? `<section class="concept-block ${cls || ""}"><h3>${title}</h3><ul class="concept-signals">${items
+          .map((item) => `<li>${prose(item)}</li>`)
+          .join("")}</ul></section>`
+      : "";
+  // Quick-scan block: what this needs, how to test it cheaply, and what
+  // confirms it, all above the fold before the deep explanation.
+  const necesitas = list("Necesitas", concept.necesitas, "concept-needs");
+  const confirmacion = block("Confirmacion minima", prose(concept.confirmacion));
+  const resultado = block("Resultado esperado", prose(concept.resultado));
+  const noAplica = list("Cuando NO aplica", concept.no_aplica, "concept-no-aplica");
+  const senales = list("Que senales lo delatan", concept.senales);
   const pasos = (concept.pasos || []).length
     ? `<section class="concept-block"><h3>Pasos</h3><ol class="concept-steps">${concept.pasos
         .map((item) => `<li>${prose(item)}</li>`)
@@ -1831,9 +1837,13 @@ function conceptPageHtml(concept, terms) {
       ${gotoBtn}
     </header>
     ${necesitas}
+    ${confirmacion}
+    ${resultado}
+    <hr class="concept-divider" />
     ${block("Que es", prose(concept.que))}
     ${block("Por que ocurre", prose(concept.porque))}
     ${block("Cuando aplica", prose(concept.cuando))}
+    ${noAplica}
     ${senales}
     ${pasos}
     ${cmdBlock}

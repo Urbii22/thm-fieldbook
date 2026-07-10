@@ -2302,15 +2302,7 @@ tr:last-child td {
   color: var(--amber, #d9a441);
 }
 
-.concept-needs-list {
-  margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 5px;
-  line-height: 1.5;
-}
-
-.concept-needs-list li::marker {
+.concept-needs .concept-signals li::marker {
   content: "\2713  ";
   color: var(--amber, #d9a441);
 }
@@ -2322,6 +2314,21 @@ tr:last-child td {
   display: grid;
   gap: 6px;
   line-height: 1.55;
+}
+
+.concept-no-aplica h3 {
+  color: var(--coral, #e06868);
+}
+
+.concept-no-aplica .concept-signals li::marker {
+  content: "\2717  ";
+  color: var(--coral, #e06868);
+}
+
+.concept-divider {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid var(--line-soft);
 }
 
 .cmd-with-note {

@@ -4174,6 +4174,13 @@
       "que": "Una LFI ocurre cuando una pagina construye la ruta de un fichero a incluir usando un valor que viene del usuario (tipicamente un parametro como ?page=), sin comprobar que ese valor sea uno de los permitidos. El servidor entonces lee y a veces ejecuta el fichero que tu le pidas, no el que el programador esperaba.",
       "porque": "El codigo hace algo como include($_GET['page'].'.php'). El programador asume que page siempre sera 'home' o 'about', pero nada lo obliga. Si metes ../../../../etc/passwd, la funcion de inclusion resuelve esa ruta relativa y sirve el fichero. La causa raiz es confiar en la entrada del usuario para decidir que fichero abrir.",
       "cuando": "Sospecha LFI en cualquier parametro que parezca nombrar una vista, una plantilla, un idioma o un documento: page, file, view, template, lang, doc, include. Sobre todo si el valor aparece reflejado en la URL y el contenido de la pagina cambia segun ese valor.",
+      "no_aplica": [
+        "El parametro no cambia el contenido de la pagina aunque le mandes ../ o rutas absolutas.",
+        "La app usa una lista blanca de vistas validas y rechaza cualquier valor fuera de ella.",
+        "El framework normaliza/sanea la ruta antes de tocar el filesystem (basename, whitelist)."
+      ],
+      "confirmacion": "Pide /etc/passwd con suficientes ../ (o su ruta absoluta si el include no es relativo).",
+      "resultado": "Lineas que empiezan por root:x:0:0 en la respuesta. Un error de include con una ruta absoluta tambien cuenta como confirmacion parcial.",
       "necesitas": [
         "Un parametro que la pagina use para nombrar un fichero (page, file, view, template, lang, doc).",
         "Poder inyectar ../ o rutas; si el codigo anade una extension (.php), un wrapper como php://filter para leer el fuente."
@@ -4212,6 +4219,18 @@
       "que": "Es el salto de 'puedo leer' a 'puedo ejecutar'. Una [[lfi]] por si sola solo lee, pero si consigues que el fichero incluido contenga codigo PHP que tu has metido antes, ese codigo se ejecuta con los permisos del servidor web y obtienes ejecucion remota de comandos.",
       "porque": "include no solo lee: interpreta PHP. Si logras escribir <?php system($_GET['c']); ?> en algun sitio del servidor y luego apuntas la LFI a ese sitio, el include ejecuta tu payload. Los sitios clasicos donde puedes 'inyectar' ese contenido son ficheros que el servidor escribe con datos tuyos: logs de acceso, ficheros de sesion, cabeceras guardadas o subidas de fichero mal filtradas.",
       "cuando": "Cuando ya confirmaste lectura con LFI y ademas existe algun fichero cuyo contenido puedas influir: el User-Agent acaba en un access.log legible, hay ficheros de sesion en /var/lib/php, o hay un formulario de subida. Sin un punto de inyeccion controlable, la LFI se queda en lectura.",
+      "necesitas": [
+        "Una [[lfi]] confirmada.",
+        "Un fichero cuyo contenido puedas influir: access.log (via User-Agent), una sesion PHP, o un upload sin filtrar.",
+        "Saber la ruta exacta de ese fichero en el servidor."
+      ],
+      "no_aplica": [
+        "No hay ningun fichero en el servidor cuyo contenido controles (logs no legibles, sin uploads, sin sesiones en disco).",
+        "El servidor no interpreta PHP en el fichero incluido (p.ej. solo lo muestra como texto).",
+        "open_basedir u otra restriccion impide llegar a la ruta del fichero envenenado."
+      ],
+      "confirmacion": "Manda un User-Agent con PHP minimo (<?php system($_GET['c']); ?>) y luego incluye el access.log con ?c=id.",
+      "resultado": "La salida de id aparece incrustada entre las lineas del log. Eso confirma ejecucion, no solo lectura.",
       "senales": [
         "Puedes leer un log (access.log, auth.log) via la LFI: el log refleja datos que tu envias, como el User-Agent.",
         "Existe una subida de ficheros que no valida bien la extension o el contenido.",
@@ -4240,6 +4259,13 @@
       "que": "Una SQLi ocurre cuando la aplicacion construye una consulta SQL concatenando texto que viene del usuario. Como el motor no distingue tu 'dato' del 'codigo' de la consulta, puedes cerrar la cadena original e inyectar tu propia logica: saltarte un login, volcar tablas o, segun el motor, ejecutar comandos.",
       "porque": "El codigo hace query = \"SELECT * FROM users WHERE name='\" + input + \"'\". Si tu input es ' OR '1'='1, la consulta final siempre es verdadera. La causa raiz es la misma que en [[lfi]]: mezclar datos no confiables con la instruccion, en vez de usar consultas parametrizadas que separan ambos.",
       "cuando": "En cualquier campo que alimente una busqueda, un login, un filtro o un id: formularios, parametros de URL, cabeceras. Sospecha si al meter una comilla la aplicacion se rompe o cambia de comportamiento.",
+      "no_aplica": [
+        "El campo usa consultas parametrizadas/prepared statements (la comilla no rompe nada y el comportamiento no cambia).",
+        "El valor se valida contra un tipo estricto (entero, enum) antes de llegar a la consulta.",
+        "El ORM escapa o tipa la entrada automaticamente sin concatenar SQL crudo."
+      ],
+      "confirmacion": "Anade una comilla simple ' al parametro y compara la respuesta con la peticion normal.",
+      "resultado": "Un error de sintaxis SQL, una pagina 500, o un cambio de comportamiento (mas filas, login sin password) frente a la peticion sin comilla.",
       "necesitas": [
         "Un campo que llegue a una consulta SQL: parametro de URL, formulario, cabecera o id.",
         "Ver como reacciona a una comilla ' (error o cambio); para extraer por UNION, el numero de columnas.",
@@ -4274,6 +4300,13 @@
       "que": "Una bind shell abre un puerto EN LA VICTIMA y tu te conectas a el. Una reverse shell hace lo contrario: la victima se conecta HACIA TI, a un listener que tienes abierto. En ambos casos acabas con una shell del objetivo, pero la direccion de la conexion cambia cual es viable.",
       "porque": "Los firewalls casi siempre bloquean conexiones entrantes a la victima pero permiten las salientes. Por eso la reverse shell (victima -> atacante) funciona donde la bind shell (atacante -> victima) falla: la conexion de salida rara vez esta filtrada. Por defecto, piensa siempre en reverse.",
       "cuando": "Reverse: el caso normal, sobre todo si la victima esta tras NAT o firewall. Bind: solo cuando TU no puedes recibir conexiones (estas tras NAT sin port-forward) pero la victima si acepta entrantes. Tras conseguirla, casi siempre toca [[tty-stabilization]].",
+      "no_aplica": [
+        "No tienes ejecucion de comandos todavia: primero hace falta un vector de RCE.",
+        "Un firewall de salida bloquea el puerto que elegiste (usa uno comun: 443, 53, 80).",
+        "AV/EDR en la victima bloquea el binario o el payload antes de conectar."
+      ],
+      "confirmacion": "Levanta el listener y dispara el payload contra tu propio LHOST/puerto antes de nada mas.",
+      "resultado": "El listener muestra 'connect to ... from ...' y un prompt de shell de la victima.",
       "necesitas": [
         "Ejecucion de comandos en la victima (RCE, una inyeccion, un exploit).",
         "Tu IP de atacante (la de la VPN/tun0, no la local) como LHOST y un puerto libre.",
@@ -4307,6 +4340,16 @@
       "que": "Una reverse shell recien llegada no es una terminal de verdad: no tiene TTY. Eso significa sin autocompletado, sin historial, sin flechas, y Ctrl+C mata TODA la shell en vez de el comando actual. Estabilizar es darle una pseudo-TTY para trabajar como en una terminal normal.",
       "porque": "Programas como su, ssh, sudo, passwd o los editores exigen un TTY y fallan ('must be run from a terminal') en una shell tonta. Ademas, sin estabilizar, un Ctrl+C accidental te deja fuera y hay que repetir todo el acceso. Estabilizar temprano ahorra sustos.",
       "cuando": "Justo despues de recibir una [[reverse-vs-bind]] shell en Linux, antes de ponerte a enumerar privesc. En Windows el concepto no aplica igual (se suele saltar a evil-winrm o a una shell de Meterpreter).",
+      "necesitas": [
+        "Una shell remota ya conectada (reverse o bind).",
+        "python, python3, script o socat disponible en la victima para la pseudo-TTY."
+      ],
+      "no_aplica": [
+        "Ya tienes una shell completa (SSH, evil-winrm, Meterpreter con pty propio): no hace falta estabilizar.",
+        "La victima no tiene ningun interprete (python/perl/script) para crear la pseudo-TTY: usa socat o resignate a la shell tonta."
+      ],
+      "confirmacion": "Lanza el pty.spawn de python y prueba Ctrl+C o las flechas del historial.",
+      "resultado": "El prompt cambia a usuario@host, Ctrl+C mata solo el comando actual (no la shell), y las flechas navegan el historial.",
       "senales": [
         "El prompt no muestra usuario@host, o es un simple $ sin mas.",
         "Las flechas imprimen ^[[A en vez de moverse por el historial.",
@@ -4340,6 +4383,15 @@
       "que": "Escalar privilegios es encontrar un punto donde un proceso o usuario mas poderoso (normalmente root) depende de algo que tu puedes modificar o influir: un binario, un script, una ruta, un fichero de config, una variable de entorno. No es magia ni un exploit unico: es esa relacion de confianza rota.",
       "porque": "Los sistemas ejecutan tareas privilegiadas continuamente (cron, servicios, binarios SUID). Si cualquiera de esas tareas toca algo escribible o controlable por tu usuario, heredas su privilegio. La causa raiz siempre es una frontera de confianza mal puesta.",
       "cuando": "Siempre que tengas una shell de usuario normal y quieras root. Antes de explotar toca enumerar de forma sistematica ([[enum-privesc-linux]]): [[sudo-abuse]], [[suid]] y [[cron-abuse]] son los vectores mas comunes, pero hay muchos mas (capabilities, PATH, wildcard, grupos, NFS, kernel); empieza por los rapidos.",
+      "necesitas": [
+        "Una shell de usuario normal en la maquina."
+      ],
+      "no_aplica": [
+        "Ya eres root/uid=0: no hay nada que escalar.",
+        "No tienes ninguna forma de ejecutar comandos todavia (esto es post-shell, no acceso inicial)."
+      ],
+      "confirmacion": "id; groups; sudo -l como primer barrido.",
+      "resultado": "Un grupo peligroso (docker/lxd/disk), una entrada NOPASSWD en sudo, o un binario SUID no estandar.",
       "senales": [
         "Perteneces a un grupo potente (docker, lxd, disk, adm): a menudo es root casi directo.",
         "Existe un binario, script o tarea que corre como root y que tu puedes leer o escribir.",
@@ -4368,6 +4420,12 @@
       "que": "El bit SUID hace que un ejecutable corra siempre como su propietario, sin importar quien lo lance. Si el dueno es root y el binario permite ejecutar comandos, leer/escribir ficheros o lanzar otra shell, puedes abusar de el para actuar como root. Es una aplicacion directa del [[privesc-modelo]].",
       "porque": "SUID existe para casos legitimos (passwd necesita tocar /etc/shadow). El problema es cuando un binario con SUID tiene una funcion que permite salir a una shell o leer ficheros arbitrarios: entonces esa capacidad se ejecuta como root. GTFOBins cataloga exactamente que binarios son abusables y como.",
       "cuando": "En la fase de privesc Linux, justo despues de mirar [[sudo-abuse]]. Busca binarios SUID que NO sean del sistema base o cuya version sea conocida por ser abusable.",
+      "no_aplica": [
+        "Todos los SUID listados son binarios estandar del sistema sin funcion de escape conocida en GTFOBins.",
+        "El binario SUID es de tu propio usuario (dueno = tu uid, no root): no gana privilegio."
+      ],
+      "confirmacion": "Busca el binario candidato en GTFOBins (seccion SUID) y ejecuta su linea de abuso exacta.",
+      "resultado": "Un prompt nuevo con # en vez de $, y euid=0 en id.",
       "necesitas": [
         "Una shell de usuario en la maquina.",
         "Un binario con bit SUID que NO sea del sistema base (o uno abusable segun GTFOBins)."
@@ -4400,6 +4458,15 @@
       "que": "sudo permite a un usuario ejecutar comandos concretos como otro (normalmente root). Si tu usuario tiene permitido ejecutar un binario que ademas puede lanzar una shell, leer/escribir ficheros o ejecutar codigo, ese permiso puntual se convierte en root total. Otra cara del [[privesc-modelo]].",
       "porque": "El admin concede sudo sobre un binario pensando que solo hace su funcion, pero muchos binarios tienen funciones secundarias (un editor puede abrir una shell, less puede ejecutar comandos). GTFOBins lista para cada uno como escapar. Ademas fallos como env_keep o rutas relativas amplian el abuso.",
       "cuando": "Es lo PRIMERO que se mira en privesc Linux por su alta rentabilidad. En cuanto tengas una shell estable ([[tty-stabilization]]), lanza sudo -l.",
+      "necesitas": [
+        "Una shell de usuario con acceso a sudo (aunque sea sobre un solo binario)."
+      ],
+      "no_aplica": [
+        "sudo -l pide password y no la tienes.",
+        "El binario permitido no aparece en GTFOBins y no tiene funcion de escape conocida (editor sin !shell, etc)."
+      ],
+      "confirmacion": "Ejecuta sudo -l y busca cada binario listado en GTFOBins bajo 'sudo'.",
+      "resultado": "Lineas '(root) NOPASSWD: /ruta/binario'. Tras aplicar la receta de GTFOBins, un prompt # con uid=0.",
       "senales": [
         "sudo -l muestra entradas '(root) NOPASSWD: /ruta/bin' (ni siquiera piden password).",
         "El binario permitido aparece en GTFOBins bajo 'sudo'.",
@@ -4433,6 +4500,16 @@
       "que": "cron ejecuta tareas programadas, a menudo como root. Si una de esas tareas llama a un script, binario o ruta que tu usuario puede escribir (o si usa comodines o rutas relativas manipulables), puedes inyectar tu propio comando y esperar a que cron lo ejecute con privilegios. Es el [[privesc-modelo]] aplicado al tiempo.",
       "porque": "Los admins programan mantenimiento (backups, limpiezas) como root y a veces dejan el script en una ruta escribible por otros, o usan comodines (tar *) que un atacante puede secuestrar creando ficheros con nombres especiales. cron lo ejecuta tal cual, sin validar quien toco el script.",
       "cuando": "Cuando sudo ([[sudo-abuse]]) y SUID ([[suid]]) no dieron nada. cron es mas lento porque hay que esperar a que la tarea corra, pero es un vector muy comun en rooms.",
+      "necesitas": [
+        "Lectura de /etc/crontab, /etc/cron.d o del crontab del usuario objetivo.",
+        "Un script/binario invocado por esa tarea que tu usuario pueda escribir (directo, por wildcard, o por PATH)."
+      ],
+      "no_aplica": [
+        "Ninguna tarea root referencia un script o ruta que puedas escribir.",
+        "Los scripts invocados usan rutas absolutas y permisos correctos (root:root, 700) sin comodines."
+      ],
+      "confirmacion": "Comprueba con ls -l si el script que ejecuta root es escribible por tu usuario o grupo.",
+      "resultado": "Permiso de escritura (w) para ti en el script; tras inyectar tu payload y esperar el ciclo de cron, una shell/binario root.",
       "senales": [
         "Un script referenciado en cron es escribible por tu usuario o su grupo.",
         "La tarea usa una ruta relativa o un comodin (*) en un directorio donde puedes crear ficheros.",
@@ -4466,6 +4543,15 @@
       "que": "SMB (445, y 139) es el protocolo de comparticion de ficheros de Windows. Enumerarlo consiste en listar sus shares (carpetas compartidas), ver a cuales puedes acceder sin o con credenciales, y sacar informacion del sistema y del dominio. Es una de las superficies mas rentables en rooms Windows/AD.",
       "porque": "Muchas configuraciones permiten sesion nula o de invitado, dejando shares legibles con backups, configs o credenciales. Y aunque no haya acceso anonimo, SMB filtra el nombre del equipo, el dominio y a veces la lista de usuarios, que alimentan el resto del ataque (spraying, [[kerberos]]).",
       "cuando": "Siempre que el recon muestre 445 abierto. Es de las primeras cosas a enumerar; en un DC ademas se combina con LDAP y Kerberos ([[ad-modelo]]).",
+      "necesitas": [
+        "El puerto 445 (o 139) abierto en el objetivo."
+      ],
+      "no_aplica": [
+        "SMB firmado y sin sesion nula/guest, y no tienes ninguna credencial que probar.",
+        "El servicio en 445 no es realmente SMB (honeypot o servicio remapeado)."
+      ],
+      "confirmacion": "nxc smb $IP -u '' -p '' --shares para probar sesion nula.",
+      "resultado": "Columna READ/WRITE por share; un READ fuera de IPC$ es acceso real. El header confirma nombre de equipo y dominio.",
       "senales": [
         "nmap marca 445/tcp open microsoft-ds o el script smb saca el dominio.",
         "Un share con permiso READ que no sea IPC$ (a menudo backups, transfer, dev).",
@@ -4499,6 +4585,15 @@
       "que": "Active Directory es el directorio que gestiona usuarios, equipos y permisos de una red Windows. Atacarlo no va de un exploit puntual, sino de conseguir una identidad (un usuario) y usar sus permisos para conseguir otra mas fuerte, repitiendo hasta llegar a Domain Admin o al hash de krbtgt.",
       "porque": "AD esta hecho de relaciones de confianza (grupos, delegaciones, ACLs, sesiones). Cada credencial abre nuevas relaciones que explotar. Por eso la mentalidad es distinta: importa mas el grafo de permisos ([[bloodhound]] lo mapea) que la version de un servicio.",
       "cuando": "En cuanto el recon confirme un DC (puertos 88 Kerberos + 389 LDAP + 445). El trabajo previo imprescindible es resolver nombres y hora, o Kerberos falla con errores confusos.",
+      "necesitas": [
+        "Un DC accesible (puertos 88/389/445 tipicamente)."
+      ],
+      "no_aplica": [
+        "El objetivo es una maquina Windows standalone sin dominio (no hay 88/389 abiertos).",
+        "No tienes ninguna via de conseguir un primer usuario (sin acceso anonimo, sin usuarios enumerables)."
+      ],
+      "confirmacion": "Escanea los puertos tipicos de DC y confirma que 88 (Kerberos) responde.",
+      "resultado": "88+389+445 abiertos en el mismo host, y los scripts de nmap/enum filtran el nombre del dominio.",
       "senales": [
         "Puertos 88, 389, 445, 636, 3268 abiertos en el mismo host.",
         "nmap/enum filtra un nombre de dominio (algo.local) y el hostname del DC.",
@@ -4527,6 +4622,15 @@
       "que": "Kerberos es como AD autentica sin mandar la password por la red. Al iniciar sesion, el usuario obtiene un TGT (ticket para pedir tickets) del DC. Luego, para usar un servicio, cambia el TGT por un TGS (ticket de servicio). Todo gira en torno a tickets cifrados con claves derivadas de passwords.",
       "porque": "Porque esos tickets van cifrados con la clave del usuario o del servicio, y se pueden pedir en situaciones que permiten crackearlos offline: eso es lo que explotan [[asrep-kerberoast]]. Ademas, si robas o falsificas tickets, te haces pasar por otro sin su password.",
       "cuando": "Es teoria de apoyo para la fase AD ([[ad-modelo]]). No hace falta dominarla para atacar, pero entender TGT/TGS te dice por que funcionan los ataques de roasting y de tickets.",
+      "necesitas": [
+        "Puerto 88 (Kerberos) abierto: confirma que estas en un dominio AD."
+      ],
+      "no_aplica": [
+        "No es un entorno AD (no hay puerto 88): Kerberos no aplica.",
+        "Tu reloj y el del DC estan sincronizados y no ves errores de skew: no hace falta tocar nada aqui."
+      ],
+      "confirmacion": "Sincroniza tu reloj con el DC si ves KRB_AP_ERR_SKEW en cualquier herramienta de Kerberos.",
+      "resultado": "El error de clock skew desaparece y las herramientas de impacket dejan de fallar por tiempo.",
       "senales": [
         "Puerto 88 abierto: hay Kerberos y por tanto un DC.",
         "Errores 'KRB_AP_ERR_SKEW' = tu reloj esta desincronizado con el DC.",
@@ -4555,6 +4659,15 @@
       "que": "Son dos ataques que piden tickets de [[kerberos]] y se quedan con la parte cifrada para crackearla offline. AS-REP roasting funciona contra usuarios con la preautenticacion desactivada y no necesita credenciales. Kerberoasting pide tickets de cuentas de servicio (con SPN) y requiere una credencial de dominio cualquiera.",
       "porque": "El ticket va cifrado con una clave derivada de la password del usuario o de la cuenta de servicio. Si esa password es debil, la crackeas offline sin tocar el DC (sin riesgo de bloqueo). Las cuentas de servicio suelen tener passwords viejas y privilegios altos: premio doble.",
       "cuando": "AS-REP: en cuanto tengas una lista de usuarios ([[smb-enum]]), aunque no tengas password. Kerberoast: en cuanto consigas UNA credencial valida. Ambos encajan en la fase AD ([[ad-modelo]]).",
+      "necesitas": [
+        "AS-REP: una lista de usuarios (sin credenciales). Kerberoast: una credencial de dominio cualquiera."
+      ],
+      "no_aplica": [
+        "AS-REP: ningun usuario tiene la preautenticacion desactivada (GetNPUsers no devuelve nada).",
+        "Kerberoast: no hay cuentas de servicio con SPN registrado en el dominio."
+      ],
+      "confirmacion": "Lanza GetNPUsers -no-pass (AS-REP) o GetUserSPNs -request con una credencial (Kerberoast).",
+      "resultado": "Un hash $krb5asrep$ o $krb5tgs$ en la salida. Sin hash, ese vector concreto no aplica en este dominio.",
       "senales": [
         "GetNPUsers devuelve hashes $krb5asrep$ (hay usuarios sin preauth).",
         "GetUserSPNs lista cuentas de servicio con SPN y devuelve $krb5tgs$.",
@@ -4588,6 +4701,15 @@
       "que": "Windows guarda las passwords como hashes NTLM. Para muchos protocolos de autenticacion, el hash ES la credencial: si lo tienes, puedes autenticarte SIN conocer la password en claro. Eso es Pass-the-Hash (PtH), y convierte un volcado de hashes directamente en acceso.",
       "porque": "El protocolo NTLM usa el hash como secreto compartido, no la password. Por eso volcar hashes (con secretsdump/DCSync tras conseguir privilegios) permite moverte por la red autenticandote con el hash. Solo necesitas crackear si el servicio exige la password en claro o quieres reutilizarla en sitios no-NTLM.",
       "cuando": "Cuando ya has volcado hashes (por admin local, DCSync o del SAM) en la fase AD ([[ad-modelo]]). Es la forma habitual de usar el hash de administrator o de una cuenta de servicio sin perder tiempo crackeando.",
+      "necesitas": [
+        "Un hash NTLM volcado (secretsdump, DCSync, o SAM local)."
+      ],
+      "no_aplica": [
+        "El servicio exige la password en claro y no acepta autenticacion NTLM (algunos servicios/API la desactivan).",
+        "No tienes ningun hash volcado todavia: esto es un paso posterior a secretsdump, no anterior."
+      ],
+      "confirmacion": "nxc smb $IP -u administrator -H <NTLM> y revisa si marca (Pwn3d!).",
+      "resultado": "(Pwn3d!) en la salida de nxc, o un login exitoso por evil-winrm -H.",
       "senales": [
         "secretsdump te da lineas usuario:rid:lmhash:nthash.",
         "nxc marca (Pwn3d!) al probar el hash: tienes ejecucion.",
@@ -4621,6 +4743,15 @@
       "que": "BloodHound recolecta usuarios, grupos, equipos, sesiones y ACLs del dominio y los representa como un grafo. En lugar de adivinar que permiso abusar, ves la ruta concreta: quien puede resetear la password de quien, que grupo tiene GenericAll sobre otro, donde hay sesiones de admin que robar.",
       "porque": "En un dominio real las relaciones de permisos son miles y a mano es imposible. El grafo revela caminos no obvios (encadenar tres permisos mediocres para llegar a DA) que definen el ataque en AD ([[ad-modelo]]).",
       "cuando": "En cuanto tengas UNA credencial valida. Es lo que haces cuando el roasting ([[asrep-kerberoast]]) no basto o para planificar el salto final a Domain Admin.",
+      "necesitas": [
+        "Una credencial de dominio valida (usuario y password, o hash)."
+      ],
+      "no_aplica": [
+        "No tienes ninguna credencial de dominio todavia: BloodHound necesita autenticarse para recolectar.",
+        "El dominio es trivialmente pequeno (pocos usuarios/equipos) y ya ves el camino a mano."
+      ],
+      "confirmacion": "Corre bloodhound-python con la credencial y confirma que el .zip se genera sin errores de autenticacion.",
+      "resultado": "El .zip se importa en la GUI y aparece tu usuario en el grafo; 'Shortest paths to Domain Admins' muestra al menos una ruta.",
       "senales": [
         "Aristas 'GenericAll', 'WriteDACL', 'ForceChangePassword' hacia grupos privilegiados.",
         "Sesiones de un admin en una maquina donde tu tienes acceso.",
@@ -4649,6 +4780,14 @@
       "que": "El reconocimiento es cartografiar la superficie de ataque: que puertos estan abiertos, que servicios corren y en que version. Se hace en capas de lo amplio a lo profundo para no perder tiempo ni hacer ruido: primero todos los puertos sin scripts, despues version y scripts solo en los abiertos, y por ultimo enumeracion especifica de cada servicio.",
       "porque": "Escanear versiones de los 65535 puertos es lentisimo e inutil. Separar 'descubrir puertos' de 'analizar servicios' hace el recon rapido y ordenado. Y cada servicio se enumera distinto, asi que primero necesitas saber cuales hay antes de elegir la tecnica.",
       "cuando": "Es SIEMPRE la primera fase de una room. Cada servicio que descubras deriva a su enumeracion propia (445 -> [[smb-enum]], 80 -> web, 88/389 -> [[ad-modelo]]).",
+      "necesitas": [
+        "Una IP o rango objetivo alcanzable."
+      ],
+      "no_aplica": [
+        "Ya tienes la lista completa de puertos/servicios de una fase anterior (no repitas el barrido)."
+      ],
+      "confirmacion": "Compara el numero de puertos abiertos entre el barrido rapido y el escaneo con -sV: deben coincidir.",
+      "resultado": "Una lista de puertos open, y en el segundo escaneo, version y banner de cada servicio.",
       "senales": [
         "Un puerto abierto con una version concreta: tu primera pista para buscar CVEs.",
         "Hostnames en certificados TLS o en scripts de nmap: anadelos a /etc/hosts.",
@@ -4682,6 +4821,15 @@
       "que": "WordPress es el CMS mas comun en rooms. Su nucleo se actualiza solito, asi que rara vez es el vector. El fallo vive en los plugins y temas de terceros (miles, muchos sin mantener) o en credenciales debiles del panel /wp-admin, desde donde se llega a ejecucion editando un tema.",
       "porque": "Cada plugin es codigo de terceros con su propia superficie; una version vulnerable de un plugin popular es explotable en masa. Y el panel de admin permite editar los .php del tema: si entras, tienes RCE casi directo. wpscan automatiza detectar version de core, plugins, temas y usuarios.",
       "cuando": "Cuando whatweb o /wp-login.php delatan WordPress. Encaja tras el fingerprint web, antes de intentar bugs genericos.",
+      "necesitas": [
+        "Confirmacion de que la web es WordPress (wp-content, wp-login.php, meta generator)."
+      ],
+      "no_aplica": [
+        "wpscan no detecta ningun plugin con CVE y el core esta en la ultima version.",
+        "No hay usuarios enumerables ni login accesible para spraying."
+      ],
+      "confirmacion": "wpscan --url $URL --enumerate vp,u y revisa si algun plugin sale marcado [!] vulnerable.",
+      "resultado": "Version del core, lista de plugins con su version, y usuarios enumerados via /?author= o REST API.",
       "senales": [
         "Rutas /wp-content/, /wp-login.php, /wp-json/ o el meta generator con la version.",
         "wpscan lista un plugin con CVE conocido o una version vieja.",
@@ -4710,6 +4858,16 @@
       "que": "Explotar un CVE es aprovechar una vulnerabilidad publica con un PoC (prueba de concepto). El trabajo real no es ejecutar el script, sino confirmar que aplica (producto y version exactos), entender que hace el PoC para no romper la maquina ni comprometer tu equipo, y reproducir el bug de forma minima antes de lanzar el payload completo.",
       "porque": "Un CVE tiene un rango de versiones afectadas; fuera de el, el exploit falla o rompe el servicio. Ademas, los PoC de internet pueden ser destructivos o maliciosos (borran datos, roban tu shell). Por eso se leen antes. Y confirmar con un comando inocuo evita perseguir un falso positivo.",
       "cuando": "Cuando el recon ([[recon-metodologia]]) te da una version concreta y sospechas que es vulnerable. Es una via de acceso inicial alternativa a los bugs web.",
+      "necesitas": [
+        "Producto y version EXACTOS del servicio (de tu recon)."
+      ],
+      "no_aplica": [
+        "La version esta fuera del rango vulnerable del CVE.",
+        "El exploit requiere autenticacion y no tienes ninguna credencial.",
+        "El PoC es ilegible/ofuscado y no puedes verificar que hace antes de ejecutarlo."
+      ],
+      "confirmacion": "Ejecuta el PoC con un comando inocuo (id, whoami) o su modo --check antes del payload completo.",
+      "resultado": "La salida de id/whoami en la respuesta, o un 'vulnerable' explicito del propio exploit.",
       "senales": [
         "searchsploit da una coincidencia exacta de producto y version.",
         "El titulo del exploit indica si es 'Remote'/pre-auth (mejor) o requiere login.",
@@ -4743,6 +4901,12 @@
       "que": "Cuando encuentras un hash (en una BD, un fichero, un volcado), crackearlo es recuperar la password en claro probando candidatos offline. La clave esta en tres cosas: identificar el tipo de hash para usar el modo correcto, elegir un buen diccionario, y despues reutilizar la password (el reuse es la norma, no la excepcion).",
       "porque": "Cada tipo de hash usa un algoritmo distinto; hashcat necesita el modo (-m) exacto o no encuentra nada aunque la password este en rockyou. Y los ficheros protegidos (zip, KeePass, claves SSH) no se crackean directos: se convierten a hash con los *2john. La mayoria de rooms usan passwords de rockyou, asi que empezar por ahi ahorra horas.",
       "cuando": "Tras hacer loot y encontrar hashes o ficheros protegidos. Los hashes de Kerberos vienen de [[asrep-kerberoast]]; los NTLM se pueden usar sin crackear via [[ntlm-pth]].",
+      "no_aplica": [
+        "El hash usa un salt unico por usuario y no tienes ninguna pista de la password (fuerza bruta pura, poco realista en CTF).",
+        "El servicio de origen ya te dio la password en claro: no hace falta crackear nada."
+      ],
+      "confirmacion": "Identifica el tipo con hashid y lanza hashcat/john con rockyou en modo diccionario.",
+      "resultado": "La linea hash:password al caer. Si rockyou no la saca en minutos, revisa si el hash realmente era el vector.",
       "necesitas": [
         "El hash (o el fichero protegido: .kdbx, id_rsa con passphrase, zip).",
         "Saber el TIPO de hash para elegir el modo de hashcat (hashid / name-that-hash).",
@@ -4781,6 +4945,15 @@
       "que": "Escalar en Windows es pasar de un usuario normal a SYSTEM/Administrator. La logica es la misma que el [[privesc-modelo]] de Linux (abusar de algo privilegiado que puedes tocar), pero cambian los vectores: privilegios de token (SeImpersonate), servicios con permisos o rutas debiles, tareas programadas, y credenciales guardadas en el sistema.",
       "porque": "Windows delega mucho poder via privilegios y servicios. Un servicio que corre como SYSTEM pero cuyo binario o ruta puedes modificar te da SYSTEM. Y ciertos privilegios de token permiten suplantar cuentas mas potentes ([[token-impersonation]]). WinPEAS automatiza la deteccion, pero hay que saber que mira.",
       "cuando": "Con una shell de usuario en Windows. Enumera de forma sistematica ([[enum-privesc-windows]]) empezando por whoami /priv y whoami /groups; a menudo el privilegio de token ya te da el vector sin buscar mas.",
+      "necesitas": [
+        "Una shell de usuario en Windows."
+      ],
+      "no_aplica": [
+        "Ya eres nt authority\\system: no hay nada que escalar.",
+        "No tienes ejecucion de comandos todavia (esto es post-shell)."
+      ],
+      "confirmacion": "whoami /priv y whoami /groups como primer barrido.",
+      "resultado": "Un privilegio de token habilitado (SeImpersonate, SeBackup) o un servicio/credencial explotable.",
       "senales": [
         "whoami /priv muestra SeImpersonatePrivilege o SeAssignPrimaryToken (habitual en cuentas de servicio/IIS).",
         "Un servicio con unquoted service path o con binario/carpeta escribible por ti.",
@@ -4814,6 +4987,12 @@
       "que": "SeImpersonatePrivilege permite a un proceso actuar con el token de seguridad de otro cliente que se conecte a el. Los exploits de la familia Potato (JuicyPotato, PrintSpoofer, GodPotato) enganan a un servicio privilegiado para que se autentique contra ellos y asi capturan y suplantan el token de SYSTEM, obteniendo una shell SYSTEM.",
       "porque": "Las cuentas de servicio (IIS, MSSQL) suelen tener SeImpersonate por diseno para funcionar, pero ese mismo privilegio permite robar el token de SYSTEM. Es tan comun que ver SeImpersonate en whoami /priv casi garantiza la escalada. Es un caso concreto del [[winprivesc-modelo]].",
       "cuando": "En cuanto whoami /priv muestre SeImpersonatePrivilege o SeAssignPrimaryTokenPrivilege como Enabled, tipico tras comprometer una web (IIS) o un servicio en Windows.",
+      "no_aplica": [
+        "whoami /priv no muestra SeImpersonate ni SeAssignPrimaryToken como Enabled.",
+        "El spooler/servicio objetivo esta parcheado contra todas las variantes de Potato conocidas."
+      ],
+      "confirmacion": "Ejecuta PrintSpoofer -i -c whoami y comprueba el usuario devuelto.",
+      "resultado": "'nt authority\\system' en la salida de whoami dentro del proceso lanzado.",
       "necesitas": [
         "Una shell en Windows (a menudo como cuenta de servicio: IIS, MSSQL).",
         "SeImpersonatePrivilege o SeAssignPrimaryTokenPrivilege habilitado (whoami /priv).",
@@ -4847,6 +5026,16 @@
       "que": "Pivotar es usar una maquina ya comprometida como puente para llegar a hosts internos que tu atacante no alcanza directamente. Se monta un tunel (SOCKS) a traves del pivot y se enruta el trafico de tus herramientas por el, con lo que puedes escanear y atacar la red interna como si estuvieras dentro.",
       "porque": "Las redes se segmentan: el pivot tiene una segunda interfaz o rutas a rangos que tu no ves. Un tunel reverse (chisel, ligolo-ng) hace que el pivot conecte hacia ti, esquivando firewalls que bloquean entrada. Por un SOCKS solo pasa TCP, de ahi que en nmap uses -sT y no SYN scan.",
       "cuando": "Cuando ya tienes acceso a una maquina y descubres una red interna nueva (ip a, ip route, arp -a muestran rangos que tu Kali no tiene). Cada host interno alcanzado reinicia el ciclo recon/enum/acceso.",
+      "necesitas": [
+        "Acceso ya establecido a la maquina pivot (shell o SSH).",
+        "Confirmacion de que existe una red interna nueva (ip a / ip route / arp -a)."
+      ],
+      "no_aplica": [
+        "ip route/arp -a no muestran ninguna red distinta a la que ya atacas: no hay nada que pivotar.",
+        "No tienes forma de ejecutar binarios en el pivot (solo lectura) y tampoco tienes SSH con -D disponible."
+      ],
+      "confirmacion": "Levanta el tunel y prueba un curl/nc contra un puerto conocido de la red interna antes de escanear.",
+      "resultado": "El puerto SOCKS local escuchando (ss -tlnp) y respuesta del host interno a traves del proxy.",
       "senales": [
         "El pivot tiene una IP en un rango distinto al que tu atacas (ej. 10.10.20.x).",
         "ip route o arp -a revelan hosts internos que no salian en tu escaneo inicial.",
@@ -4880,6 +5069,14 @@
       "que": "Enumerar para privesc es recorrer de forma sistematica todos los vectores posibles en un orden que va de lo mas rentable a lo mas laborioso. Herramientas como linpeas lo automatizan y colorean los hallazgos, pero entender que representa cada resultado es lo que convierte 'output' en 'vector'. Es el paso previo obligado del [[privesc-modelo]].",
       "porque": "Adivinar pierde tiempo. Un recorrido fijo (sudo, SUID, capabilities, cron, servicios, credenciales, kernel) garantiza que no te saltas nada. linpeas resalta en rojo/amarillo lo probable, pero da falsos positivos: hay que validar cada pista contra el modelo mental.",
       "cuando": "Justo tras conseguir shell y estabilizarla ([[tty-stabilization]]). Corre primero los checks rapidos manuales (sudo -l, id) y luego lanza linpeas para lo exhaustivo.",
+      "necesitas": [
+        "Una shell de usuario ya estabilizada."
+      ],
+      "no_aplica": [
+        "Ya recorriste todos los vectores manualmente y linpeas no aporta nada nuevo."
+      ],
+      "confirmacion": "Corre sudo -l e id primero (gratis); despues linpeas para el resto.",
+      "resultado": "Al menos un hallazgo resaltado en rojo/amarillo en linpeas, o una entrada NOPASSWD en sudo -l.",
       "senales": [
         "linpeas marca en rojo/amarillo (99% PE vectors) un binario, servicio o fichero.",
         "pspy muestra procesos o cron que arrancan como root de forma periodica.",
@@ -4913,6 +5110,15 @@
       "que": "Las capabilities parten los privilegios de root en piezas concretas que se asignan a un binario sin darle SUID completo. Es una version mas granular del [[suid]]: en vez de 'corre como root', es 'puede hacer esta cosa de root'. Algunas capabilities permiten escalar directamente.",
       "porque": "Se usan para que un binario haga una tarea privilegiada (abrir un puerto bajo, cambiar de uid) sin ser root del todo. Pero cap_setuid permite a un interprete (python, perl) cambiar su uid a 0, y cap_dac_read_search permite leer cualquier fichero. Mal puestas, son root.",
       "cuando": "En la enumeracion ([[enum-privesc-linux]]), justo despues de SUID. getcap recorre el sistema buscandolas.",
+      "necesitas": [
+        "Una shell de usuario en la maquina."
+      ],
+      "no_aplica": [
+        "getcap -r / no devuelve ningun binario fuera de los estandar del sistema.",
+        "Las capabilities presentes no incluyen cap_setuid ni cap_dac_read_search (son inofensivas para privesc)."
+      ],
+      "confirmacion": "getcap -r / 2>/dev/null y busca cap_setuid o cap_dac_read_search en la salida.",
+      "resultado": "Una linea 'binario = cap_setuid+ep' sobre un interprete (python/perl); tras el abuso, euid=0.",
       "senales": [
         "getcap lista un binario con cap_setuid+ep (escalada directa via python/perl).",
         "cap_dac_read_search+ep: lectura de /etc/shadow y cualquier fichero protegido.",
@@ -4946,6 +5152,16 @@
       "que": "Cuando un programa privilegiado invoca otro comando por su nombre (por ejemplo 'cat' en vez de '/bin/cat'), el sistema lo busca por el PATH. Si puedes modificar el PATH o escribir en un directorio que aparezca antes, colocas ahi un binario malicioso con ese nombre y el proceso root ejecuta el tuyo. Otro caso del [[privesc-modelo]].",
       "porque": "El programador uso una ruta relativa por comodidad, confiando en que el PATH apunta a los binarios legitimos. Pero si controlas el PATH (o hay un directorio escribible en el), rompes esa confianza: tu binario se ejecuta con los privilegios del proceso.",
       "cuando": "Cuando un SUID ([[suid]]) o un script de [[cron-abuse]] que corre como root llama a comandos sin ruta absoluta. strings sobre el binario o leer el script lo revela.",
+      "necesitas": [
+        "Un SUID o script root que invoque un comando SIN ruta absoluta.",
+        "Un directorio escribible que puedas anteponer al PATH."
+      ],
+      "no_aplica": [
+        "El binario/script usa siempre rutas absolutas (/bin/cat, /usr/bin/service).",
+        "El proceso privilegiado fija su propio PATH explicitamente antes de ejecutar (no hereda el tuyo)."
+      ],
+      "confirmacion": "strings sobre el SUID y busca llamadas a comandos sin '/' delante.",
+      "resultado": "Un nombre de comando sin ruta absoluta en las strings; tras crear tu binario falso y anteponerlo al PATH, ejecucion como el proceso privilegiado.",
       "senales": [
         "strings de un SUID muestra un comando llamado sin ruta (system(\"service ...\")).",
         "Un script root usa comandos sin path absoluto.",
@@ -4979,6 +5195,15 @@
       "que": "Cuando un script root ejecuta algo como 'tar czf backup.tar.gz *' en un directorio, el shell expande el * a la lista de ficheros ANTES de pasarla al comando. Si puedes crear ficheros ahi, creas ficheros cuyo nombre es en realidad una opcion del comando (como --checkpoint-action de tar), y el comando ejecuta lo que pongas.",
       "porque": "El shell no distingue un fichero llamado '--checkpoint-action=exec=sh script.sh' de una opcion legitima: el glob lo expande igual. tar, chown, rsync y otros tienen flags que ejecutan comandos, y asi el proceso root corre tu codigo. Es un [[privesc-modelo]] via nombres de fichero.",
       "cuando": "Cuando [[cron-abuse]] o un script root usa un comando con * en un directorio escribible por ti. Muy comun con tar en tareas de backup.",
+      "necesitas": [
+        "Un cron/script root que use un comando con * (tar, chown, rsync) en un directorio escribible por ti."
+      ],
+      "no_aplica": [
+        "El comando no usa comodines o los ficheros se listan explicitamente por nombre.",
+        "El directorio del comodin no es escribible por tu usuario ni grupo."
+      ],
+      "confirmacion": "Crea los ficheros con nombres de flags (--checkpoint=1, --checkpoint-action=...) y espera al siguiente ciclo.",
+      "resultado": "Tras el ciclo, tu payload se ejecuta como root (comprueba con el binario/flag SUID que hayas preparado).",
       "senales": [
         "Un cron/script root ejecuta tar/chown/rsync con * en una ruta que puedes escribir.",
         "El directorio del comodin es de tu propiedad o escribible por tu grupo.",
@@ -5012,6 +5237,16 @@
       "que": "LD_PRELOAD fuerza al cargador a inyectar una libreria tuya antes que las del sistema en cualquier programa. Si sudo esta configurado con env_keep+=LD_PRELOAD, esa variable sobrevive al sudo y puedes precargar una .so maliciosa en un comando que tengas permitido ejecutar con sudo, corriendo tu codigo como root. Variante avanzada de [[sudo-abuse]].",
       "porque": "El admin conservo variables de entorno por comodidad sin darse cuenta de que LD_PRELOAD permite inyectar codigo. Tu .so define una funcion (por ejemplo el constructor) que lanza una shell; al cargarla en el proceso privilegiado, esa shell es root.",
       "cuando": "Cuando sudo -l ([[sudo-abuse]]) muestra 'env_keep+=LD_PRELOAD' (o LD_LIBRARY_PATH) y tienes algun comando permitido con sudo, aunque sea inofensivo.",
+      "necesitas": [
+        "sudo -l mostrando env_keep+=LD_PRELOAD (o LD_LIBRARY_PATH).",
+        "Al menos un comando permitido con sudo."
+      ],
+      "no_aplica": [
+        "sudo -l no muestra env_keep para LD_PRELOAD/LD_LIBRARY_PATH.",
+        "No tienes gcc en la maquina ni forma de subir una .so ya compilada."
+      ],
+      "confirmacion": "Ejecuta el comando permitido con sudo LD_PRELOAD=/tu.so y observa si tu codigo corre.",
+      "resultado": "Un prompt de root al ejecutar el comando con la variable precargada.",
       "senales": [
         "sudo -l muestra 'env_keep+=LD_PRELOAD' en la politica.",
         "Tienes al menos un comando ejecutable con sudo.",
@@ -5045,6 +5280,14 @@
       "que": "Ciertos ficheros del sistema definen quien es root y quien puede escalar. Si por una mala configuracion de permisos tu usuario puede escribir en /etc/passwd, /etc/shadow o /etc/sudoers, puedes anadir o alterar una cuenta con uid 0 o darte permisos sudo. No hay exploit: es escritura directa a la fuente de la verdad.",
       "porque": "Estos ficheros deberian ser solo-lectura para usuarios normales. Cuando alguien afloja los permisos (o un script los deja escribibles), rompes la frontera de confianza mas basica del sistema: /etc/passwd todavia permite un hash de password en el segundo campo, asi que puedes crear un root con password conocida.",
       "cuando": "Cuando la enumeracion ([[enum-privesc-linux]]) marca /etc/passwd, /etc/shadow o /etc/sudoers como escribibles por ti (ls -l o el check de linpeas).",
+      "necesitas": [
+        "Una shell de usuario en la maquina."
+      ],
+      "no_aplica": [
+        "/etc/passwd, /etc/shadow y /etc/sudoers(.d) son todos solo-lectura para tu usuario/grupo."
+      ],
+      "confirmacion": "ls -l /etc/passwd /etc/shadow /etc/sudoers y busca un permiso w para ti.",
+      "resultado": "Un 'w' en los permisos de alguno de esos ficheros para tu usuario o grupo.",
       "senales": [
         "ls -l /etc/passwd muestra permiso de escritura para tu usuario o grupo.",
         "/etc/shadow legible/escribible (linpeas lo resalta).",
@@ -5078,6 +5321,15 @@
       "que": "Algunos grupos conceden capacidades que equivalen a root aunque tu usuario no lo sea. docker y lxd permiten arrancar un contenedor que monta el sistema de ficheros del host y escribir en el como root. disk da acceso crudo al dispositivo (leer /etc/shadow con debugfs). adm permite leer todos los logs. Es el atajo mas rapido del [[privesc-modelo]].",
       "porque": "Estos grupos existen para administrar subsistemas, pero su poder se traduce trivialmente en root: si controlas el demonio de contenedores puedes montar / del host; si lees el disco crudo, saltas todos los permisos de fichero. Por eso id/groups es lo primero que se mira.",
       "cuando": "Nada mas orientarte con id/groups ([[privesc-modelo]]). Si sales en docker/lxd/disk/adm, prioriza este vector sobre todo lo demas.",
+      "necesitas": [
+        "Pertenecer a un grupo privilegiado (docker, lxd/lxc, disk, adm)."
+      ],
+      "no_aplica": [
+        "id no muestra ninguno de esos grupos.",
+        "El demonio correspondiente (docker/lxd) no esta corriendo pese a estar en el grupo."
+      ],
+      "confirmacion": "id para ver tus grupos; si sale docker, prueba docker run -v /:/mnt --rm -it alpine chroot /mnt sh.",
+      "resultado": "Una shell dentro del chroot con acceso de escritura a / del host real.",
       "senales": [
         "id muestra tu usuario en docker, lxd/lxc, disk o adm.",
         "El binario docker/lxc responde (el demonio esta corriendo).",
@@ -5111,6 +5363,16 @@
       "que": "no_root_squash es una opcion de NFS que hace que el root de tu maquina sea tratado como root en el servidor NFS (en lugar de degradarlo a nobody). Si un share exportado con esa opcion esta montado en una ruta accesible en la victima, montas el share desde tu Kali (donde SI eres root), creas ahi un binario SUID root, y lo ejecutas en la victima para escalar.",
       "porque": "Normalmente NFS 'aplasta' (squash) el root remoto para que no pueda actuar como root local. no_root_squash desactiva esa proteccion: los ficheros que creas como root en tu maquina conservan uid 0 en el servidor. Un binario SUID creado asi corre como root al ejecutarlo en la victima.",
       "cuando": "Cuando ves NFS (2049) o /etc/exports revela un share con no_root_squash. showmount lista los exports disponibles.",
+      "necesitas": [
+        "Un export NFS accesible (showmount -e).",
+        "Poder montar el share desde tu Kali como root."
+      ],
+      "no_aplica": [
+        "showmount -e no devuelve ningun export, o el export tiene root_squash activo.",
+        "No puedes montar NFS desde tu maquina de ataque (firewall, sin cliente NFS)."
+      ],
+      "confirmacion": "Monta el share en tu Kali, crea un binario SUID como root, y ejecutalo desde la victima por esa misma ruta.",
+      "resultado": "El binario mantiene el bit SUID y euid root al ejecutarse en la victima.",
       "senales": [
         "showmount -e muestra un export disponible.",
         "/etc/exports (legible en la victima) contiene 'no_root_squash'.",
@@ -5144,6 +5406,15 @@
       "que": "Un exploit de kernel aprovecha un fallo en el propio nucleo de Linux para ejecutar codigo como root desde un usuario normal. Casos famosos: DirtyCow, PwnKit (polkit), DirtyPipe. Funcionan cuando la version del kernel o de un componente del sistema es vulnerable, independientemente de la config.",
       "porque": "Se dejan para el FINAL por dos razones: los exploits de kernel pueden causar un kernel panic y tumbar la maquina (arruinando la room), y muchas veces hay un vector de config mas limpio y estable. Solo cuando la enumeracion ([[enum-privesc-linux]]) no dio nada mejor, se recurre a esto.",
       "cuando": "Cuando ningun vector de config (sudo, SUID, cron, capabilities) funciono y uname -r revela un kernel viejo o hay un componente vulnerable (polkit, sudo Baron Samedit).",
+      "necesitas": [
+        "Version exacta del kernel (uname -a) y de componentes clave (sudo, polkit)."
+      ],
+      "no_aplica": [
+        "El kernel/distro esta parcheado contra los CVEs conocidos para esa version.",
+        "Quedan vectores de configuracion sin probar (sudo, SUID, cron): prueba esos primero."
+      ],
+      "confirmacion": "Compara uname -a con CVEs conocidos (DirtyCow, PwnKit, DirtyPipe) para ese rango de version.",
+      "resultado": "Tras ejecutar el exploit compilado, un prompt root y uid=0. Si no aplica, la maquina puede quedar inestable: usalo con cuidado.",
       "senales": [
         "uname -r muestra un kernel antiguo con CVE conocido.",
         "linpeas sugiere exploits de kernel aplicables.",
@@ -5177,6 +5448,14 @@
       "que": "Enumerar para privesc en Windows es recorrer sus vectores tipicos en orden: privilegios de token, grupos, servicios mal configurados, tareas programadas, credenciales guardadas y parches faltantes. WinPEAS lo automatiza; entender cada hallazgo es lo que lo convierte en escalada. Paso previo del [[winprivesc-modelo]].",
       "porque": "Windows esconde muchos vectores en configuracion (servicios, registro, permisos NTFS) que a mano son tediosos. WinPEAS y las consultas manuales garantizan cobertura, pero dan falsos positivos: hay que validar cada pista.",
       "cuando": "Nada mas conseguir una shell en Windows. Corre primero whoami /priv y whoami /groups, luego WinPEAS para lo exhaustivo.",
+      "necesitas": [
+        "Una shell de usuario en Windows."
+      ],
+      "no_aplica": [
+        "Ya recorriste privilegios de token, servicios y credenciales sin hallazgos."
+      ],
+      "confirmacion": "whoami /priv y whoami /groups primero; despues winPEAS para el resto.",
+      "resultado": "Un privilegio de token Enabled, o un hallazgo resaltado en winPEAS (servicio, credencial, AlwaysInstallElevated).",
       "senales": [
         "whoami /priv revela un privilegio potente (SeImpersonate, SeBackup, SeDebug).",
         "WinPEAS resalta servicios modificables o rutas sin comillas.",
@@ -5210,6 +5489,16 @@
       "que": "Los servicios de Windows suelen correr como SYSTEM. Si tu usuario puede modificar la configuracion del servicio (binPath), reemplazar su ejecutable, o si la ruta del binario no esta entre comillas y hay un directorio escribible en medio, puedes hacer que el servicio ejecute TU binario como SYSTEM. Es el [[winprivesc-modelo]] aplicado a servicios.",
       "porque": "Instaladores descuidados dejan servicios con permisos NTFS flojos en el .exe o permiten a usuarios normales reconfigurar el servicio. Y una ruta como C:\\Program Files\\My App\\svc.exe sin comillas hace que Windows pruebe C:\\Program.exe primero: si puedes escribir ahi, secuestras el arranque.",
       "cuando": "En la enumeracion ([[enum-privesc-windows]]). WinPEAS marca servicios modificables, binarios escribibles y unquoted paths.",
+      "necesitas": [
+        "Una shell de usuario en Windows.",
+        "accesschk o permisos NTFS consultables sobre servicios."
+      ],
+      "no_aplica": [
+        "Todos los servicios corren con permisos correctos y rutas entre comillas.",
+        "No tienes SERVICE_CHANGE_CONFIG ni escritura sobre ningun binario de servicio."
+      ],
+      "confirmacion": "sc qc <servicio> para ver BINARY_PATH_NAME y SERVICE_START_NAME; cruzalo con accesschk.",
+      "resultado": "Una ruta sin comillas con directorio intermedio escribible, o permiso de reconfigurar el servicio (SERVICE_CHANGE_CONFIG).",
       "senales": [
         "accesschk o WinPEAS marca SERVICE_CHANGE_CONFIG o WRITE sobre un servicio.",
         "El .exe del servicio esta en una carpeta escribible por tu usuario.",
@@ -5243,6 +5532,14 @@
       "que": "AlwaysInstallElevated es una politica de Windows que, si esta activada en las dos claves de registro (HKCU y HKLM), hace que cualquier paquete .msi se instale con privilegios de SYSTEM sin importar quien lo lance. Un atacante genera un .msi malicioso y lo instala para ejecutar codigo como SYSTEM.",
       "porque": "La politica existe para que usuarios sin privilegios puedan instalar software aprobado, pero abre un agujero enorme: el instalador corre como SYSTEM y el .msi puede hacer cualquier cosa. Es un vector limpio y fiable cuando esta activo. Caso del [[winprivesc-modelo]].",
       "cuando": "En la enumeracion ([[enum-privesc-windows]]). Se comprueba leyendo las dos claves de registro; WinPEAS lo marca explicitamente.",
+      "necesitas": [
+        "Una shell de usuario en Windows con acceso al registro (reg query)."
+      ],
+      "no_aplica": [
+        "Cualquiera de las dos claves (HKCU o HKLM) vale 0 o no existe."
+      ],
+      "confirmacion": "reg query en ambas claves AlwaysInstallElevated (HKCU y HKLM); las dos deben ser 0x1.",
+      "resultado": "0x1 en ambas claves. Tras instalar tu .msi, tu usuario aparece en el grupo Administrators.",
       "senales": [
         "Ambas claves AlwaysInstallElevated valen 1 (HKCU y HKLM).",
         "WinPEAS resalta 'AlwaysInstallElevated set to 1'."
@@ -5275,6 +5572,14 @@
       "que": "Muchas escaladas en Windows no son un exploit, sino encontrar una credencial reutilizable. Windows guarda passwords en ficheros de despliegue (unattend.xml, sysprep), en el gestor de credenciales (cmdkey), en el registro (Winlogon autologon, PuTTY), y en backups del SAM/SYSTEM que se pueden volcar. Cada credencial alimenta [[cracking]] o reuse directo.",
       "porque": "Los administradores automatizan despliegues y dejan credenciales en claro o cifradas de forma reversible. Y el propio Windows cachea secretos para comodidad. Buscar sistematicamente es de lo mas rentable, igual que en Linux.",
       "cuando": "En la enumeracion ([[enum-privesc-windows]]), en paralelo a los vectores de servicio/token. WinPEAS busca la mayoria automaticamente.",
+      "necesitas": [
+        "Una shell de usuario en Windows con acceso al filesystem y al registro."
+      ],
+      "no_aplica": [
+        "No hay ficheros de despliegue (unattend.xml), autologon ni credenciales cacheadas visibles."
+      ],
+      "confirmacion": "findstr /si password sobre configs y reg query del autologon en Winlogon.",
+      "resultado": "Una password en claro en un fichero de config, o DefaultPassword en el registro.",
       "senales": [
         "Ficheros unattend.xml / sysprep.xml / Autounattend.xml en el disco.",
         "cmdkey /list muestra credenciales cacheadas (runas /savecred).",
@@ -5308,6 +5613,14 @@
       "que": "Windows ejecuta programas al inicio o al login desde varias claves de registro (Run, RunOnce) y carpetas de startup, a veces con privilegios altos. Si el binario referenciado es escribible por tu usuario, o la clave de registro es modificable, colocas tu ejecutable y correra con los privilegios del que dispara el autorun. Variante del [[winprivesc-modelo]].",
       "porque": "El software de terceros registra autoruns sin proteger bien los permisos del binario o de la clave. Si un admin inicia sesion (o el arranque es como SYSTEM), tu binario reemplazado se ejecuta con ese contexto.",
       "cuando": "En la enumeracion ([[enum-privesc-windows]]). WinPEAS y autorunsc listan los autoruns y marcan los que tienen permisos debiles.",
+      "necesitas": [
+        "Una shell de usuario en Windows con accesschk o permisos consultables."
+      ],
+      "no_aplica": [
+        "Ningun autorun referencia un binario escribible por tu usuario, y las claves de registro no son modificables."
+      ],
+      "confirmacion": "accesschk sobre el binario referenciado por cada entrada de Run/RunOnce.",
+      "resultado": "Un permiso de escritura (FILE_WRITE_DATA/W) para tu usuario o grupo sobre el .exe de autorun.",
       "senales": [
         "Un binario referenciado en una clave Run es escribible por tu usuario (accesschk).",
         "Una clave de registro de autorun modificable por ti.",
@@ -5341,6 +5654,15 @@
       "que": "Cuando un programa carga una DLL sin ruta absoluta, Windows la busca por un orden de directorios. Si un proceso privilegiado busca una DLL que no existe (o busca antes en un directorio donde puedes escribir), colocas ahi una DLL maliciosa con ese nombre y el proceso la carga y ejecuta tu codigo. Es el analogo Windows del [[path-hijacking]] de Linux.",
       "porque": "El orden de busqueda de DLLs incluye el directorio del ejecutable y otros; si la app no fija rutas y falta una DLL, el hueco es explotable. Tu DLL (con su DllMain) ejecuta el payload en el contexto del proceso, que puede ser SYSTEM.",
       "cuando": "Cuando un servicio o app privilegiada tiene una DLL ausente o cargable desde un directorio escribible. ProcMon (filtrando NAME NOT FOUND en .dll) lo revela.",
+      "necesitas": [
+        "ProcMon (o equivalente) para monitorizar cargas de DLL fallidas.",
+        "Capacidad de compilar/subir una DLL (mingw en Kali o similar)."
+      ],
+      "no_aplica": [
+        "Ningun proceso privilegiado busca una DLL en un directorio escribible por ti."
+      ],
+      "confirmacion": "Filtra ProcMon por NAME NOT FOUND y Path ends with .dll mientras el proceso privilegiado corre.",
+      "resultado": "Una ruta de DLL no encontrada en un directorio donde puedes escribir; tras colocar tu DLL, ejecucion en el contexto del proceso.",
       "senales": [
         "ProcMon muestra un proceso privilegiado con 'NAME NOT FOUND' buscando una .dll.",
         "El directorio donde busca la DLL es escribible por tu usuario.",
@@ -5374,6 +5696,14 @@
       "que": "SeBackupPrivilege permite leer cualquier fichero ignorando sus ACL (pensado para software de backup), y SeRestorePrivilege permite escribir cualquiera. Con SeBackup puedes copiar los hives SAM y SYSTEM del registro, llevartelos y extraer los hashes NTLM locales, incluido el del administrador. Caso concreto del [[winprivesc-modelo]] via privilegios de token.",
       "porque": "El privilegio existe para que las herramientas de copia lean ficheros bloqueados, pero no distingue backup legitimo de robo: si lo tienes, saltas todos los permisos NTFS. El SAM contiene los hashes locales; con ellos, [[ntlm-pth]] te da administrator sin crackear.",
       "cuando": "Cuando whoami /priv ([[enum-privesc-windows]]) muestra SeBackupPrivilege (habitual en el grupo Backup Operators).",
+      "necesitas": [
+        "whoami /priv mostrando SeBackupPrivilege o SeRestorePrivilege como Enabled."
+      ],
+      "no_aplica": [
+        "whoami /priv no muestra esos privilegios habilitados."
+      ],
+      "confirmacion": "reg save de HKLM\\SAM y HKLM\\SYSTEM; si funciona sin error de acceso, el privilegio esta activo.",
+      "resultado": "Dos ficheros .hive generados sin error; tras secretsdump, hashes NTLM locales incluido administrator.",
       "senales": [
         "whoami /priv lista SeBackupPrivilege / SeRestorePrivilege habilitado.",
         "Perteneces al grupo Backup Operators."
@@ -5406,6 +5736,15 @@
       "que": "El Control de Cuentas de Usuario (UAC) hace que, aunque tu usuario sea administrador, ejecutes con un token de integridad media hasta que confirmas la elevacion. Un bypass de UAC aprovecha binarios de Windows que auto-elevan sin pedir consentimiento para lanzar un proceso con integridad alta (admin completo) sin el prompt.",
       "porque": "Ciertos ejecutables firmados de Microsoft se auto-elevan y leen configuracion del registro de usuario; si secuestras esa clave (fodhelper, eventvwr), Windows lanza tu comando elevado. No es cruzar de usuario a admin, sino de 'admin a medias' a 'admin completo'.",
       "cuando": "Cuando whoami /groups muestra que estas en Administrators pero con integridad media (no puedes tocar recursos protegidos aun). No aplica si ya eres SYSTEM o integridad alta.",
+      "necesitas": [
+        "Ser miembro del grupo Administrators con nivel de integridad Medium."
+      ],
+      "no_aplica": [
+        "Tu usuario no esta en Administrators (esto no es una escalada de usuario a admin, solo de admin-medio a admin-alto).",
+        "Ya tienes integridad High/System."
+      ],
+      "confirmacion": "whoami /groups | findstr Label para ver tu nivel de integridad actual.",
+      "resultado": "'Mandatory Label\\Medium'; tras el bypass, un proceso con integridad High ejecutando tu comando.",
       "senales": [
         "Estas en el grupo Administrators pero el nivel de integridad es Medium.",
         "Operaciones de admin fallan con acceso denegado pese a ser admin."
@@ -5438,6 +5777,15 @@
       "que": "Un exploit de kernel de Windows aprovecha un fallo en el nucleo o en un driver para ejecutar codigo como SYSTEM desde un usuario normal. Aplica cuando faltan parches concretos (MS16-032, PrintNightmare, etc.). Se identifican comparando los hotfixes instalados con los CVE conocidos.",
       "porque": "Como en Linux, se dejan para el FINAL: pueden inestabilizar o tumbar la maquina, y casi siempre hay un vector de config mas limpio. Solo cuando la enumeracion ([[enum-privesc-windows]]) no dio token, servicio ni credencial se recurre a esto.",
       "cuando": "Cuando ningun vector de config funciono y systeminfo revela un Windows con pocos parches. Watson/wesng cruzan los hotfixes con exploits conocidos.",
+      "necesitas": [
+        "Version y hotfixes exactos (systeminfo)."
+      ],
+      "no_aplica": [
+        "El sistema esta al dia de parches para los CVEs conocidos.",
+        "Quedan vectores de configuracion sin probar (token, servicios, credenciales): prueba esos primero."
+      ],
+      "confirmacion": "Pasa systeminfo por wesng/Watson y compara con los KB instalados.",
+      "resultado": "Un CVE de Elevation of Privilege sin el KB correspondiente instalado.",
       "senales": [
         "systeminfo muestra pocos hotfixes o un build viejo.",
         "Watson/wesng sugieren exploits aplicables a esa build.",
@@ -5471,6 +5819,12 @@
       "que": "La fuerza bruta online lanza intentos de login reales contra un servicio en marcha, probando usuarios y passwords de un diccionario hasta que uno entra. A diferencia del [[cracking]] (que trabaja offline sobre un hash), aqui atacas el servicio directamente: cada intento es una conexion de verdad. La herramienta estandar es hydra.",
       "porque": "Muchos logins usan passwords debiles o por defecto y no limitan los intentos. Si tienes un usuario valido (o una lista) y un buen diccionario, probar en automatico es mas rapido que a mano. La clave del ataque web es que hydra necesita saber distinguir un fallo de un acierto, y eso se lo das tu con el mensaje de error.",
       "cuando": "Cuando hay un servicio de login accesible (ssh, ftp, smb, un formulario web) y no tienes credenciales, o tienes un usuario pero no su password. No lo uses a lo loco en AD: el spraying agresivo bloquea cuentas.",
+      "no_aplica": [
+        "El servicio bloquea la cuenta tras pocos intentos (rate limiting agresivo o lockout).",
+        "No tienes ningun usuario valido ni forma de enumerarlos."
+      ],
+      "confirmacion": "Lanza hydra contra un unico usuario conocido con un diccionario pequeno antes de escalar.",
+      "resultado": "Una linea '[PUERTO][protocolo] host: ... login: ... password: ...' al acertar.",
       "necesitas": [
         "Un servicio de login accesible: ssh, ftp, smb, o un formulario web.",
         "Al menos un usuario, o una lista users.txt (sacala de enum: [[smb-enum]], la web, OSINT).",
@@ -5510,6 +5864,12 @@
       "que": "Cuando un script de Python que se ejecuta como root hace 'import modulo', Python busca ese modulo recorriendo una lista de directorios (sys.path) en orden. Si puedes colocar un fichero .py con ese nombre en un directorio que se busque ANTES que el modulo real, o sobrescribir el propio modulo, tu codigo se ejecuta con privilegios de root al importarse. Es el [[path-hijacking]] aplicado al sistema de imports de Python.",
       "porque": "sys.path incluye, y normalmente en primer lugar, el directorio del propio script; ademas de PYTHONPATH y los site-packages. El programador confia en que se importara el modulo legitimo, pero Python simplemente coge el primero que encuentra. Si el directorio del script es escribible, o el modulo importado lo es, o sudo conserva PYTHONPATH, rompes esa confianza. Misma logica que el [[privesc-modelo]].",
       "cuando": "Cuando puedes ejecutar un script Python como root (via [[sudo-abuse]]) o un cron root lo ejecuta, Y puedes escribir uno de los sitios donde Python busca sus modulos. Es un vector muy comun en rooms de escalada Linux.",
+      "no_aplica": [
+        "El script root no hace ningun 'import' de un modulo no estandar.",
+        "Todos los directorios de sys.path anteriores al modulo real son de solo-lectura para ti."
+      ],
+      "confirmacion": "Revisa sys.path y los permisos de cada directorio anterior al modulo real que importa el script.",
+      "resultado": "Un directorio escribible por ti apareciendo ANTES del modulo legitimo en sys.path.",
       "necesitas": [
         "Un script Python que corre como root (sudo -l con un .py, o un cron).",
         "Que el script haga 'import <algo>' de un modulo (idealmente no estandar).",

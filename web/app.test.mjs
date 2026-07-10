@@ -156,15 +156,16 @@ for (const concept of content.concepts) {
   assert.ok(concept.id, "concepto sin id");
   assert.ok(!conceptIds.has(concept.id), `id de concepto duplicado: ${concept.id}`);
   conceptIds.add(concept.id);
-  for (const field of ["title", "summary", "que", "porque", "cuando", "section", "phase"]) {
+  for (const field of ["title", "summary", "que", "porque", "cuando", "section", "phase", "confirmacion", "resultado"]) {
     assert.ok(concept[field], `concepto ${concept.id} sin ${field}`);
   }
   assert.ok(Array.isArray(concept.senales) && concept.senales.length, `concepto ${concept.id} sin senales`);
   assert.ok(Array.isArray(concept.pasos) && concept.pasos.length, `concepto ${concept.id} sin pasos`);
-  if (concept.necesitas !== undefined) {
-    assert.ok(Array.isArray(concept.necesitas) && concept.necesitas.length, `concepto ${concept.id} con necesitas vacio`);
-    for (const item of concept.necesitas) {
-      assert.ok(typeof item === "string" && item.length, `concepto ${concept.id} con item de necesitas invalido`);
+  // necesitas/no_aplica: mandatory minimal-template fields (PLAN_IMPLEMENTACION_CONTENIDOS.md fase 2).
+  for (const field of ["necesitas", "no_aplica"]) {
+    assert.ok(Array.isArray(concept[field]) && concept[field].length, `concepto ${concept.id} sin ${field}`);
+    for (const item of concept[field]) {
+      assert.ok(typeof item === "string" && item.length, `concepto ${concept.id} con item de ${field} invalido`);
     }
   }
   assert.ok(KNOWN_PHASES.has(concept.phase), `concepto ${concept.id} con phase invalida: ${concept.phase}`);
@@ -215,7 +216,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260709-review-fixes/);
+  assert.match(asset, /20260710-plantilla-minima/);
 }
 
 assert.match(js, /registration\.update\(\)/);
