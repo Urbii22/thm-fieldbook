@@ -2034,6 +2034,239 @@ CONCEPTS = [
             },
         ],
     },
+    {
+        "id": "dns-enum",
+        "title": "Enumeracion de DNS",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "El DNS revela subdominios, hostnames internos y a veces todo el mapa de la zona si el servidor permite una transferencia.",
+        "que": "Enumerar DNS es sacarle al servidor de nombres toda la informacion de dominios y subdominios que gestiona: registros A/AAAA (IPs), MX (correo), TXT (a veces con pistas), y sobre todo intentar una transferencia de zona (AXFR), que si esta mal configurada te da TODOS los registros de golpe, como si te regalaran el mapa completo.",
+        "porque": "AXFR existe para que servidores DNS secundarios se sincronicen con el primario, pero si el servidor no restringe quien puede pedirla, cualquiera puede solicitarla y recibir el listado completo de subdominios/hosts internos. Es una mala configuracion clasica, no una vulnerabilidad del protocolo en si.",
+        "cuando": "Cuando el recon muestra el puerto 53 abierto, o cuando conoces un dominio del objetivo (visto en un certificado TLS, un email, o la propia room) y quieres descubrir subdominios/hosts internos asociados.",
+        "necesitas": [
+            "Un dominio conocido del objetivo, o el puerto 53 abierto en el propio servidor DNS.",
+        ],
+        "no_aplica": [
+            "El servidor rechaza la transferencia de zona (respuesta 'Transfer failed' o REFUSED) y no conoces mas nombres para probar por fuerza bruta.",
+            "No hay ningun dominio conocido ni servidor DNS accesible para el objetivo.",
+        ],
+        "confirmacion": "Intenta una transferencia de zona (AXFR) contra el servidor DNS del dominio conocido.",
+        "resultado": "Si funciona, una lista completa de registros (subdominios, IPs internas, hostnames) en la respuesta. Si falla, el servidor la tiene bien configurada; pasa a fuerza bruta de subdominios.",
+        "senales": [
+            "Puerto 53 (TCP/UDP) abierto en el objetivo.",
+            "Un hostname en un certificado TLS o un email que revela el dominio interno a enumerar.",
+            "dig axfr no devuelve REFUSED sino una lista de registros.",
+        ],
+        "pasos": [
+            "Prueba AXFR directamente contra el servidor DNS del dominio conocido; es rapido y, si funciona, te da todo de golpe.",
+            "Si falla, haz fuerza bruta de subdominios con una wordlist y anade los que resuelvan a /etc/hosts.",
+            "Cruza los hostnames encontrados con vhosts web ([[lfi]] y el resto de bugs web pueden variar por vhost).",
+            "Si el objetivo es un DC de Active Directory, el DNS suele revelar el nombre del dominio y del propio DC: mira [[ad-modelo]].",
+        ],
+        "commands": [
+            {
+                "cmd": "dig axfr @$IP dominio.local",
+                "why": "Intenta la transferencia de zona directamente. Es la prueba mas rentable: si el servidor la permite, obtienes todos los registros sin fuerza bruta.",
+                "out": "Si funciona, una lista completa de registros A/CNAME/MX con nombres de host internos. 'Transfer failed' o REFUSED significa que esta bien configurado.",
+            },
+        ],
+    },
+    {
+        "id": "ftp-enum",
+        "title": "Enumeracion de FTP",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "FTP suele permitir login anonimo; si lo hace, listas y descargas ficheros sin credenciales, y a veces hasta escribes.",
+        "que": "FTP (puerto 21) es un protocolo de transferencia de ficheros anterior a la web. Muchas instalaciones dejan habilitado el login 'anonymous' (usuario anonymous, cualquier password) por comodidad o por defecto. Si esta activo, entras sin credenciales y puedes listar, descargar, y a veces subir ficheros segun los permisos del share.",
+        "porque": "El login anonimo es una funcionalidad legitima de FTP para descargas publicas, pero cuando se deja activo sobre un share que contiene ficheros sensibles (backups, configs, notas), se convierte en una fuga de informacion gratuita. Es la misma logica que la sesion nula de [[smb-enum]] aplicada a FTP.",
+        "cuando": "Siempre que el recon muestre el puerto 21 abierto. Es de las comprobaciones mas baratas: un intento de login anonimo tarda segundos.",
+        "necesitas": [
+            "El puerto 21 (FTP) abierto en el objetivo.",
+        ],
+        "no_aplica": [
+            "El servidor rechaza el usuario anonymous y no tienes ninguna otra credencial que probar.",
+            "El share anonimo esta vacio o solo contiene ficheros publicos sin valor.",
+        ],
+        "confirmacion": "Conecta con usuario anonymous y password vacia o cualquiera; si el login es aceptado, lista el contenido.",
+        "resultado": "Un login exitoso (230 Login successful) seguido de un listado de ficheros/directorios confirma acceso anonimo.",
+        "senales": [
+            "Puerto 21 abierto en el escaneo de puertos.",
+            "El banner de nmap/ftp menciona 'Anonymous FTP login allowed'.",
+            "Login con usuario anonymous aceptado.",
+        ],
+        "pasos": [
+            "Prueba login anonimo primero; es gratis y muy comun que funcione en labs.",
+            "Si entra, lista y descarga TODO lo accesible; busca configs, backups, claves SSH o notas con credenciales.",
+            "Comprueba tambien permisos de escritura (STOR): un FTP anonimo con escritura permite subir un webshell si el mismo directorio se sirve por HTTP.",
+            "Cualquier credencial encontrada -> pruebala en otros servicios ([[cracking]] si esta hasheada, reuse si esta en claro).",
+        ],
+        "commands": [
+            {
+                "cmd": "ftp $IP",
+                "why": "Conecta al servicio FTP para probar el login anonimo de forma interactiva. Cuando pida usuario, prueba anonymous; password, cualquier cosa o vacia.",
+                "out": "'230 Login successful' confirma acceso anonimo. Un ls/dir tras entrar te muestra el contenido del share; get descarga ficheros.",
+            },
+        ],
+    },
+    {
+        "id": "snmp-enum",
+        "title": "Enumeracion de SNMP",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "SNMP con la community string 'public' filtra procesos, usuarios y software instalado sin necesitar credenciales reales.",
+        "que": "SNMP (puerto 161/UDP) es un protocolo de gestion y monitorizacion de dispositivos de red. Se autentica con una 'community string' en vez de usuario/password; si el dispositivo sigue usando la que trae por defecto ('public' para lectura), cualquiera que la conozca puede consultar una cantidad enorme de informacion del sistema: procesos en ejecucion (con sus argumentos, que a veces llevan credenciales), interfaces de red, software instalado, y en Windows a veces hasta usuarios locales.",
+        "porque": "La community string por defecto es publica y conocida (esta en cualquier manual); si el administrador no la cambia, SNMP queda abierto a cualquiera que sepa probarla. No es un fallo del protocolo, es no cambiar una credencial por defecto, igual que [[smb-enum]] con sesiones nulas.",
+        "cuando": "Cuando el recon muestra 161/UDP abierto (nmap -sU lo detecta, un escaneo TCP normal NO lo vera). Muy rentable en maquinas de red/infraestructura.",
+        "necesitas": [
+            "El puerto 161/UDP abierto (necesitas un escaneo UDP explicito para verlo).",
+        ],
+        "no_aplica": [
+            "La community string 'public' es rechazada y no tienes otra candidata que probar.",
+            "El puerto aparece 'open|filtered' de forma persistente sin responder a ninguna consulta (UDP filtrado, no un SNMP mal configurado).",
+        ],
+        "confirmacion": "Consulta con snmpwalk usando la community 'public' (la mas comun por defecto).",
+        "resultado": "Una respuesta con datos del sistema (nombre de host, procesos, interfaces) confirma que la community funciona. Timeout repetido sugiere filtrado UDP o community incorrecta (dificil distinguir sin mas pruebas).",
+        "senales": [
+            "Puerto 161/UDP abierto (solo visible con un escaneo UDP, no en el TCP por defecto).",
+            "snmpwalk con 'public' devuelve datos en vez de timeout.",
+            "Los datos incluyen procesos con linea de comandos completa, a veces con credenciales en los argumentos.",
+        ],
+        "pasos": [
+            "Confirma el puerto con un escaneo UDP (nmap -sU); un TCP normal no lo detecta.",
+            "Prueba la community 'public' primero (la mas comun); si falla, prueba otras por defecto (private, community) o fuerza bruta si el reto lo sugiere.",
+            "Vuelca toda la informacion disponible (procesos, software, interfaces) con snmpwalk.",
+            "Revisa la linea de comandos de cada proceso: es un sitio clasico donde aparecen credenciales pasadas como argumento.",
+        ],
+        "commands": [
+            {
+                "cmd": "snmpwalk -v2c -c public $IP",
+                "why": "Vuelca toda la informacion accesible via SNMPv2 con la community 'public', la que casi siempre viene por defecto si nadie la cambio.",
+                "out": "Cientos de lineas con datos del sistema. Busca especificamente procesos (hrSWRunParameters) y su linea de comandos completa: ahi caen credenciales a menudo.",
+            },
+        ],
+    },
+    {
+        "id": "nfs-enum",
+        "title": "Enumeracion de NFS",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "NFS lista que directorios exporta y a quien; montarlos revela ficheros del servidor directamente en tu Kali.",
+        "que": "NFS (puerto 2049) comparte directorios del servidor para que otras maquinas los monten como si fueran locales. Antes de montar nada, puedes preguntarle al servidor QUE exporta y con que restricciones (showmount). Si un export no restringe por host o usuario, lo montas y navegas sus ficheros como si estuvieras en el servidor.",
+        "porque": "NFS confia en el UID/GID que le manda el CLIENTE para decidir permisos, en vez de autenticar de verdad; si tu Kali usa el mismo UID que el dueno de los ficheros en el servidor (o el export no restringe), lees y a veces escribes sin credenciales. Es la base tambien de [[nfs-no-root-squash]], la variante que da privesc directo.",
+        "cuando": "Cuando el recon muestra el puerto 2049 (o 111 portmapper) abierto. Compruébalo siempre antes de intentar montar nada a ciegas.",
+        "necesitas": [
+            "El puerto 2049 (NFS) o 111 (portmapper) abierto.",
+            "Un cliente NFS en tu Kali para montar (paquete nfs-common o similar).",
+        ],
+        "no_aplica": [
+            "showmount -e no devuelve ningun export, o todos estan restringidos a hosts que no eres tu.",
+            "No tienes forma de montar NFS desde tu maquina de ataque.",
+        ],
+        "confirmacion": "Pide la lista de exports con showmount -e contra la IP objetivo.",
+        "resultado": "Una lista de rutas exportadas (y sus restricciones de host, si las hay). Un export accesible para ti (* o tu rango) confirma que puedes montarlo.",
+        "senales": [
+            "Puerto 2049 (NFS) o 111 (portmapper) abierto en el escaneo.",
+            "showmount -e devuelve al menos un export sin restriccion de host.",
+            "Al montar, los ficheros muestran UID/GID numericos en vez de nombres (no coinciden con tus usuarios locales).",
+        ],
+        "pasos": [
+            "Lista los exports disponibles con showmount -e antes de montar nada.",
+            "Monta el export en un punto local y navega su contenido como cualquier directorio.",
+            "Fijate en los UID/GID de los ficheros: si no coinciden con tu usuario, quiza necesites ajustar tu propio UID para leer/escribir como el dueno.",
+            "Si el export tiene no_root_squash, no hace falta ajustar UID de lectura: puedes escalar directamente, ve a [[nfs-no-root-squash]].",
+        ],
+        "commands": [
+            {
+                "cmd": "showmount -e $IP",
+                "why": "Pregunta al servidor NFS que exporta y a quien, sin montar nada todavia. Es el primer paso obligado antes de montar a ciegas.",
+                "out": "Rutas exportadas y su restriccion de host (o * si es abierto a todos). Cada ruta accesible es un candidato a montar y explorar.",
+            },
+            {
+                "cmd": "sudo mount -t nfs $IP:/export /mnt/nfs",
+                "why": "Monta el export localmente para navegarlo como un directorio normal. Requiere sudo porque montar sistemas de ficheros es una operacion privilegiada en tu propia maquina.",
+                "out": "El contenido del export disponible en /mnt/nfs. Explora en busca de ficheros de config, claves SSH, o binarios que puedas modificar.",
+            },
+        ],
+    },
+    {
+        "id": "ldap-enum",
+        "title": "Enumeracion de LDAP",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "LDAP guarda el directorio de usuarios y grupos de un dominio; un bind anonimo te deja consultarlo sin credenciales.",
+        "que": "LDAP (puerto 389, o 636 cifrado) es el protocolo que Active Directory (y otros directorios) usan para almacenar y consultar usuarios, grupos, equipos y su estructura organizativa. Muchos servidores permiten un 'bind anonimo' (conectar sin credenciales) que, aunque limitado, a veces basta para leer el naming context y enumerar usuarios.",
+        "porque": "El bind anonimo existe para operaciones basicas de consulta sin necesitar cuenta, pero si el administrador no lo restringe, expone la estructura del directorio (nombres de usuario, grupos, a veces atributos sensibles) a cualquiera que se conecte, sin autenticar. Es el equivalente en AD de la sesion nula de [[smb-enum]].",
+        "cuando": "Cuando el recon confirma un DC (puerto 389/636 abierto junto a 88 Kerberos y 445 SMB). Es parte del arranque de la fase AD: mira tambien [[ad-modelo]].",
+        "necesitas": [
+            "El puerto 389 (LDAP) o 636 (LDAPS) abierto, tipicamente en un DC.",
+        ],
+        "no_aplica": [
+            "El servidor rechaza el bind anonimo (necesitas credenciales validas para cualquier consulta).",
+            "No es un entorno AD/LDAP: el puerto 389 no responde o pertenece a otro servicio.",
+        ],
+        "confirmacion": "Intenta un bind anonimo y pide el naming context base con ldapsearch.",
+        "resultado": "Una respuesta con el defaultNamingContext (algo como DC=dominio,DC=local) confirma que el bind anonimo funciona y puedes consultar el directorio.",
+        "senales": [
+            "Puertos 389/636 abiertos junto a 88 (Kerberos) y 445 (SMB): confirma que es un DC.",
+            "ldapsearch sin credenciales (bind anonimo) devuelve resultados en vez de error de autenticacion.",
+            "El naming context revela el nombre del dominio en formato DC=...",
+        ],
+        "pasos": [
+            "Prueba el bind anonimo pidiendo el naming context base; te confirma si esta permitido y te da el nombre del dominio.",
+            "Si el bind anonimo funciona, enumera usuarios y grupos con una consulta mas amplia (base DN completo).",
+            "Con una credencial (aunque sea debil), repite la consulta: el bind autenticado suele revelar mucho mas que el anonimo.",
+            "Los usuarios que saques alimentan spraying y roasting: mira [[asrep-kerberoast]].",
+        ],
+        "commands": [
+            {
+                "cmd": "ldapsearch -x -H ldap://$IP -s base namingcontexts",
+                "why": "Bind anonimo (-x sin credenciales) pidiendo el naming context base. Es la prueba minima: si responde, el bind anonimo esta permitido.",
+                "out": "Un defaultNamingContext tipo DC=corp,DC=local. Confirma el nombre del dominio y que puedes seguir consultando sin credenciales.",
+            },
+            {
+                "cmd": "ldapsearch -x -H ldap://$IP -D '' -w '' -b 'DC=corp,DC=local' '(objectClass=user)'",
+                "why": "Con el naming context ya conocido, pide todos los objetos de tipo usuario via bind anonimo. Es la enumeracion completa de usuarios sin credenciales.",
+                "out": "Una lista de usuarios del dominio con sus atributos visibles. Extrae los nombres para spraying o Kerberoasting.",
+            },
+        ],
+    },
+    {
+        "id": "smtp-enum",
+        "title": "Enumeracion de SMTP",
+        "phase": "enumeration",
+        "section": "recon-y-servicios",
+        "summary": "El servidor de correo a veces confirma si un usuario existe (VRFY/EXPN) o filtra software en el banner.",
+        "que": "SMTP (puerto 25, o 587/465) es el protocolo de envio de correo. Algunos servidores mal configurados responden a los comandos VRFY (verifica si un usuario existe) o EXPN (expande una lista de distribucion), lo que te deja confirmar usuarios validos del dominio sin autenticarte. El banner tambien suele filtrar el software y version del MTA.",
+        "porque": "VRFY/EXPN son comandos legitimos del protocolo SMTP pensados para diagnostico, pero dejarlos activos sin restriccion permite enumerar cuentas de correo validas (que a menudo son tambien cuentas del sistema o del dominio). Es la misma logica de fuga de informacion que RID brute en [[smb-enum]].",
+        "cuando": "Cuando el recon muestra el puerto 25 (o 587/465) abierto. Sirve tanto para sacar usuarios como para entender que servidor de correo corre.",
+        "necesitas": [
+            "El puerto 25 (o 587/465) abierto en el objetivo.",
+        ],
+        "no_aplica": [
+            "El servidor tiene VRFY/EXPN desactivados (respuesta 'not implemented' o similar) y no hay otra via de enumerar usuarios por SMTP.",
+            "El puerto pertenece a un relay externo (no al servidor objetivo) sin relacion con el dominio que atacas.",
+        ],
+        "confirmacion": "Conecta por SMTP y prueba VRFY con un nombre de usuario probable (root, admin, un nombre visto en otra fuente).",
+        "resultado": "Un codigo 250/252 (usuario existe) frente a 550 (no existe) te deja distinguir usuarios validos probando varios nombres.",
+        "senales": [
+            "Puerto 25/587/465 abierto en el escaneo.",
+            "El banner de conexion revela el software MTA y su version.",
+            "VRFY responde con codigos distintos segun si el usuario existe o no.",
+        ],
+        "pasos": [
+            "Conecta y observa el banner: a veces ya revela el software y version.",
+            "Prueba VRFY con nombres candidatos (usuarios ya vistos en otras fuentes, nombres comunes).",
+            "Si VRFY esta desactivado, prueba EXPN sobre listas de distribucion conocidas o comunes.",
+            "Los usuarios confirmados alimentan spraying ([[fuerza-bruta-online]]) contra otros servicios del objetivo.",
+        ],
+        "commands": [
+            {
+                "cmd": "nc -nv $IP 25",
+                "why": "Conecta directamente por SMTP para leer el banner (revela software/version) e interactuar a mano con VRFY/EXPN.",
+                "out": "Un banner tipo '220 mail.corp.local ESMTP Postfix'. Desde esta sesion, escribe VRFY usuario y observa el codigo de respuesta.",
+            },
+        ],
+    },
 ]
 
 
@@ -2085,10 +2318,16 @@ PATHS = [
         ],
     },
     {
-        "id": "recon-y-servicios-ruta",
-        "title": "Reconocimiento y servicios",
-        "summary": "La primera fase de toda room: de puertos a servicios enumerados. SMB como ejemplo por su altisima rentabilidad.",
-        "concepts": ["recon-metodologia", "smb-enum"],
+        "id": "recon-red-ruta",
+        "title": "Reconocimiento de red",
+        "summary": "La primera fase de toda room: de puertos a servicios identificados, antes de enumerar cada uno.",
+        "concepts": ["recon-metodologia"],
+    },
+    {
+        "id": "enumeracion-servicios-ruta",
+        "title": "Enumeracion de servicios",
+        "summary": "Cada servicio se enumera distinto. SMB, DNS, FTP, SNMP, NFS, LDAP y SMTP: que mirar en cada uno.",
+        "concepts": ["smb-enum", "dns-enum", "ftp-enum", "snmp-enum", "nfs-enum", "ldap-enum", "smtp-enum"],
     },
     {
         "id": "credenciales-ruta",
