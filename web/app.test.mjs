@@ -12,6 +12,8 @@ import {
   resolveSlug,
   shouldRenderCodeBlock,
   SLUG_REDIRECTS,
+  PORT_DB,
+  lookupPort,
 } from "./app.mjs";
 
 const sections = [
@@ -153,6 +155,31 @@ for (const [oldSlug, newSlug] of Object.entries(SLUG_REDIRECTS)) {
 }
 assert.equal(resolveSlug("un-slug-cualquiera-no-redirigido"), "un-slug-cualquiera-no-redirigido");
 
+// ---- Buscador de puertos (feature: teclear un puerto -> que es + como seguir) ----
+// Puerto conocido devuelve servicio + comandos + seccion real.
+const smb = lookupPort("445");
+assert.ok(smb && smb.known && smb.svc === "SMB", "445 deberia resolver a SMB");
+assert.ok(smb.cmds.length && sectionSlugs.has(resolveSlug(smb.slug)), "445 apunta a seccion inexistente");
+// Formatos de entrada aceptados.
+assert.equal(lookupPort("puerto 80").svc, "HTTP");
+assert.equal(lookupPort("port 6379/tcp").svc, "Redis");
+assert.equal(lookupPort("  53  ").svc, "DNS");
+// Puerto fuera de la base -> fallback de fingerprint (la leccion del nombre de nmap).
+const rare = lookupPort("5050");
+assert.ok(rare && rare.known === false, "5050 deberia caer al fallback no-estandar");
+assert.ok(rare.cmds.some((c) => c.includes("-sV")), "el fallback debe incluir fingerprint de version");
+assert.ok(sectionSlugs.has(resolveSlug(rare.slug)), "fallback apunta a seccion inexistente");
+// No-puertos devuelven null (no debe dispararse con texto normal).
+for (const q of ["", "smb", "top 20", "nmap", "70000", "0"]) {
+  assert.equal(lookupPort(q), null, `lookupPort(${JSON.stringify(q)}) deberia ser null`);
+}
+// Toda entrada de la base es consistente y enlaza a una seccion que existe.
+for (const [port, entry] of Object.entries(PORT_DB)) {
+  assert.ok(entry.svc && entry.note, `puerto ${port} sin svc/note`);
+  assert.ok(Array.isArray(entry.cmds) && entry.cmds.length, `puerto ${port} sin comandos`);
+  assert.ok(sectionSlugs.has(resolveSlug(entry.slug)), `puerto ${port} apunta a seccion inexistente: ${entry.slug}`);
+}
+
 const isValidCommand = (command) =>
   typeof command === "string"
     ? command.length > 0
@@ -276,7 +303,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-content-depth/);
+  assert.match(asset, /20260710-buscador-puertos/);
 }
 
 assert.match(js, /registration\.update\(\)/);

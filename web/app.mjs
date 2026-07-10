@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-content-depth";
+const APP_VERSION = "20260710-buscador-puertos";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -181,6 +181,95 @@ const ALIASES = {
   interno: ["pivoting", "forwarding", "socks", "proxychains"],
   version: ["cve", "searchsploit", "poc", "exploit"],
 };
+
+// Base de puertos: teclear un numero de puerto (p.ej. "5050") devuelve que
+// servicio corre ahi, como enumerarlo y a que seccion ir. Para puertos raros el
+// fallback ensena la leccion clave: el nombre que imprime nmap en puertos no
+// estandar sale de /etc/services (tabla estatica), NO es deteccion real -> hay
+// que hacer fingerprint de version + banner-grab.
+export const PORT_DB = {
+  "21": { svc: "FTP", note: "Transferencia de ficheros. Prueba login anonimo antes que nada; si entra, lista y descarga todo.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ftp-anon,ftp-syst $IP", "ftp $IP $PORT"] },
+  "22": { svc: "SSH", note: "Shell remota. Rara vez explotable directo: apunta banner/version y guarda para reutilizar credenciales que encuentres.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ssh2-enum-algos $IP", "ssh USER@$IP -p $PORT"] },
+  "23": { svc: "Telnet", note: "Shell en claro. Conecta y lee el banner; a veces da acceso sin credenciales o revela el sistema.", slug: "recon-y-servicios", cmds: ["telnet $IP $PORT", "nc $IP $PORT"] },
+  "25": { svc: "SMTP", note: "Correo. Enumera usuarios validos con VRFY/EXPN/RCPT y apunta el nombre de host interno del banner.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-commands,smtp-enum-users $IP"] },
+  "53": { svc: "DNS", note: "Resolucion de nombres. Intenta transferencia de zona (AXFR) para volcar todos los registros del dominio.", slug: "recon-y-servicios", cmds: ["dig axfr @$IP DOMINIO", "nmap -p $PORT --script dns-nsid $IP"] },
+  "69": { svc: "TFTP", note: "Transferencia sin auth sobre UDP. Sin listado: adivina nombres tipicos (config, backup) para leer/escribir.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script tftp-enum $IP", "tftp $IP"] },
+  "79": { svc: "Finger", note: "Enumera usuarios del sistema. Consulta cuentas comunes para armar lista de logins.", slug: "recon-y-servicios", cmds: ["finger @$IP", "nmap -p $PORT --script finger $IP"] },
+  "80": { svc: "HTTP", note: "Web. Fingerprint del stack, luego fuzz de directorios y ficheros; casi siempre es la via principal.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt", "curl -sv http://$IP:$PORT/"] },
+  "88": { svc: "Kerberos", note: "Autenticacion de Active Directory. Su presencia = hay dominio: enumera usuarios y busca AS-REP roasting.", slug: "active-directory", cmds: ["nmap -p $PORT $IP", "kerbrute userenum -d DOMINIO --dc $IP users.txt"] },
+  "110": { svc: "POP3", note: "Buzon de correo. Con credenciales, lee mensajes en busca de secretos.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script pop3-capabilities $IP"] },
+  "111": { svc: "rpcbind / NFS portmapper", note: "Mapa de servicios RPC. Lista programas registrados; suele delatar NFS (mira 2049).", slug: "recon-y-servicios", cmds: ["rpcinfo -p $IP", "nmap -p $PORT --script rpcinfo $IP"] },
+  "135": { svc: "MSRPC (Windows)", note: "Endpoint mapper de Windows. Enumera interfaces y valida usuarios/DCOM.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script msrpc-enum $IP", "impacket-rpcdump $IP"] },
+  "139": { svc: "NetBIOS / SMB", note: "SMB sobre NetBIOS. Enumera shares y sesiones nulas igual que el 445.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p ''", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
+  "143": { svc: "IMAP", note: "Buzon de correo. Con credenciales, lee carpetas en busca de loot.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script imap-capabilities $IP"] },
+  "161": { svc: "SNMP (UDP)", note: "Gestion de red sobre UDP. Prueba community 'public': suele filtrar procesos, usuarios y hasta credenciales.", slug: "recon-y-servicios", cmds: ["snmpwalk -v2c -c public $IP", "nmap -sU -p $PORT --script snmp-info $IP"] },
+  "389": { svc: "LDAP", note: "Directorio (a menudo AD). Consulta el naming context base con bind anonimo para volcar objetos.", slug: "active-directory", cmds: ["ldapsearch -x -H ldap://$IP:$PORT -s base namingcontexts", "nmap -p $PORT --script ldap-rootdse $IP"] },
+  "443": { svc: "HTTPS", note: "Web cifrada. Igual que HTTP pero mira ademas el certificado: revela hostnames y subdominios.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/", "ffuf -u https://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
+  "445": { svc: "SMB", note: "Comparticion de ficheros Windows. Sesion nula, listado de shares y enumeracion de usuarios; pilar en AD.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p ''", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
+  "465": { svc: "SMTPS", note: "SMTP cifrado. Mismo juego que el 25 pero sobre TLS.", slug: "recon-y-servicios", cmds: ["openssl s_client -connect $IP:$PORT", "nmap -p $PORT --script smtp-commands $IP"] },
+  "512": { svc: "rexec (r-services)", note: "Ejecucion remota legacy. Junto a 513/514: si confia en hosts, da shell sin password.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script rexec-brute $IP"] },
+  "513": { svc: "rlogin (r-services)", note: "Login remoto legacy. Con .rhosts permisivo entras sin credenciales.", slug: "recon-y-servicios", cmds: ["rlogin $IP -l root", "nmap -p $PORT --script rlogin-brute $IP"] },
+  "514": { svc: "rsh / syslog", note: "Shell remota legacy o syslog. Prueba rsh con hosts de confianza.", slug: "recon-y-servicios", cmds: ["rsh $IP -l root id", "nmap -p $PORT $IP"] },
+  "587": { svc: "SMTP (submission)", note: "Envio de correo autenticado. Enumera usuarios y prueba credenciales encontradas.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-enum-users $IP"] },
+  "623": { svc: "IPMI (UDP)", note: "Gestion de hardware BMC. Vulnerable a volcado de hashes de credenciales sin auth.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script ipmi-version,ipmi-cipher-zero $IP"] },
+  "636": { svc: "LDAPS", note: "LDAP cifrado. Igual que 389 pero sobre TLS.", slug: "active-directory", cmds: ["ldapsearch -x -H ldaps://$IP:$PORT -s base namingcontexts", "openssl s_client -connect $IP:$PORT"] },
+  "873": { svc: "rsync", note: "Sincronizacion de ficheros. Lista modulos sin auth; a menudo se leen o escriben sin credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "rsync -av --list-only rsync://$IP:$PORT/"] },
+  "1099": { svc: "Java RMI", note: "Objetos remotos Java. Vuelca el registro; candidato a deserializacion (ysoserial).", slug: "cve-y-exploits", cmds: ["nmap -p $PORT --script rmi-dumpregistry $IP"] },
+  "1433": { svc: "MSSQL", note: "SQL Server. Con credenciales, ejecuta consultas y posible RCE via xp_cmdshell; clave en AD.", slug: "recon-y-servicios", cmds: ["nxc mssql $IP -u USER -p PASS", "impacket-mssqlclient USER@$IP"] },
+  "1521": { svc: "Oracle DB", note: "Base de datos Oracle. Enumera el SID antes de intentar credenciales.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script oracle-sid-brute $IP", "odat sidguesser -s $IP -p $PORT"] },
+  "2049": { svc: "NFS", note: "Sistema de ficheros de red. Lista exports; si hay no_root_squash, es via directa a privesc.", slug: "recon-y-servicios", cmds: ["showmount -e $IP", "nmap -p $PORT --script nfs-showmount,nfs-ls $IP"] },
+  "2222": { svc: "SSH (alt)", note: "SSH en puerto alternativo. Igual que el 22.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ssh2-enum-algos $IP", "ssh USER@$IP -p $PORT"] },
+  "2375": { svc: "Docker API (sin TLS)", note: "API Docker expuesta sin auth. Lanza un contenedor que monte el disco del host = root.", slug: "cve-y-exploits", cmds: ["curl http://$IP:$PORT/version", "docker -H $IP:$PORT ps"] },
+  "3000": { svc: "HTTP (Grafana / Node / dev)", note: "Web de desarrollo, a menudo Grafana. Identifica la app y busca su CVE o panel por defecto.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "curl -sv http://$IP:$PORT/"] },
+  "3128": { svc: "Squid proxy", note: "Proxy HTTP. Puede dar acceso a servicios internos; prueba a proxyficar peticiones.", slug: "pivoting", cmds: ["curl -x http://$IP:$PORT http://127.0.0.1/", "nmap -p $PORT --script http-open-proxy $IP"] },
+  "3306": { svc: "MySQL / MariaDB", note: "Base de datos. Prueba root sin password; con acceso, vuelca hashes y busca credenciales.", slug: "recon-y-servicios", cmds: ["mysql -h $IP -P $PORT -u root", "nmap -p $PORT --script mysql-info,mysql-empty-password $IP"] },
+  "3389": { svc: "RDP", note: "Escritorio remoto Windows. Con credenciales, entra en GUI; util tras conseguir un usuario.", slug: "credenciales-y-acceso", cmds: ["nxc rdp $IP -u USER -p PASS", "xfreerdp /v:$IP /u:USER /p:PASS"] },
+  "3690": { svc: "SVN (subversion)", note: "Control de versiones. Descarga el repo y revisa el historial en busca de secretos.", slug: "recon-y-servicios", cmds: ["svn ls svn://$IP:$PORT/", "svn log -v svn://$IP:$PORT/"] },
+  "4369": { svc: "Erlang Port Mapper (EPMD)", note: "Descubre nodos Erlang/RabbitMQ. Con la cookie, RCE via distribucion Erlang.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script epmd-info $IP", "epmd -d"] },
+  "5000": { svc: "HTTP (Flask / Docker registry)", note: "App web (Flask) o registro Docker. Si es registro, lista imagenes y extrae capas con secretos.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/v2/_catalog"] },
+  "5432": { svc: "PostgreSQL", note: "Base de datos. Prueba postgres sin password; con acceso puede haber RCE via COPY/lo_import.", slug: "recon-y-servicios", cmds: ["psql -h $IP -p $PORT -U postgres", "nmap -p $PORT --script pgsql-brute $IP"] },
+  "5601": { svc: "Kibana", note: "Panel de Elasticsearch. Identifica version: varias tienen RCE conocido; mira tambien 9200.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/api/status"] },
+  "5672": { svc: "AMQP / RabbitMQ", note: "Cola de mensajes. Prueba credenciales por defecto (guest/guest); admin suele estar en 15672.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script amqp-info $IP"] },
+  "5900": { svc: "VNC", note: "Escritorio remoto. A veces sin password o con auth debil; conecta y mira la pantalla.", slug: "credenciales-y-acceso", cmds: ["nmap -p $PORT --script vnc-info,realvnc-auth-bypass $IP", "vncviewer $IP:$PORT"] },
+  "5985": { svc: "WinRM (HTTP)", note: "Gestion remota Windows. Con credenciales validas = shell directa via evil-winrm.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS", "evil-winrm -i $IP -u USER -p PASS"] },
+  "5986": { svc: "WinRM (HTTPS)", note: "WinRM cifrado. Igual que 5985 anadiendo -S/--ssl.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS --ssl", "evil-winrm -i $IP -u USER -p PASS -S"] },
+  "6379": { svc: "Redis", note: "Almacen clave-valor, normalmente sin auth. Sin password puede escribir claves SSH o webshell = RCE.", slug: "recon-y-servicios", cmds: ["redis-cli -h $IP -p $PORT", "redis-cli -h $IP -p $PORT info"] },
+  "6667": { svc: "IRC", note: "Chat. Lee el banner: algunas versiones (UnrealIRCd) tienen backdoor de RCE.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script irc-info,irc-unrealircd-backdoor $IP"] },
+  "8000": { svc: "HTTP (alt)", note: "Web alternativa, a menudo apps o APIs de desarrollo. Fingerprint y fuzz como en el 80.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
+  "8009": { svc: "AJP (Tomcat)", note: "Conector AJP de Tomcat. Vulnerable a Ghostcat (lectura de ficheros / RCE).", slug: "cve-y-exploits", cmds: ["nmap -p $PORT --script ajp-methods,ajp-headers $IP"] },
+  "8080": { svc: "HTTP (proxy / Tomcat)", note: "Web alternativa, frecuente Tomcat. Prueba /manager con credenciales por defecto para desplegar WAR.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "curl -sv http://$IP:$PORT/", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
+  "8443": { svc: "HTTPS (alt)", note: "Web cifrada alternativa. Igual que 443; revisa el certificado.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/"] },
+  "8500": { svc: "HashiCorp Consul", note: "Orquestacion de servicios. La API puede permitir registrar checks que ejecutan comandos = RCE.", slug: "cve-y-exploits", cmds: ["curl http://$IP:$PORT/v1/agent/self", "curl http://$IP:$PORT/v1/catalog/services"] },
+  "8888": { svc: "HTTP (alt / Jupyter)", note: "Web alternativa, a menudo Jupyter. Un notebook sin token da ejecucion de codigo directa.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
+  "9000": { svc: "HTTP (SonarQube / PHP-FPM)", note: "App web o FastCGI. Si es PHP-FPM, posible RCE; si es SonarQube, mira credenciales admin/admin.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
+  "9200": { svc: "Elasticsearch", note: "Motor de busqueda/BD. API REST sin auth: lista indices y vuelca datos; versiones viejas con RCE.", slug: "recon-y-servicios", cmds: ["curl http://$IP:$PORT/", "curl http://$IP:$PORT/_cat/indices?v"] },
+  "10000": { svc: "Webmin", note: "Panel de administracion de servidor. Identifica version: varias tienen RCE autenticado o no.", slug: "web-discovery", cmds: ["curl -skv https://$IP:$PORT/", "whatweb https://$IP:$PORT"] },
+  "11211": { svc: "Memcached", note: "Cache en memoria sin auth. Vuelca claves: a veces guardan sesiones o credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script memcached-info $IP"] },
+  "15672": { svc: "RabbitMQ (panel web)", note: "Consola de gestion de RabbitMQ. Prueba guest/guest y explora colas y usuarios.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl -u guest:guest http://$IP:$PORT/api/overview"] },
+  "25565": { svc: "Minecraft", note: "Servidor de juego. Rara vez la via; apunta version y busca plugins mal configurados.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script minecraft-info $IP"] },
+  "27017": { svc: "MongoDB", note: "Base de datos NoSQL, a veces sin auth. Conecta, lista bases y vuelca colecciones con secretos.", slug: "recon-y-servicios", cmds: ["mongosh mongodb://$IP:$PORT", "nmap -p $PORT --script mongodb-info,mongodb-databases $IP"] },
+  "50000": { svc: "HTTP (SAP / DB2 / Jenkins)", note: "Suele ser un panel web (SAP, Jenkins). Fingerprint la app y busca su via de RCE.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
+};
+
+// Parsea "5050", "puerto 5050", "port 5050/tcp" -> ficha del puerto. Devuelve
+// null si el texto no es un numero de puerto valido (1-65535). Puertos fuera de
+// la base caen al fallback de fingerprint.
+export function lookupPort(query) {
+  const m = String(query || "").trim().toLowerCase().match(/^(?:puerto|port)?\s*(\d{1,5})(?:\/(?:tcp|udp))?$/);
+  if (!m) return null;
+  const port = Number(m[1]);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+  const hit = PORT_DB[String(port)];
+  if (hit) return { port, known: true, svc: hit.svc, note: hit.note, slug: hit.slug, cmds: hit.cmds };
+  return {
+    port,
+    known: false,
+    svc: "Puerto no estandar",
+    note: "El nombre que muestra nmap para un puerto no estandar sale de una tabla estatica (/etc/services), NO es deteccion real. Haz fingerprint de version y banner-grab para saber que corre de verdad; muchos puertos raros son solo HTTP en otro numero.",
+    slug: "recon-y-servicios",
+    cmds: ["nmap -sV -sC -p $PORT $IP", "nc $IP $PORT", "curl -skv http://$IP:$PORT/", "searchsploit SERVICIO VERSION"],
+  };
+}
 
 const COMMAND_QUERY_TERMS = new Set([
   "arjun",
@@ -829,16 +918,58 @@ function renderShortcuts(data) {
   });
 }
 
+function sectionTitleFor(slug) {
+  const section = state.data.sections.find((s) => s.slug === slug);
+  return section ? section.title : slug;
+}
+
+function portCardHtml(info) {
+  const room = { ...state.room, port: String(info.port) };
+  const cmds = info.cmds
+    .map((command) => {
+      const value = escapeHtml(adaptCommand(command, room));
+      return `<button type="button" class="port-cmd" data-copy="${value}" title="Copiar comando"><code>${markPlaceholders(value)}</code><span class="copy-btn">${COPY_ICON}<span class="copy-label">copy</span></span></button>`;
+    })
+    .join("");
+  const target = resolveSlug(info.slug);
+  return `<section class="port-card ${info.known ? "" : "port-card-unknown"}" aria-label="Puerto ${info.port}">
+    <div class="port-card-head">
+      <span class="port-num">${info.port}</span>
+      <strong>${escapeHtml(info.svc)}</strong>
+      ${info.known ? "" : `<span class="port-badge">fingerprint</span>`}
+    </div>
+    <p class="port-note">${escapeHtml(info.note)}</p>
+    <div class="port-cmds">${cmds}</div>
+    <button type="button" class="port-goto" data-slug="${escapeHtml(target)}">Ir a ${escapeHtml(sectionTitleFor(target))} &rarr;</button>
+  </section>`;
+}
+
+function bindPortCard(container) {
+  const goto = container.querySelector(".port-goto");
+  if (!goto) return;
+  goto.addEventListener("click", () => {
+    markPracticaSeen();
+    state.activeSlug = goto.dataset.slug;
+    pushRecent(goto.dataset.slug);
+    writeHash(true);
+    render();
+  });
+}
+
 function renderResults(sections) {
   const container = document.querySelector("[data-results]");
   const commandMatches = state.query ? renderInlineCommandMatches() : "";
+  const portInfo = state.query ? lookupPort(state.query) : null;
+  const portCard = portInfo ? portCardHtml(portInfo) : "";
   if (!sections.length) {
-    container.innerHTML = commandMatches || `<p class="list-empty">Sin coincidencias. Cambia fase, tema o termino.</p>`;
+    const rest = commandMatches || (portCard ? "" : `<p class="list-empty">Sin coincidencias. Cambia fase, tema o termino.</p>`);
+    container.innerHTML = portCard + rest;
+    bindPortCard(container);
     bindInlineCommandMatches(container);
     return;
   }
   const terms = queryTerms();
-  container.innerHTML = commandMatches + sections
+  container.innerHTML = portCard + commandMatches + sections
     .map((section) => {
       const fav = state.favs.has(section.slug);
       return `<div class="result-wrap">
@@ -855,6 +986,7 @@ function renderResults(sections) {
       </div>`;
     })
     .join("");
+  bindPortCard(container);
   bindInlineCommandMatches(container);
   container.querySelectorAll(".result").forEach((button) => {
     button.addEventListener("click", () => {
