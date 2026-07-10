@@ -9,7 +9,9 @@ import {
   filterSections,
   getTopCommands,
   normalizeQuery,
+  resolveSlug,
   shouldRenderCodeBlock,
+  SLUG_REDIRECTS,
 } from "./app.mjs";
 
 const sections = [
@@ -142,6 +144,15 @@ for (const guide of content.guides) {
 const KNOWN_PHASES = new Set(["access", "closeout", "enumeration", "pivot", "privesc", "recon", "reference"]);
 const sectionSlugs = new Set(content.sections.map((section) => section.slug));
 
+// A retired slug must never be a real section (else it wasn't actually retired)
+// and must resolve to one that IS real (else an old hash/favorite hits a hole).
+for (const [oldSlug, newSlug] of Object.entries(SLUG_REDIRECTS)) {
+  assert.ok(!sectionSlugs.has(oldSlug), `slug retirado ${oldSlug} sigue existiendo como seccion real`);
+  assert.ok(sectionSlugs.has(newSlug), `redirect ${oldSlug} -> ${newSlug} apunta a seccion inexistente`);
+  assert.equal(resolveSlug(oldSlug), newSlug);
+}
+assert.equal(resolveSlug("un-slug-cualquiera-no-redirigido"), "un-slug-cualquiera-no-redirigido");
+
 const isValidCommand = (command) =>
   typeof command === "string"
     ? command.length > 0
@@ -216,7 +227,7 @@ for (const guide of content.guides) {
 }
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-plantilla-minima/);
+  assert.match(asset, /20260710-web-split/);
 }
 
 assert.match(js, /registration\.update\(\)/);

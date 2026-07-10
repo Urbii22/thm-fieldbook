@@ -145,7 +145,7 @@ GUIDES = [
         "id": "web-a-shell",
         "title": "De la web a una shell",
         "phase": "access",
-        "section": "web-y-apis",
+        "section": "web-discovery",
         "summary": "Como pasar de una pagina web a ejecutar comandos, razonando cada paso.",
         "steps": [
             {

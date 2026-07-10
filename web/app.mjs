@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-plantilla-minima";
+const APP_VERSION = "20260710-web-split";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -71,6 +71,17 @@ const UNRESOLVED_RAW_RE =
 
 const COPY_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
+
+// Old section slugs retired by a content restructure -> their replacement.
+// Keeps saved hashes/favorites/recientes from landing on a blank/wrong screen
+// (PLAN_IMPLEMENTACION_CONTENIDOS.md, "compatibilidad minima de slugs").
+export const SLUG_REDIRECTS = {
+  "web-y-apis": "web-discovery",
+};
+
+export function resolveSlug(slug) {
+  return SLUG_REDIRECTS[slug] || slug;
+}
 
 const shortcutHints = {
   "Estoy atascado": "Reset de 10 minutos",
@@ -1330,18 +1341,22 @@ function applyHashToState() {
     const slug = decodeURIComponent(pathPart || "");
     // A practica deep-link (or ?q=) is an explicit entry point -> skip the guided screen.
     if (slug || query) state.practicaSeen = true;
-    if (slug) state.activeSlug = slug;
+    if (slug) state.activeSlug = resolveSlug(slug);
   }
 }
 
 function loadFavs() {
   try {
-    state.favs = new Set(JSON.parse(localStorage.getItem(FAVS_KEY) || "[]"));
+    const stored = JSON.parse(localStorage.getItem(FAVS_KEY) || "[]");
+    state.favs = new Set(stored.map(resolveSlug));
   } catch {
     state.favs = new Set();
   }
   try {
-    state.recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    const stored = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    // Redirect + dedupe (an old and new slug for the same section could
+    // otherwise both show up in "recientes" after a restructure).
+    state.recent = [...new Set(stored.map(resolveSlug))].slice(0, 6);
   } catch {
     state.recent = [];
   }
@@ -1666,8 +1681,8 @@ function gotoSection(slug) {
   if (search) search.value = "";
   setView("practica");
   markPracticaSeen();
-  state.activeSlug = slug;
-  pushRecent(slug);
+  state.activeSlug = resolveSlug(slug);
+  pushRecent(state.activeSlug);
   writeHash(true);
   render();
   document.querySelector("[data-detail]")?.scrollIntoView({ block: "start" });
@@ -2064,7 +2079,8 @@ function render() {
   if (state.favOnly) sections = sections.filter((section) => state.favs.has(section.slug));
   state.visible = sections;
   if (!sections.some((section) => section.slug === state.activeSlug)) {
-    state.activeSlug = sections[0]?.slug || "";
+    const redirected = resolveSlug(state.activeSlug);
+    state.activeSlug = sections.some((section) => section.slug === redirected) ? redirected : sections[0]?.slug || "";
   }
   const active = sections.find((section) => section.slug === state.activeSlug);
   document.querySelector("[data-count]").textContent = String(sections.length);

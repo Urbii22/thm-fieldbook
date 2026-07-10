@@ -17,13 +17,33 @@ DEFAULT_OUTPUT = ROOT / "web" / "data" / "content.json"
 MASTER_SECTION_SLUGS = {
     "ultra-quick-start": "ultra-quick-start",
     "arquetipos-de-rooms": "arquetipos-de-rooms",
-    "web-moderna-y-apis": "web-y-apis",
     "metodologia-cve-exploit": "cve-y-exploits",
-    "credenciales-cracking-y-loot": "credenciales-y-loot",
     "plantilla-de-room-writeup": "notas-y-cierre",
     "equivalencias-windows-linux": "equivalencias",
     "errores-tipicos": "errores-tipicos",
     "checklist-de-atasco": "checklist-de-atasco",
+}
+
+
+# Some master docs cover several distinct topics and should NOT all land in one
+# destination section (that just recreates the density problem). For those,
+# route by matching the master doc's own sub-heading instead of a single 1:1
+# slug. First matching needle wins; headings with no match are dropped (their
+# content is superseded by hand-curated blocks/concepts in the new sections).
+MASTER_SECTION_ROUTES: dict[str, list[tuple[str, str]]] = {
+    # Only route headings whose raw "code" lines are genuinely standalone,
+    # runnable commands. The other headings in this master doc (IDOR, JWT,
+    # GraphQL, SSRF, XXE, NoSQLi, command injection) store bare payload/JSON
+    # fragments as "code" lines (e.g. "GET /api/users/1001", "; id",
+    # "url=http://..."), not real commands — merging those back in would
+    # recreate the "comandos sin finalidad" noise this split is meant to
+    # remove. Those topics are hand-curated directly in the new sections
+    # instead (with proper why/annotation), so they are intentionally
+    # excluded here rather than routed.
+    "web-moderna-y-apis": [
+        ("mapa inicial", "web-discovery"),
+        ("fuzzing", "web-discovery"),
+    ],
 }
 
 
@@ -45,7 +65,10 @@ CURATED_TAGS = {
     "mapa-de-decisiones": ["recon", "workflow"],
     "arquetipos-de-rooms": ["recon", "workflow"],
     "recon-y-servicios": ["recon"],
-    "web-y-apis": ["web"],
+    "web-discovery": ["web"],
+    "web-apis-y-autorizacion": ["web"],
+    "web-inyecciones": ["web"],
+    "web-ficheros-y-ejecucion": ["web"],
     "wordpress": ["web"],
     "sqli": ["web"],
     "credenciales-y-loot": ["credentials"],
@@ -89,7 +112,7 @@ SHORTCUTS = [
     {
         "label": "Veo una web",
         "query": "web api idor jwt upload sqli wordpress discovery",
-        "target": "web-y-apis",
+        "target": "web-discovery",
     },
     {
         "label": "Necesito pivotar",
@@ -219,6 +242,24 @@ def extract_master_commands(doc: dict[str, Any]) -> list[str]:
     return commands
 
 
+def extract_master_commands_by_heading(doc: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    """Same as extract_master_commands but keeps each sub-section's heading,
+    so callers can route different topics within one doc to different
+    destinations (see MASTER_SECTION_ROUTES)."""
+    result: list[tuple[str, list[str]]] = []
+    for section in doc.get("sections", []):
+        heading = normalize_text(section.get("heading", "")).lower()
+        commands: list[str] = []
+        for key in ("code", "code2"):
+            for line in section.get(key, []):
+                command = normalize_text(line).strip()
+                if command:
+                    commands.append(command)
+        if commands:
+            result.append((heading, commands))
+    return result
+
+
 def load_master_docs() -> list[dict[str, Any]]:
     source_path = ROOT / "tools" / "generate_thm_playbook.py"
     module = ast.parse(source_path.read_text(encoding="utf-8"))
@@ -234,6 +275,14 @@ def build_master_command_index() -> dict[str, list[str]]:
     command_index: dict[str, list[str]] = {}
     for doc in load_master_docs():
         source_slug = slugify(normalize_text(doc.get("short", "")))
+        routes = MASTER_SECTION_ROUTES.get(source_slug)
+        if routes:
+            for heading, commands in extract_master_commands_by_heading(doc):
+                target_slug = next((slug for needle, slug in routes if needle in heading), None)
+                if not target_slug:
+                    continue
+                command_index.setdefault(target_slug, []).extend(commands)
+            continue
         target_slug = MASTER_SECTION_SLUGS.get(source_slug)
         if not target_slug:
             continue
@@ -241,9 +290,14 @@ def build_master_command_index() -> dict[str, list[str]]:
     return command_index
 
 
+def _all_master_target_slugs() -> set[str]:
+    routed = {slug for routes in MASTER_SECTION_ROUTES.values() for _, slug in routes}
+    return routed | set(MASTER_SECTION_SLUGS.values())
+
+
 def should_merge_master_commands(sections: list[dict[str, Any]]) -> bool:
     slugs = {section["slug"] for section in sections}
-    return len(sections) >= 10 and bool(slugs.intersection(MASTER_SECTION_SLUGS.values()))
+    return len(sections) >= 10 and bool(slugs.intersection(_all_master_target_slugs()))
 
 
 def merge_master_commands(sections: list[dict[str, Any]]) -> None:

