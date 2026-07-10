@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-web-split";
+const APP_VERSION = "20260710-creds-split";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -77,6 +77,7 @@ const COPY_ICON =
 // (PLAN_IMPLEMENTACION_CONTENIDOS.md, "compatibilidad minima de slugs").
 export const SLUG_REDIRECTS = {
   "web-y-apis": "web-discovery",
+  "credenciales-y-loot": "loot-y-secretos",
 };
 
 export function resolveSlug(slug) {

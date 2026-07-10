@@ -44,6 +44,13 @@ MASTER_SECTION_ROUTES: dict[str, list[tuple[str, str]]] = {
         ("mapa inicial", "web-discovery"),
         ("fuzzing", "web-discovery"),
     ],
+    "credenciales-cracking-y-loot": [
+        ("busqueda rapida", "loot-y-secretos"),
+        ("conversiones john", "hashes-y-cracking"),
+        ("hashcat", "hashes-y-cracking"),
+        ("keepass", "hashes-y-cracking"),
+        ("reutilizacion", "credenciales-y-acceso"),
+    ],
 }
 
 
@@ -71,7 +78,9 @@ CURATED_TAGS = {
     "web-ficheros-y-ejecucion": ["web"],
     "wordpress": ["web"],
     "sqli": ["web"],
-    "credenciales-y-loot": ["credentials"],
+    "loot-y-secretos": ["credentials"],
+    "hashes-y-cracking": ["credentials"],
+    "credenciales-y-acceso": ["credentials"],
     "acceso-inicial": ["credentials", "exploit", "linux", "windows"],
     "linux-privesc": ["linux"],
     "windows-privesc": ["windows"],
@@ -102,7 +111,7 @@ SHORTCUTS = [
     {
         "label": "Tengo credenciales",
         "query": "credenciales loot hash cracking reuse smb ssh winrm",
-        "target": "credenciales-y-loot",
+        "target": "credenciales-y-acceso",
     },
     {
         "label": "Tengo shell",

@@ -398,7 +398,7 @@ GUIDES = [
         "id": "credenciales",
         "title": "Tengo credenciales, y ahora que",
         "phase": "access",
-        "section": "credenciales-y-loot",
+        "section": "loot-y-secretos",
         "summary": "Buscar, identificar, crackear y reutilizar sin caos.",
         "steps": [
             {
