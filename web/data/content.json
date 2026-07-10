@@ -6,7 +6,7 @@
     "totalTags": 9,
     "totalGuides": 8,
     "totalConcepts": 42,
-    "totalPaths": 9
+    "totalPaths": 11
   },
   "tags": [
     "active-directory",
@@ -6227,9 +6227,9 @@
       ]
     },
     {
-      "id": "privesc-linux-ruta",
-      "title": "Escalada de privilegios en Linux",
-      "summary": "De usuario normal a root, a fondo. Modelo mental, enumeracion, y todos los vectores en orden de rentabilidad (kernel al final).",
+      "id": "privesc-linux-esencial-ruta",
+      "title": "Escalada de privilegios en Linux: esencial",
+      "summary": "El modelo mental y los vectores mas rentables: enumeracion, sudo, SUID, capabilities, cron y ficheros sensibles.",
       "concepts": [
         "privesc-modelo",
         "enum-privesc-linux",
@@ -6237,11 +6237,18 @@
         "suid",
         "capabilities",
         "cron-abuse",
+        "writable-sensitive-files"
+      ]
+    },
+    {
+      "id": "privesc-linux-avanzada-ruta",
+      "title": "Escalada de privilegios en Linux: avanzada",
+      "summary": "Vectores menos frecuentes pero igual de reales: PATH, Python, wildcards, LD_PRELOAD, grupos, NFS y kernel (al final, ultimo recurso).",
+      "concepts": [
         "path-hijacking",
         "python-library-hijacking",
         "wildcard-injection",
         "sudo-ld-preload",
-        "writable-sensitive-files",
         "group-abuse-linux",
         "nfs-no-root-squash",
         "kernel-exploits-linux"
@@ -6274,16 +6281,23 @@
       ]
     },
     {
-      "id": "windows-privesc-ruta",
-      "title": "Escalada en Windows",
-      "summary": "De usuario a SYSTEM, a fondo. Modelo, enumeracion, privilegios de token, servicios, credenciales y el resto de vectores (kernel al final).",
+      "id": "windows-privesc-esencial-ruta",
+      "title": "Escalada en Windows: esencial",
+      "summary": "El modelo mental y los vectores mas rentables: enumeracion, privilegios de token, servicios, credenciales y AlwaysInstallElevated.",
       "concepts": [
         "winprivesc-modelo",
         "enum-privesc-windows",
         "token-impersonation",
         "service-misconfig-windows",
-        "always-install-elevated",
         "stored-credentials-windows",
+        "always-install-elevated"
+      ]
+    },
+    {
+      "id": "windows-privesc-avanzada-ruta",
+      "title": "Escalada en Windows: avanzada",
+      "summary": "Registro, DLL hijacking, privilegios especiales (SeBackup/SeRestore), UAC y kernel (al final, ultimo recurso).",
+      "concepts": [
         "registry-autoruns",
         "dll-hijacking",
         "sebackup-serestore",
