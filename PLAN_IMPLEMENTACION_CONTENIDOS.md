@@ -1,5 +1,11 @@
 # Plan de implementación de contenidos y usabilidad — alcance recortado
 
+> **Estado de esta iteración (2026-07-10):** la estructura planificada ya está implementada y validada.
+>
+> Baseline exportado: **24 secciones, 441 comandos, 66 conceptos, 10 guías y 14 rutas**. Se añadieron la ruta de APIs/autorización, la guía `api-paso-a-paso`, los flujos de UDP/bases de datos/transferencia/shell/loot/reutilización/pivoting y sus alias de búsqueda.
+>
+> Validación actual: `python -m unittest discover -s tests -q`, `node --test web/app.test.mjs`, export determinista y `git diff --check`.
+
 ## Objetivo
 
 Mejorar THM Fieldbook como herramienta personal de apoyo durante prácticas, rooms y laboratorios de pentesting. El objetivo no es convertirla en una plataforma de certificaciones ni en una wiki exhaustiva, sino conseguir que el usuario encuentre rápidamente qué significa un hallazgo, qué necesita para probarlo, qué resultado debe esperar y cuál es el siguiente paso.
@@ -12,9 +18,9 @@ Este plan aplica un recorte deliberado: prioriza las carencias con mayor impacto
 
 - Dividir las dos secciones realmente densas: `web-y-apis` y `credenciales-y-loot`.
 - Dividir las rutas de Linux y Windows privesc en esencial y avanzada, sin eliminar profundidad.
-- Añadir 13 conceptos prioritarios: 7 de web y 6 de enumeración de servicios.
-- Añadir una guía paso a paso de Windows privesc.
-- Completar `necesitas` en los 42 conceptos existentes.
+- Añadir 11 conceptos prioritarios: APIs/autorización, UDP, bases de datos, transferencia, shells, loot, reutilización y pivoting.
+- Añadir guías paso a paso de Windows privesc y APIs.
+- Completar `necesitas` en los 66 conceptos exportados.
 - Añadir únicamente tres campos teóricos nuevos: cuándo no aplica, confirmación mínima y resultado esperado.
 - Añadir alias de búsqueda por puerto, síntoma y situación.
 - Reducir la densidad visual utilizando los patrones existentes de bloques e índices.
@@ -27,7 +33,7 @@ Este plan aplica un recorte deliberado: prioriza las carencias con mayor impacto
 - Once facetas de filtrado y metadatos exhaustivos.
 - Contenido web avanzado: OAuth, deserialización, race conditions, request smuggling, cache poisoning, prototype pollution y WebSockets.
 - Nuevas áreas: cloud, SOC/SIEM, forense, malware, reversing, wireless y móvil.
-- Más guías aparte de Windows privesc.
+- Más guías aparte de Windows privesc y APIs.
 - División completa de la aplicación en 27 secciones.
 - División de Active Directory mientras su ruta siga teniendo 5 conceptos.
 
@@ -35,13 +41,13 @@ Este plan aplica un recorte deliberado: prioriza las carencias con mayor impacto
 
 | Elemento | Estado actual | Objetivo de esta iteración |
 |---|---:|---:|
-| Secciones | 19 | 24 |
-| Conceptos | 42 | 55 |
-| Guías | 8 | 9 |
-| Rutas | 9 | 11 |
-| Conceptos nuevos | — | 13 |
+| Secciones | 24 | 24 |
+| Conceptos | 55 | 66 |
+| Guías | 9 | 10 |
+| Rutas | 13 | 14 |
+| Conceptos nuevos | — | 11 |
 | Campos teóricos obligatorios nuevos | — | 3 |
-| Conceptos con `necesitas` | 8/42 | 55/55 |
+| Conceptos con `necesitas` | 55/55 | 66/66 |
 
 El aumento de secciones procede únicamente de sustituir:
 
@@ -873,4 +879,3 @@ Orden profundo:
 ## Open questions
 
 - Ninguna pregunta bloqueante. El alcance queda cerrado con las cifras y prioridades indicadas en este documento.
-
