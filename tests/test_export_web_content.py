@@ -94,6 +94,20 @@ class ExportWebContentTests(unittest.TestCase):
         for slug in ["web-discovery", "web-apis-y-autorizacion", "web-inyecciones", "web-ficheros-y-ejecucion"]:
             self.assertLess(len(by_slug[slug]["commands"]), 40, f"{slug} is too dense")
 
+    def test_api_learning_paths_are_separated_and_complete(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        paths = {path["id"]: path for path in payload["paths"]}
+
+        self.assertEqual(
+            paths["web-inyecciones-ruta"]["concepts"],
+            ["ssti", "ssrf", "xxe", "xss", "file-upload", "command-injection"],
+        )
+        self.assertEqual(
+            paths["web-autorizacion-apis-ruta"]["concepts"],
+            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security"],
+        )
+        self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
+
     def test_full_guide_commands_are_merged_into_existing_sections(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
 
