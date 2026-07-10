@@ -42,7 +42,7 @@ const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-notas-drawer";
+const APP_VERSION = "20260710-notas-fab2";
 let suppressHash = false;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
@@ -1834,6 +1834,11 @@ function bindRoomPanel() {
     else notesDrawer.setAttribute("hidden", "");
     notesToggle.setAttribute("aria-expanded", String(open));
     notesToggle.classList.toggle("active", open);
+    // Desplaza el boton a la izquierda del cajon abierto para que no quede
+    // tapado y se pueda cerrar con otro clic (inline: gana a la cascada).
+    notesToggle.style.transform = open ? "translateX(calc(-1 * (min(460px, 92vw) + 16px)))" : "";
+    const label = notesToggle.querySelector("span");
+    if (label) label.textContent = open ? "Cerrar" : "Notas";
     if (open) {
       const ta = document.querySelector("[data-notes]");
       if (ta) ta.focus();
