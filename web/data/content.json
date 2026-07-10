@@ -4,7 +4,7 @@
     "totalSections": 24,
     "totalCommands": 441,
     "totalTags": 9,
-    "totalGuides": 9,
+    "totalGuides": 10,
     "totalConcepts": 59,
     "totalPaths": 14
   },
@@ -4553,6 +4553,100 @@
           ],
           "look": "Confirmacion clara de SYSTEM o admin con integridad alta, no solo pertenecer al grupo Administrators con integridad Medium (eso todavia necesitaria un bypass de UAC).",
           "decide": "SYSTEM confirmado -> recoge la flag y documenta el vector exacto (que privilegio/servicio/credencial lo permitio). Sigues en Medium/usuario normal -> vuelve a los vectores prioritarios antes de recurrir a un exploit de kernel."
+        }
+      ]
+    },
+    {
+      "id": "api-paso-a-paso",
+      "title": "APIs: del inventario a la autorizacion",
+      "phase": "enumeration",
+      "section": "web-apis-y-autorizacion",
+      "summary": "Una secuencia corta para mapear endpoints, validar sesiones y probar permisos sin perder el hilo.",
+      "steps": [
+        {
+          "title": "Construye el inventario",
+          "idea": "Empieza por documentacion y metodos observables. El objetivo no es lanzar payloads, sino saber que recursos existen y que entrada controla cada uno.",
+          "commands": [
+            {
+              "cmd": "curl -sS $URL/swagger.json",
+              "why": "Busca un contrato OpenAPI publicado.",
+              "out": "Rutas, metodos y esquemas disponibles."
+            },
+            {
+              "cmd": "curl -sS -i -X OPTIONS \"$URL/api/resource\"",
+              "why": "Comprueba metodos aceptados por un recurso.",
+              "out": "Cabecera Allow y comportamiento del endpoint."
+            }
+          ],
+          "look": "Versiones de API, endpoints administrativos, parametros identificadores y respuestas JSON.",
+          "decide": "Si falta documentacion, continua con el trafico de la SPA y compara respuestas por metodo."
+        },
+        {
+          "title": "Fija el contexto de sesion",
+          "idea": "Separa siempre peticiones publicas, autenticadas y de otra cuenta. Esa comparacion evita confundir un fallo de autenticacion con uno de autorizacion.",
+          "commands": [
+            {
+              "cmd": "curl -sS \"$URL/api/me\" -H \"Authorization: Bearer $TOKEN\"",
+              "why": "Confirma que el token identifica al usuario esperado.",
+              "out": "Perfil, rol o contexto de identidad."
+            },
+            {
+              "cmd": "curl -sS -i \"$URL/api/me\"",
+              "why": "Establece la respuesta sin credenciales.",
+              "out": "401/403 o respuesta publica."
+            }
+          ],
+          "look": "Cookies, cabeceras Bearer, expiracion, refresh y diferencias entre 401 y 403.",
+          "decide": "Si el token no cambia el contexto, revisa formato, expiracion y endpoint de login antes de probar permisos."
+        },
+        {
+          "title": "Prueba autorizacion por objeto",
+          "idea": "Con dos cuentas de laboratorio, conserva el mismo endpoint y cambia solo el identificador del objeto. Un 200 sobre un objeto ajeno es mas importante que una respuesta generica de login.",
+          "commands": [
+            {
+              "cmd": "curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN_A\"",
+              "why": "Lee un objeto propio como cuenta A.",
+              "out": "Campos y codigo de respuesta de referencia."
+            },
+            {
+              "cmd": "curl -sS -i \"$URL/api/users/1002\" -H \"Authorization: Bearer $TOKEN_A\"",
+              "why": "Repite con un identificador de otra cuenta.",
+              "out": "403/404 esperado; un 200 con datos ajenos confirma una pista IDOR/BOLA."
+            }
+          ],
+          "look": "Cambios de status, tamano y campos sensibles al variar solo el ID.",
+          "decide": "Si hay acceso cruzado, documenta el control ausente y no sigas escalando sin acotar el impacto."
+        },
+        {
+          "title": "Revisa JWT y operaciones GraphQL",
+          "idea": "Cuando la API usa JWT o GraphQL, valida claims y superficie antes de modificar nada. Introspection y errores estructurados suelen revelar el modelo de datos.",
+          "commands": [
+            {
+              "cmd": "jwt_tool $TOKEN",
+              "why": "Inspecciona algoritmo, claims y validaciones habituales.",
+              "out": "Algoritmo, exp, aud, sub y pruebas sugeridas."
+            },
+            {
+              "cmd": "curl -sS \"$URL/graphql\" -H 'Content-Type: application/json' --data '{\"query\":\"{ __typename }\"}'",
+              "why": "Confirma si el endpoint procesa GraphQL.",
+              "out": "Respuesta data o errores GraphQL."
+            }
+          ],
+          "look": "Algoritmo inesperado, claims de rol, introspection abierta y mutations sin controles.",
+          "decide": "Prioriza una validacion reproducible de permisos; deja las pruebas de alteracion para un laboratorio controlado."
+        },
+        {
+          "title": "Cierra con evidencia y siguiente paso",
+          "idea": "Un hallazgo util incluye peticion, identidad, respuesta esperada y respuesta observada. Asi puedes volver atras, comparar otra cuenta y decidir si toca corregir el alcance o pasar a otra fase.",
+          "commands": [
+            {
+              "cmd": "curl -sS -i \"$URL/api/resource\" -H \"Authorization: Bearer $TOKEN\"",
+              "why": "Guarda una respuesta completa como evidencia minima.",
+              "out": "Status, cabeceras y cuerpo para comparar en el writeup."
+            }
+          ],
+          "look": "Request reproducible, contexto de cuenta, objeto afectado y limite del impacto.",
+          "decide": "Si el control funciona, pasa al siguiente endpoint del inventario; si falla, conserva el caso minimo y enlazalo con [[idor-bola]]."
         }
       ]
     }

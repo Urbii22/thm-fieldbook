@@ -64,6 +64,14 @@ class ExportWebContentTests(unittest.TestCase):
                 self.assertTrue(step["idea"])
                 self.assertIn("commands", step)
 
+    def test_api_guide_has_five_bounded_steps(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        guide = next(item for item in payload["guides"] if item["id"] == "api-paso-a-paso")
+
+        self.assertEqual(guide["section"], "web-apis-y-autorizacion")
+        self.assertEqual(len(guide["steps"]), 5)
+        self.assertTrue(all(len(step["commands"]) <= 3 for step in guide["steps"]))
+
     def test_web_section_includes_gobuster_command_alternatives(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
         web_section = next(section for section in payload["sections"] if section["slug"] == "web-discovery")
