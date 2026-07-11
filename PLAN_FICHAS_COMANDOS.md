@@ -64,4 +64,5 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 - ✅ Lote 1+2 — Active Directory completo (enum, kerberos, lateral, dump, AD CS): 22 fichas → **61 total**. Cubre AD entero de una (no hizo falta partir en 2).
 - ✅ Lote 3 — Linux privesc (SUID, sudo/GTFOBins, LD_PRELOAD, caps, cron/pspy/tar-wildcard, python hijack, /etc/passwd, NFS no_root_squash, docker/lxd, kernel): 25 fichas → **86 total**.
 - ✅ Lote 4 — Windows privesc · A (systeminfo/qfe, winpeas/certutil, servicios: sc query/qc, accesschk, binPath hijack, unquoted path, schtasks, autoruns Run, AlwaysInstallElevated + msiexec): 14 fichas → **100 total**.
-- ⬜ Lotes 5-12 pendientes. Siguiente: Lote 5 (Windows privesc · B: creds guardadas, unattend/PSReadLine, tokens/potato).
+- ✅ Lote 5 — Windows privesc · B (software vuln, cmdkey, busqueda dir/findstr de secretos, unattend.xml, PSReadLine history, potato: PrintSpoofer/GodPotato/JuicyPotato): 9 fichas → **109 total**. windows-privesc cerrado (25 fichas).
+- ⬜ Lotes 6-12 pendientes. Siguiente: Lote 6 (Cracking + loot: hashes-y-cracking, loot-y-secretos).

