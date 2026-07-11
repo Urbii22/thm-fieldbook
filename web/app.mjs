@@ -54,7 +54,7 @@ const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
 const LAST_VIEW_KEY = "thm-last-view";
-const APP_VERSION = "20260711-impact";
+const APP_VERSION = "20260711-cmd-expect";
 let suppressHash = false;
 let roomStore;
 
@@ -654,6 +654,156 @@ const TOOL_PURPOSE = {
   sudo: "Ejecuta como otro usuario; util para revisar o abusar de permisos.",
   ldapsearch: "Consulta un directorio LDAP.",
   kinit: "Solicita un ticket Kerberos (TGT).",
+  rustscan: "Escaneo de puertos ultrarrapido; pasa los abiertos a nmap.",
+  whatweb: "Identifica tecnologias, CMS y cabeceras de un sitio web.",
+  nikto: "Escaner web de vulnerabilidades y ficheros peligrosos conocidos.",
+  dig: "Consulta registros DNS (A, MX, NS, TXT, transferencia de zona).",
+  nslookup: "Resuelve nombres y consulta el servidor DNS.",
+  rpcclient: "Cliente MS-RPC para enumerar usuarios, grupos y politicas por SMB.",
+  showmount: "Lista los exports NFS disponibles en el objetivo.",
+  mysql: "Cliente de base de datos MySQL/MariaDB.",
+  psql: "Cliente de base de datos PostgreSQL.",
+  redis: "Cliente de Redis para leer/escribir claves.",
+  "redis-cli": "Cliente de Redis para leer/escribir claves.",
+  snmpwalk: "Recorre la MIB SNMP para extraer info del dispositivo.",
+  searchsploit: "Busca exploits publicos de Exploit-DB para un servicio/version.",
+  kerbrute: "Enumera usuarios validos y hace spraying contra Kerberos.",
+  "impacket-getnpusers": "Pide TGTs de cuentas sin preauth (AS-REP roasting).",
+  "impacket-getuserspns": "Extrae hashes de servicio (Kerberoasting).",
+  "impacket-secretsdump": "Vuelca hashes NTLM y secretos del dominio/SAM.",
+  "impacket-psexec": "Ejecuta comandos/shell remota por SMB (estilo PsExec).",
+  getnpusers: "Pide TGTs de cuentas sin preauth (AS-REP roasting).",
+  getuserspns: "Extrae hashes de servicio (Kerberoasting).",
+  secretsdump: "Vuelca hashes NTLM y secretos del dominio/SAM.",
+  bloodhound: "Recopila y grafica rutas de ataque en Active Directory.",
+  "bloodhound-python": "Recolector de BloodHound desde Linux.",
+  certipy: "Enumera y abusa de plantillas de AD CS (certificados).",
+  arjun: "Descubre parametros HTTP ocultos por fuerza bruta.",
+  weevely: "Genera y controla una webshell PHP sigilosa.",
+  hashid: "Identifica el tipo de un hash.",
+  "hash-identifier": "Identifica el tipo de un hash.",
+  keepass2john: "Convierte una base KeePass a formato crackeable por John.",
+  office2john: "Convierte un documento Office a formato crackeable por John.",
+  ssh2john: "Convierte una clave SSH a formato crackeable por John.",
+  certutil: "Utilidad Windows; se abusa para descargar ficheros al objetivo.",
+  powershell: "Shell y scripting de Windows; descarga, ejecuta y evade.",
+  "iwr": "Invoke-WebRequest: descarga ficheros en Windows.",
+  wmic: "Consulta info del sistema Windows (WMI): procesos, parches, cuentas.",
+  reg: "Lee o modifica el registro de Windows.",
+  sc: "Gestiona servicios de Windows (crear, consultar, arrancar).",
+  schtasks: "Crea o consulta tareas programadas en Windows.",
+  net: "Enumera y gestiona usuarios, grupos y recursos en Windows.",
+  cmdkey: "Lista y usa credenciales guardadas en Windows.",
+  runas: "Ejecuta un proceso como otro usuario en Windows.",
+  icacls: "Consulta o cambia permisos NTFS de ficheros/carpetas.",
+  accesschk: "Audita permisos de servicios, ficheros y claves (Sysinternals).",
+  whoami: "Muestra tu usuario, grupos y privilegios actuales.",
+  find: "Busca ficheros; se usa para SUID, permisos y datos sensibles.",
+  grep: "Filtra texto por patron; extrae datos utiles de una salida.",
+  awk: "Procesa y extrae campos de texto por columnas.",
+  sed: "Edita y transforma texto en linea.",
+  cat: "Muestra el contenido de un fichero.",
+  type: "Muestra el contenido de un fichero (Windows).",
+  dir: "Lista ficheros y carpetas (Windows).",
+  ls: "Lista ficheros y permisos (Linux).",
+  export: "Define una variable de entorno para la sesion actual.",
+  echo: "Imprime texto o el valor de una variable.",
+  ip: "Consulta interfaces, rutas y direcciones de red.",
+  ifconfig: "Consulta interfaces y direcciones de red.",
+  file: "Detecta el tipo real de un fichero por su firma.",
+  base64: "Codifica o decodifica en Base64.",
+  openssl: "Cripto y utilidades: hashes, cifrado, certificados, passwords.",
+  crontab: "Lista o edita tareas programadas de cron.",
+  mount: "Monta un sistema de ficheros (p.ej. un export NFS).",
+  smbserver: "Levanta un servidor SMB para transferir ficheros.",
+  "impacket-smbserver": "Levanta un servidor SMB para transferir ficheros.",
+  ligolo: "Tunel/pivote hacia redes internas (Ligolo-ng).",
+  "ligolo-ng": "Tunel/pivote hacia redes internas (Ligolo-ng).",
+  ssh_keygen: "Genera un par de claves SSH.",
+  "ssh-keygen": "Genera un par de claves SSH.",
+  stty: "Ajusta el terminal; se usa para estabilizar una shell.",
+  lxc: "Gestiona contenedores LXC; se abusa para escalar a root.",
+  docker: "Gestiona contenedores; se abusa para escalar a root.",
+  getcap: "Lista capabilities de binarios (vector de escalada Linux).",
+};
+
+// Base tool -> "que esperas obtener" (senal de exito). Se muestra en el modal
+// cuando el comando no tiene una ficha curada, para que TODO comando explique
+// claramente su resultado esperado, no solo los 23 con metadata a mano.
+const TOOL_EXPECT = {
+  nmap: "Puertos abiertos con su servicio y version para decidir por donde entrar.",
+  rustscan: "La lista de puertos abiertos, que luego pasas a nmap -sV.",
+  masscan: "Puertos abiertos a gran velocidad en rangos amplios.",
+  ffuf: "Rutas, ficheros o subdominios validos (fijate en codigo/tamano de respuesta).",
+  gobuster: "Rutas, directorios o vhosts que existen en el servidor.",
+  feroxbuster: "Rutas y ficheros descubiertos de forma recursiva.",
+  wfuzz: "Parametros o rutas que responden distinto (posible punto de entrada).",
+  dirb: "Directorios y ficheros web accesibles.",
+  whatweb: "El CMS, framework y tecnologias para buscar exploits concretos.",
+  nikto: "Ficheros peligrosos, cabeceras y vulns conocidas del servidor.",
+  wpscan: "Usuarios, plugins/temas y versiones vulnerables de WordPress.",
+  sqlmap: "Confirmacion de SQLi y, si hay, datos/tablas o incluso shell.",
+  arjun: "Nombres de parametros ocultos que aceptan input.",
+  curl: "La respuesta cruda (cabeceras, cookies, redirecciones, cuerpo) para analizarla.",
+  wget: "El fichero descargado en tu maquina.",
+  hydra: "Credenciales validas cuando una linea marca login correcto.",
+  medusa: "Credenciales validas para el servicio atacado.",
+  hashcat: "La contrasena en claro si el hash se crackea.",
+  john: "La contrasena en claro si el hash se crackea.",
+  hashid: "El tipo/modo de hash para elegir el ataque correcto.",
+  keepass2john: "Un hash listo para crackear con John/hashcat.",
+  office2john: "Un hash listo para crackear con John/hashcat.",
+  ssh2john: "Un hash de la clave SSH listo para crackear.",
+  responder: "Hashes NetNTLM capturados de la red para crackear o relayar.",
+  crackmapexec: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
+  nxc: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
+  netexec: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
+  smbclient: "El listado de shares y sus ficheros si tienes acceso.",
+  smbmap: "Los shares y tus permisos (READ/WRITE) sobre cada uno.",
+  enum4linux: "Usuarios, grupos, shares y politica de contrasenas del objetivo.",
+  "enum4linux-ng": "Usuarios, grupos, shares y politica de contrasenas del objetivo.",
+  rpcclient: "Usuarios, grupos y SIDs del dominio via RPC.",
+  ldapsearch: "Objetos del directorio (usuarios, grupos, atributos) del dominio.",
+  kerbrute: "Usuarios validos del dominio (y logins si haces spraying).",
+  "impacket-getnpusers": "Hashes AS-REP de cuentas sin preauth para crackear offline.",
+  getnpusers: "Hashes AS-REP de cuentas sin preauth para crackear offline.",
+  "impacket-getuserspns": "Hashes de servicio (TGS) para Kerberoasting offline.",
+  getuserspns: "Hashes de servicio (TGS) para Kerberoasting offline.",
+  "impacket-secretsdump": "Hashes NTLM de usuarios locales/dominio para pass-the-hash o crackeo.",
+  secretsdump: "Hashes NTLM de usuarios locales/dominio para pass-the-hash o crackeo.",
+  bloodhound: "El grafo de rutas hacia Domain Admin.",
+  certipy: "Plantillas de certificado vulnerables o un certificado para autenticarte.",
+  showmount: "Los directorios NFS exportados que puedes montar.",
+  snmpwalk: "Info del dispositivo: procesos, rutas, a veces credenciales.",
+  dig: "Los registros DNS; con transferencia de zona, todos los hosts internos.",
+  nslookup: "La IP/registro DNS consultado.",
+  searchsploit: "Exploits publicos que coinciden con el servicio/version.",
+  linpeas: "Vectores de escalada resaltados (rojo/amarillo = prioritario).",
+  winpeas: "Vectores de escalada resaltados (rojo/amarillo = prioritario).",
+  "evil-winrm": "Una shell interactiva en el objetivo Windows.",
+  nc: "Una conexion: shell recibida (listener) o banner del servicio.",
+  ncat: "Una conexion: shell recibida (listener) o banner del servicio.",
+  msfvenom: "El fichero de payload listo para ejecutar en el objetivo.",
+  chisel: "Un tunel/SOCKS activo para llegar a la red interna.",
+  ligolo: "Un tunel activo para pivotar a subredes internas.",
+  "ligolo-ng": "Un tunel activo para pivotar a subredes internas.",
+  proxychains: "La herramienta ejecutada a traves del tunel/proxy.",
+  socat: "El reenvio o la shell establecida.",
+  whoami: "Tu contexto: usuario, grupos y privilegios (ej. SeImpersonate).",
+  find: "Los ficheros que cumplen el criterio (SUID, escribibles, con secretos).",
+  getcap: "Binarios con capabilities abusables para escalar.",
+  sudo: "Que puedes ejecutar como root (mira la lista tras sudo -l).",
+  wmic: "Info del sistema: parches instalados, procesos o cuentas.",
+  accesschk: "Servicios/ficheros con permisos debiles que abusar.",
+  icacls: "Los permisos NTFS; busca los que puedes modificar.",
+  reg: "El valor del registro (a veces credenciales o autologon).",
+  cmdkey: "Credenciales guardadas que reutilizar con runas.",
+  certutil: "El fichero descargado en el objetivo Windows.",
+  smbserver: "Un share tuyo montado desde el objetivo para mover ficheros.",
+  "impacket-smbserver": "Un share tuyo montado desde el objetivo para mover ficheros.",
+  grep: "Solo las lineas que importan de una salida larga.",
+  cat: "El contenido del fichero (busca creds, flags o config).",
+  type: "El contenido del fichero (busca creds, flags o config).",
 };
 
 function capitalize(str) {
@@ -686,11 +836,22 @@ function classifyToken(token, index, prevToken) {
   return "argumento / valor";
 }
 
+// Wrappers que no son "la herramienta" real del comando; saltamos al siguiente
+// token para explicar lo que de verdad se ejecuta (p.ej. sudo nmap, proxychains crackmapexec).
+const CMD_WRAPPERS = new Set(["sudo", "proxychains", "proxychains4", "doas", "time", "watch", "stdbuf"]);
+
+function effectiveTool(tokens) {
+  let i = 0;
+  while (i < tokens.length && CMD_WRAPPERS.has(baseTool(tokens[i]))) i += 1;
+  return baseTool(tokens[i] || tokens[0] || "");
+}
+
 function describeCommand(raw) {
   const tokens = String(raw).split(/\s+/).filter(Boolean);
-  const base = baseTool(tokens[0] || "");
+  const base = effectiveTool(tokens);
   let purpose = TOOL_PURPOSE[base];
   if (!purpose) purpose = FLAG_HELP[base] ? `${capitalize(FLAG_HELP[base])}.` : "Comando de shell.";
+  const expect = TOOL_EXPECT[base] || "";
   const parts = tokens.map((token, index) => ({ token, desc: classifyToken(token, index, tokens[index - 1]) }));
   const seen = new Set();
   const vars = [];
@@ -701,7 +862,7 @@ function describeCommand(raw) {
       vars.push({ token, desc: VAR_HELP[token] || "reemplaza por tu valor" });
     }
   }
-  return { purpose, parts, vars };
+  return { purpose, expect, parts, vars };
 }
 
 function infoMarkFor(rawCommand) {
@@ -802,6 +963,7 @@ function openCmdModal(raw) {
     <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">&times;</button>
     <code class="cmd-modal-cmd">${escapeHtml(adapted)}</code>
     <p class="cmd-modal-purpose">${escapeHtml(info.purpose)}</p>
+    ${!metadata && info.expect ? `<p class="cmd-modal-expect"><b>Qué esperas obtener:</b> ${escapeHtml(info.expect)}</p>` : ""}
     ${riskHtml}
     ${metadataHtml}
     <h4>Partes del comando</h4>

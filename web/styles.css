@@ -3171,6 +3171,21 @@ tr:last-child td {
   line-height: 1.55;
 }
 
+.cmd-modal-expect {
+  margin: 0 0 12px;
+  border-left: 3px solid var(--cyan);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--cyan) 8%, var(--panel-2, var(--surface-1)));
+  color: var(--ink-soft, var(--ink));
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.cmd-modal-expect b {
+  color: var(--cyan);
+}
+
 .cmd-modal-risk {
   margin: 0 0 12px;
   border-radius: 8px;
