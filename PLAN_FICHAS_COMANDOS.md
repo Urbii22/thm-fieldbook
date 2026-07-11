@@ -52,11 +52,11 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 
 ## Aceptación global
 
-- [ ] Cada técnica de ataque distinta tiene su ficha (objetivo + señal de éxito).
-- [ ] 0 orphans en el validador; tests JS+Python verdes en cada lote.
-- [ ] Variantes near-dup cubiertas por fallback, no infladas a fichas.
-- [ ] Metodología (notas/checklist) sin fichas artificiales.
-- [ ] `commandMetadata` ~180-220 al cerrar; el resto = fallback por herramienta.
+- [x] Cada técnica de ataque distinta tiene su ficha (objetivo + señal de éxito).
+- [x] 0 orphans en el validador; tests JS+Python verdes en cada lote.
+- [x] Variantes near-dup cubiertas por fallback, no infladas a fichas.
+- [x] Metodología (notas/checklist) sin fichas artificiales.
+- [x] `commandMetadata` ~180-220 al cerrar (215); el resto = fallback por herramienta.
 
 ## Progreso
 
@@ -71,4 +71,8 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 - ✅ Lote 9 — CVE / exploits (leer/auditar PoC con sed+grep, --check, whatweb fingerprint, reproducir con curl, gcc compilar, script evidencia): 7 fichas → **169 total**. Resto de la seccion = comentarios/glue (sin ficha).
 - ✅ Lote 10 — Web ficheros/ejec + SQLi + WP (LFI php filter/proc/log poisoning/php:input/filter-chain, upload bypass, weevely, .git dump; sqlmap batch/dbs/dump/os-shell; wpscan + wp-json users): 18 fichas → **187 total**.
 - ✅ Lote 11 — Web discovery/APIs (1 ficha por tecnica: katana crawl, ffuf dirs/files/vhost/api, arjun params; api base/swagger, metodos HTTP, IDOR, jwt_tool, graphql): 12 fichas → **199 total**. Resto ffuf/wfuzz/gobuster/feroxbuster = fallback por dedupe.
-- ⬜ Lote 12 pendiente. Siguiente: Lote 12 (Recon servicios, dedupe por servicio).
+- ✅ Lote 12 — Recon servicios (1 ficha por servicio: nmap all/-sCsV/UDP, nikto, nxc smb, enum4linux-ng, rpcclient, ftp-anon, dig axfr, snmpwalk, showmount, ldapsearch, mssqlclient, redis-cli, smtp-user-enum, xfreerdp): 16 fichas → **215 total**. Variantes web-fuzzing/db/dns = fallback.
+
+## ✅ PLAN COMPLETO — 215 fichas (objetivo 180-220 cumplido)
+
+12/12 lotes hechos. Todas las tecnicas de ataque conceptualmente unicas tienen ficha (objetivo + senal de exito + error comun + alternativa). El resto de comandos (variantes near-dup, glue, metodologia) se apoya en el fallback por herramienta (TOOL_PURPOSE/TOOL_EXPECT). Sentinel en v64.

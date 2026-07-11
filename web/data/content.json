@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 199
+    "totalCommandMetadata": 215
   },
   "tags": [
     "active-directory",
@@ -12603,6 +12603,374 @@
         "Campo inexistente en el schema (usa introspection)"
       ],
       "alternative": "introspection para mapear el schema",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nmap -p- -Pn -n --min-rate 5000 $IP -oN nmap/all_ports.txt",
+      "objective": "Escanear los 65535 puertos TCP rapido",
+      "tool": "nmap",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Todos los puertos TCP abiertos (sin detalle aun).",
+      "successSignal": "Tienes la lista de puertos para el escaneo de servicios.",
+      "commonErrors": [
+        "--min-rate alto pierde puertos en redes lentas",
+        "IDS lo detecta"
+      ],
+      "alternative": "rustscan / masscan",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nmap -sC -sV -Pn -p <PUERTOS> $IP -oN nmap/services.txt",
+      "objective": "Detallar servicios y versiones",
+      "tool": "nmap",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [
+        "Tener la lista de puertos abiertos"
+      ],
+      "expectedOutput": "Servicio, version y scripts por defecto de cada puerto.",
+      "successSignal": "Identificas software y version para buscar CVE.",
+      "commonErrors": [
+        "Version oculta o falseada"
+      ],
+      "alternative": "-A (mas agresivo)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "sudo nmap -sU --top-ports 200 -sV $IP -oN nmap/udp.txt",
+      "objective": "Escanear puertos UDP comunes",
+      "tool": "nmap",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "root",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Servicios UDP (SNMP, DNS, TFTP, IKE...).",
+      "successSignal": "Aparece un UDP olvidado (SNMP/161) que enumerar.",
+      "commonErrors": [
+        "UDP es lento y da falsos open|filtered"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nikto -h $URL",
+      "objective": "Escaneo rapido de vulnerabilidades web",
+      "tool": "nikto",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Ficheros peligrosos, cabeceras y misconfigs conocidas.",
+      "successSignal": "Marca un fichero o version con problema conocido.",
+      "commonErrors": [
+        "Muy ruidoso y con falsos positivos"
+      ],
+      "alternative": "nuclei",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nxc smb $IP",
+      "objective": "Sacar OS, dominio y firma SMB",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Nombre, OS, dominio y si exige SMB signing.",
+      "successSignal": "Sabes el hostname/dominio y si el relay es viable.",
+      "commonErrors": [
+        "SMB filtrado (445 cerrado)"
+      ],
+      "alternative": "enum4linux-ng",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "enum4linux-ng -A $IP",
+      "objective": "Enumeracion completa de SMB/RPC",
+      "tool": "enum4linux-ng",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Usuarios, grupos, shares y politica via sesion nula.",
+      "successSignal": "Salen usuarios y shares sin credenciales.",
+      "commonErrors": [
+        "Sesiones nulas restringidas (poco o nada)"
+      ],
+      "alternative": "rpcclient / nxc",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "rpcclient -U '' -N $IP -c 'enumdomusers'",
+      "objective": "Listar usuarios del dominio por sesion nula",
+      "tool": "rpcclient",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "El host permite sesion nula (null session)"
+      ],
+      "expectedOutput": "Los usuarios del dominio con su RID.",
+      "successSignal": "Obtienes una lista de usuarios para spray/roasting.",
+      "commonErrors": [
+        "Null session denegada (Access denied)"
+      ],
+      "alternative": "nxc --rid-brute",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nmap --script ftp-anon -p 21 $IP",
+      "objective": "Comprobar login FTP anonimo",
+      "tool": "nmap",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Si el FTP acepta anonymous y el listado inicial.",
+      "successSignal": "Anonymous permitido: entra a mirar/descargar ficheros.",
+      "commonErrors": [
+        "Anonimo deshabilitado"
+      ],
+      "alternative": "ftp $IP (usuario anonymous)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "dig axfr @$IP $DOMAIN",
+      "objective": "Intentar transferencia de zona DNS",
+      "tool": "dig",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "El $IP es un servidor DNS del dominio"
+      ],
+      "expectedOutput": "Todos los registros de la zona si el AXFR esta abierto.",
+      "successSignal": "Sacas subdominios y hosts internos de golpe.",
+      "commonErrors": [
+        "Transfer failed (AXFR restringido, lo normal)"
+      ],
+      "alternative": "dnsrecon -t axfr",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "snmpwalk -v2c -c public $IP",
+      "objective": "Volcar informacion via SNMP",
+      "tool": "snmpwalk",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Community string valida (prueba public/private)"
+      ],
+      "expectedOutput": "Procesos, usuarios, interfaces y a veces credenciales.",
+      "successSignal": "SNMP filtra datos jugosos del sistema.",
+      "commonErrors": [
+        "Community incorrecta",
+        "SNMP v3 (requiere auth)"
+      ],
+      "alternative": "onesixtyone para hallar la community",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "showmount -e $IP",
+      "objective": "Listar exports NFS",
+      "tool": "showmount",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los directorios que el servidor NFS comparte.",
+      "successSignal": "Un export montable (a veces con no_root_squash).",
+      "commonErrors": [
+        "NFS no accesible o sin exports"
+      ],
+      "alternative": "nmap --script nfs-ls",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local'",
+      "objective": "Consultar LDAP de forma anonima",
+      "tool": "ldapsearch",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Saber el baseDN (DC=...)"
+      ],
+      "expectedOutput": "Objetos del directorio (usuarios, grupos) si el bind anonimo va.",
+      "successSignal": "Enumeras el dominio sin credenciales.",
+      "commonErrors": [
+        "Bind anonimo deshabilitado",
+        "baseDN incorrecto"
+      ],
+      "alternative": "nxc ldap",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "impacket-mssqlclient $USER:$PASS@$IP -windows-auth",
+      "objective": "Conectarse a MSSQL con auth de Windows",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "mixed",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Un prompt SQL sobre el servidor MSSQL.",
+      "successSignal": "Entras y puedes probar xp_cmdshell para RCE.",
+      "commonErrors": [
+        "Credenciales o modo de auth incorrectos"
+      ],
+      "alternative": "nxc mssql",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "redis-cli -h $IP",
+      "objective": "Conectarse a un Redis expuesto",
+      "tool": "redis-cli",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Un prompt Redis (a menudo sin autenticacion).",
+      "successSignal": "INFO/KEYS revelan datos; a veces se logra RCE via módulos.",
+      "commonErrors": [
+        "Requiere AUTH (protegido)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "smtp-user-enum -M VRFY -U users.txt -t $IP",
+      "objective": "Enumerar usuarios validos por SMTP",
+      "tool": "smtp-user-enum",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Que usuarios existen segun responde VRFY/EXPN.",
+      "successSignal": "Confirmas cuentas validas para spray/phishing.",
+      "commonErrors": [
+        "VRFY deshabilitado (prueba RCPT)"
+      ],
+      "alternative": "nmap --script smtp-enum-users",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "xfreerdp /v:$IP /u:$USER /p:$PASS +clipboard /dynamic-resolution",
+      "objective": "Conectarse por RDP con credenciales",
+      "tool": "xfreerdp",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "3389 abierto y credenciales validas"
+      ],
+      "expectedOutput": "El escritorio remoto del objetivo.",
+      "successSignal": "Entras al escritorio con GUI.",
+      "commonErrors": [
+        "Credenciales invalidas",
+        "NLA exige cuenta con permiso RDP"
+      ],
+      "alternative": "rdesktop / remmina",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
