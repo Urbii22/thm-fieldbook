@@ -9,6 +9,11 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.command_metadata import COMMAND_METADATA, ENUMS, normalize_command, validate_command_metadata
+except ModuleNotFoundError:  # direct ``python tools/export_web_content.py`` execution
+    from command_metadata import COMMAND_METADATA, ENUMS, normalize_command, validate_command_metadata
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "web" / "data" / "content.json"
@@ -361,6 +366,20 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
     guides = load_guides()
     concepts = load_concepts()
     paths = load_paths()
+    section_command_keys = {
+        (section["slug"], normalize_command(command))
+        for section in normalized_sections
+        for command in section["commands"]
+    }
+    # Keep the additive catalogue scoped to commands present in this export;
+    # this also makes small fixture payloads deterministic.
+    command_metadata = [
+        item for item in COMMAND_METADATA
+        if (item["sectionSlug"], normalize_command(item["command"])) in section_command_keys
+    ]
+    metadata_errors = validate_command_metadata(command_metadata, normalized_sections)
+    if metadata_errors:
+        raise ValueError("Invalid command metadata: " + "; ".join(metadata_errors))
 
     return {
         "generatedAt": date.today().isoformat(),
@@ -371,6 +390,7 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
             "totalGuides": len(guides),
             "totalConcepts": len(concepts),
             "totalPaths": len(paths),
+            "totalCommandMetadata": len(command_metadata),
         },
         "tags": all_tags,
         "phases": phases,
@@ -379,6 +399,7 @@ def build_payload(sections: list[dict[str, Any]]) -> dict[str, Any]:
         "guides": guides,
         "concepts": concepts,
         "paths": paths,
+        "commandMetadata": command_metadata,
     }
 
 

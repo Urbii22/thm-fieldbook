@@ -3265,3 +3265,38 @@ tr:last-child td {
     animation: none !important;
   }
 }
+
+/* Impact pass: rooms, structured notes and context-first mobile flow. */
+.roompanel-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.room-actions, .notes-templates { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.room-actions select, .room-action, .notes-templates button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); padding: 0 10px; font: 11px var(--mono); }
+.room-action { display: inline-flex; align-items: center; cursor: pointer; }
+.room-action:hover, .notes-templates button:hover { border-color: var(--green); color: var(--ink); }
+.secret-input-wrap { position: relative; display: block; }
+.secret-input-wrap input { width: 100%; padding-right: 56px; }
+.secret-toggle { position: absolute; right: 6px; top: 6px; min-height: 28px; border: 0; border-radius: 5px; background: var(--panel-hi); color: var(--muted); cursor: pointer; font: 10px var(--mono); }
+.secret-persist { margin-right: auto; color: var(--muted); font-size: 12px; }
+.notes-templates { padding: 0 0 2px; }
+.notes-templates button { cursor: pointer; min-height: 32px; }
+.filters-toggle { display: none; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--ink); cursor: pointer; text-align: left; padding: 0 12px; }
+.cmd-modal-metadata { margin: 14px 0; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 9px; background: var(--panel-2); padding: 10px 12px; }
+.cmd-modal-metadata h4 { margin: 0 0 7px; color: var(--green-hi); }
+.cmd-modal-metadata p { margin: 6px 0; color: var(--muted); font-size: 13px; }
+.cmd-meta-version { color: var(--faint) !important; font-family: var(--mono); font-size: 11px !important; }
+.guided-first-run { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 0; padding: 12px; border: 1px solid rgba(63, 185, 80, 0.42); border-radius: 10px; background: rgba(63, 185, 80, 0.07); }
+.guided-first-run strong { margin-right: auto; }
+.guided-first-run button { min-height: 36px; border: 1px solid var(--green); border-radius: 8px; background: var(--panel-hi); color: var(--green-hi); cursor: pointer; padding: 0 10px; }
+@media (max-width: 640px) {
+  .roompanel-head { display: grid; }
+  .room-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .room-actions select { grid-column: 1 / -1; width: 100%; }
+  .roompanel-foot { align-items: start; flex-direction: column; }
+  .secret-persist { margin: 0; }
+  .quickbar { order: 2; }
+  .workbench { order: 1; }
+  .shell { display: flex; flex-direction: column; }
+  .filters-toggle { display: block; }
+  .finder { gap: 12px; }
+  .notes-drawer { width: 100%; max-width: none; padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  .notes-fab { min-height: 44px; min-width: 44px; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); }
+}

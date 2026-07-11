@@ -1,10 +1,16 @@
-const CACHE = "thm-fieldbook-v50";
-const VERSION = "20260710-notas-fab2";
+const CACHE = "thm-fieldbook-v51";
+const VERSION = "20260711-impact";
 const ASSETS = [
   "./",
   "./index.html",
   `./styles.css?v=${VERSION}`,
   `./app.mjs?v=${VERSION}`,
+  "./js/intent-rules.mjs",
+  "./js/search-ranking.mjs",
+  "./js/search-engine.mjs",
+  "./js/room-store.mjs",
+  "./js/notes-report.mjs",
+  "./js/progress.mjs",
   `./data/content.json?v=${VERSION}`,
   `./data/revshells.json?v=${VERSION}`,
   "./manifest.webmanifest",

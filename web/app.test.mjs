@@ -107,6 +107,8 @@ assert.equal(
   adaptCommand('ffuf -u "$URL/" -H "Host: FUZZ.target.local"', { ip: "10.10.145.23", url: "http://10.10.145.23" }),
   'ffuf -u "http://10.10.145.23/" -H "Host: FUZZ.target.local"',
 );
+assert.equal(adaptCommand("nxc smb $IP -u $USER -H $HASH", { ip: "10.10.145.23", user: "admin", hash: "aabbcc" }), "nxc smb 10.10.145.23 -u admin -H aabbcc");
+assert.equal(adaptCommand("ssh -i $KEY user@$IP", { ip: "10.10.145.23", key: "id_rsa" }), "ssh -i id_rsa user@10.10.145.23");
 
 assert.equal(adaptCommand("echo ATTACKER_IP", { ip: "10.10.145.23", url: "http://10.10.145.23" }), "echo ATTACKER_IP");
 
@@ -196,6 +198,12 @@ const isValidCommand = (command) =>
 assert.equal(content.stats.totalConcepts, content.concepts.length);
 assert.equal(content.stats.totalPaths, content.paths.length);
 assert.ok(content.concepts.length >= 1);
+assert.equal(content.stats.totalCommandMetadata, content.commandMetadata.length);
+assert.ok(content.commandMetadata.length >= 20, "debe haber metadata curada para comandos prioritarios");
+for (const meta of content.commandMetadata) {
+  const section = content.sections.find((item) => item.slug === meta.sectionSlug);
+  assert.ok(section?.commands.includes(meta.command), `metadata huérfana: ${meta.sectionSlug}`);
+}
 
 const conceptIds = new Set();
 for (const concept of content.concepts) {
@@ -311,7 +319,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260710-notas-fab2/);
+  assert.match(asset, /20260711-impact/);
 }
 
 assert.match(js, /registration\.update\(\)/);

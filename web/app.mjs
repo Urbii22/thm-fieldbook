@@ -1,3 +1,8 @@
+import { matchIntent, rankResults } from "./js/search-engine.mjs";
+import { createRoomStore, createStorageAdapter, secretStorageKey } from "./js/room-store.mjs";
+import { createExportBundle, insertNoteTemplate } from "./js/notes-report.mjs";
+import { suggestProgress } from "./js/progress.mjs";
+
 const BLANK_PROFILE = {
   ip: "",
   attacker: "",
@@ -7,6 +12,8 @@ const BLANK_PROFILE = {
   port: "",
   user: "",
   pass: "",
+  hash: "",
+  key: "",
   notes: "",
   revType: "bash",
   revLport: "4444",
@@ -36,14 +43,20 @@ const state = {
   activeConcept: "",
   learnMode: "guides",
   practicaSeen: false,
+  rooms: [],
+  activeRoomId: "",
+  persistSecret: false,
+  firstRun: false,
 };
 
 const PROFILE_KEY = "thm-room";
 const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
-const APP_VERSION = "20260710-notas-fab2";
+const LAST_VIEW_KEY = "thm-last-view";
+const APP_VERSION = "20260711-impact";
 let suppressHash = false;
+let roomStore;
 
 // Shell-payload templates are loaded from ./data/revshells.json at runtime.
 let REV_TEMPLATES = [];
@@ -57,17 +70,19 @@ const ROOM_VARS = [
   { key: "dcFqdn", label: "DC FQDN", ph: "dc01.corp.local", token: "$DC_FQDN", mono: true },
   { key: "port", label: "Puerto(s)", ph: "80,443", token: "<PUERTOS> · $PORT", mono: true },
   { key: "user", label: "Usuario", ph: "jdoe", token: "$USER", mono: true },
-  { key: "pass", label: "Password", ph: "P@ssw0rd", token: "$PASS", mono: true },
+  { key: "pass", label: "Password", ph: "P@ssw0rd", token: "$PASS", mono: true, secret: true },
+  { key: "hash", label: "Hash", ph: "aad3b435...", token: "$HASH", mono: true, secret: true },
+  { key: "key", label: "Key", ph: "id_rsa", token: "$KEY", mono: true, secret: true },
 ];
 
 // Known placeholders to highlight when still unresolved after adaptCommand.
 const UNRESOLVED_RE =
-  /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|LHOST|LPORT|RHOST)\b|&lt;(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|LHOST|LPORT|RHOST)&gt;|\bATTACKER_IP\b)/g;
+  /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|HASH|KEY|LHOST|LPORT|RHOST)\b|&lt;(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|HASH|KEY|LHOST|LPORT|RHOST)&gt;|\bATTACKER_IP\b)/g;
 
 // Same placeholders but over RAW text (as copied to the clipboard), so we can
 // warn which variable is still unresolved after a copy.
 const UNRESOLVED_RAW_RE =
-  /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|LHOST|LPORT|RHOST)\b|<(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|LHOST|LPORT|RHOST)>|\bATTACKER_IP\b)/g;
+  /(\$(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|USER|PASS|HASH|KEY|LHOST|LPORT|RHOST)\b|<(?:IP|URL|DOMAIN|DC_HOST|DC_FQDN|PORT|PUERTOS|USER|PASS|HASH|KEY|LHOST|LPORT|RHOST)>|\bATTACKER_IP\b)/g;
 
 const COPY_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
@@ -417,6 +432,10 @@ export function adaptCommand(command, room) {
   sub("<USER>", room.user);
   sub("$PASS", room.pass);
   sub("<PASS>", room.pass);
+  sub("$HASH", room.hash);
+  sub("<HASH>", room.hash);
+  sub("$KEY", room.key);
+  sub("<KEY>", room.key);
   return out;
 }
 
@@ -689,6 +708,10 @@ function infoMarkFor(rawCommand) {
   return `<span class="cmd-info" data-explain="${escapeHtml(rawCommand)}" role="button" tabindex="0" title="Explicar comando" aria-label="Explicar comando">i</span>`;
 }
 
+function commandMetadataFor(raw) {
+  return state.data?.commandMetadata?.find((item) => item.command === raw) || null;
+}
+
 function ensureCmdModal() {
   let el = document.querySelector("[data-cmd-modal]");
   if (el) return el;
@@ -714,6 +737,7 @@ function openCmdModal(raw) {
   const el = ensureCmdModal();
   const box = el.querySelector(".cmd-modal-box");
   const info = describeCommand(raw);
+  const metadata = commandMetadataFor(raw);
   const adapted = adaptCommand(raw, state.room);
   const risk = detectRisk(raw);
   const partsHtml = info.parts
@@ -727,11 +751,15 @@ function openCmdModal(raw) {
   const riskHtml = risk
     ? `<p class="cmd-modal-risk risk-${risk.level}">${risk.level === "danger" ? "&#9888;" : "📡"} ${escapeHtml(risk.reason)}</p>`
     : "";
+  const metadataHtml = metadata
+    ? `<section class="cmd-modal-metadata"><h4>${escapeHtml(metadata.objective)}</h4><p><b>Señal de éxito:</b> ${escapeHtml(metadata.successSignal || metadata.expectedOutput || "Revisa la salida.")}</p>${metadata.preconditions?.length ? `<p><b>Antes:</b> ${escapeHtml(metadata.preconditions.join(" · "))}</p>` : ""}${metadata.commonErrors?.length ? `<p><b>Error común:</b> ${escapeHtml(metadata.commonErrors.join(" · "))}</p>` : ""}${metadata.alternative ? `<p><b>Alternativa:</b> <code>${escapeHtml(metadata.alternative)}</code></p>` : ""}<p class="cmd-meta-version">${escapeHtml(metadata.tool || "herramienta")} · revisado ${escapeHtml(metadata.reviewedAt || "sin fecha")}</p></section>`
+    : "";
   box.innerHTML = `
     <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">&times;</button>
     <code class="cmd-modal-cmd">${escapeHtml(adapted)}</code>
     <p class="cmd-modal-purpose">${escapeHtml(info.purpose)}</p>
     ${riskHtml}
+    ${metadataHtml}
     <h4>Partes del comando</h4>
     <ul class="cmd-modal-parts">${partsHtml}</ul>
     ${varsHtml}
@@ -1048,6 +1076,25 @@ function bindInlineCommandMatches(container) {
   });
 }
 
+function rankSectionsForContext(sections) {
+  if (!state.query) return sections;
+  const intent = matchIntent(state.query);
+  const inlinePort = state.query.match(/\b\d{1,5}\b/)?.[0];
+  const portInfo = lookupPort(state.query) || (inlinePort ? lookupPort(inlinePort) : null);
+  const entries = sections.map((section) => ({
+    id: section.slug,
+    section,
+    title: section.title,
+    summary: section.summary,
+    text: section.searchText,
+    phase: section.phase,
+    intent: portInfo?.slug === section.slug ? intent.intent || "service-playbook" : "",
+    service: portInfo?.slug === section.slug ? portInfo.svc : "",
+    port: portInfo?.slug === section.slug ? portInfo.port : undefined,
+  }));
+  return rankResults(entries, { query: state.query, intent: intent.intent, phase: intent.phase, port: portInfo?.port }).map((entry) => entry.section);
+}
+
 function filterCommands(limit = 80) {
   return filterCommandEntries(state.commandIndex, state.query, limit);
 }
@@ -1100,6 +1147,25 @@ function renderCommandResults() {
 
 function renderCommandSearchDetail() {
   const container = document.querySelector("[data-detail]");
+  const inlinePort = state.query.match(/\b\d{1,5}\b/)?.[0];
+  const portInfo = lookupPort(state.query) || (inlinePort ? lookupPort(inlinePort) : null);
+  if (portInfo) {
+    const room = { ...state.room, port: String(portInfo.port) };
+    const intent = matchIntent(state.query);
+    container.setAttribute("style", phaseStyle("recon"));
+    container.innerHTML = `<header class="detail-head command-search-head intent-head">
+        <div class="detail-meta"><span class="detail-phase">${escapeHtml(intent.reason || "Playbook de servicio")}</span><span class="detail-count">${portInfo.port}/${escapeHtml(portInfo.svc)}</span></div>
+        <h2>${escapeHtml(portInfo.svc)}: siguiente paso</h2><p>${escapeHtml(portInfo.note)}</p>
+      </header><section class="detail-body"><section class="command-shelf command-focus" aria-label="Acciones prioritarias">
+        <div class="command-shelf-head"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><h3>acciones prioritarias</h3></div>
+        <p class="command-hint">Ejecuta estas comprobaciones en orden y guarda la salida relevante en notas.</p>
+        <div class="command-grid command-hit-grid">${portInfo.cmds.map((command) => commandCard(adaptCommand(command, room), { edit: true, terms: queryTerms() })).join("")}</div>
+        <button type="button" class="guide-goto" data-goto-section="${escapeHtml(resolveSlug(portInfo.slug))}">Abrir playbook completo &rarr;</button>
+      </section></section>`;
+    container.querySelector("[data-goto-section]")?.addEventListener("click", (event) => gotoSection(event.currentTarget.dataset.gotoSection));
+    bindCommandTools();
+    return true;
+  }
   const entries = filterCommands(80);
   if (!state.query || !isCommandFocusedQuery(entries)) return false;
 
@@ -1626,9 +1692,96 @@ function loadProfile() {
   };
 }
 
+function profileToRoom(profile, name) {
+  return {
+    name: name || "Room sin nombre",
+    targetIp: profile.ip,
+    attackerIp: profile.attacker,
+    domain: profile.domain,
+    dcHost: profile.dcHost,
+    dcFqdn: profile.dcFqdn,
+    ports: profile.port,
+    user: profile.user,
+    credentialType: profile.hash ? "hash" : profile.key ? "key" : profile.pass ? "password" : "",
+    notes: profile.notes,
+    progress: profile.progress,
+    checks: profile.checks,
+    reverseShellPreferences: { type: profile.revType, lport: profile.revLport },
+  };
+}
+
+function profileFromRoom(room = {}) {
+  return {
+    ...BLANK_PROFILE,
+    ip: room.targetIp || "",
+    attacker: room.attackerIp || "",
+    domain: room.domain || "",
+    dcHost: room.dcHost || "",
+    dcFqdn: room.dcFqdn || "",
+    port: room.ports || "",
+    user: room.user || "",
+    notes: room.notes || "",
+    revType: room.reverseShellPreferences?.type || BLANK_PROFILE.revType,
+    revLport: room.reverseShellPreferences?.lport || BLANK_PROFILE.revLport,
+    checks: { ...(room.checks || {}) },
+    progress: { ...(room.progress || {}) },
+  };
+}
+
+function getRoomSecret(roomId) {
+  if (!roomStore || !roomId) return {};
+  const key = secretStorageKey(roomId);
+  const raw = roomStore.sessionStorage.get(key) || roomStore.storage.get(key);
+  if (!raw) return {};
+  try { return JSON.parse(raw) || {}; } catch { return {}; }
+}
+
+function saveRoomSecret(roomId) {
+  if (!roomStore || !roomId) return;
+  const key = secretStorageKey(roomId);
+  const secret = { pass: state.profile.pass || "", hash: state.profile.hash || "", key: state.profile.key || "" };
+  const target = state.persistSecret ? roomStore.storage : roomStore.sessionStorage;
+  target.set(key, JSON.stringify(secret));
+  if (!state.persistSecret) roomStore.storage.remove(key);
+}
+
+function initializeRooms() {
+  roomStore = createRoomStore({ storage: createStorageAdapter(localStorage), sessionStorage: createStorageAdapter(sessionStorage) });
+  const legacy = loadProfile();
+  roomStore.migrate();
+  state.rooms = roomStore.list();
+  if (!state.rooms.length) {
+    const first = roomStore.create(profileToRoom(legacy, legacy.ip ? "Room importada" : "Mi primera room"));
+    state.rooms = [first];
+    state.firstRun = !legacy.ip && !legacy.notes;
+  }
+  state.activeRoomId = roomStore.activeId() || state.rooms[0].id;
+  roomStore.setActive(state.activeRoomId);
+  const active = state.rooms.find((room) => room.id === state.activeRoomId) || state.rooms[0];
+  state.profile = { ...profileFromRoom(active), ...getRoomSecret(active.id) };
+  if (legacy.pass || legacy.hash || legacy.key) {
+    state.profile.pass ||= legacy.pass || "";
+    state.profile.hash ||= legacy.hash || "";
+    state.profile.key ||= legacy.key || "";
+    saveRoomSecret(active.id);
+  }
+}
+
 function saveProfile() {
+  if (roomStore && state.activeRoomId) {
+    try {
+      const current = state.rooms.find((room) => room.id === state.activeRoomId);
+      const saved = roomStore.update(state.activeRoomId, profileToRoom(state.profile, current?.name));
+      state.rooms = state.rooms.map((room) => room.id === saved.id ? saved : room);
+      saveRoomSecret(saved.id);
+      return;
+    } catch {
+      /* Preserve the in-memory profile if browser storage is unavailable. */
+    }
+  }
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(state.profile));
+    const safe = { ...state.profile, pass: "", hash: "", key: "" };
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(safe));
   } catch {
     /* storage full or blocked: keep working in-memory */
   }
@@ -1645,6 +1798,8 @@ function applyProfile() {
     port: p.port.trim(),
     user: p.user.trim(),
     pass: p.pass.trim(),
+    hash: p.hash.trim(),
+    key: p.key.trim(),
   };
 }
 
@@ -1666,7 +1821,7 @@ function renderVarsPanel() {
   container.innerHTML = ROOM_VARS.map(
     (v) => `<label class="var-field">
       <span class="var-label">${escapeHtml(v.label)}<b>${escapeHtml(v.token)}</b></span>
-      <input type="text" spellcheck="false" autocomplete="off" data-var="${escapeHtml(v.key)}" placeholder="${escapeHtml(v.ph)}" value="${escapeHtml(state.profile[v.key] || "")}" />
+      <span class="secret-input-wrap"><input type="${v.secret ? "password" : "text"}" spellcheck="false" autocomplete="off" data-var="${escapeHtml(v.key)}" placeholder="${escapeHtml(v.ph)}" value="${escapeHtml(state.profile[v.key] || "")}" />${v.secret ? `<button type="button" class="secret-toggle" data-secret-toggle="${escapeHtml(v.key)}" aria-label="Mostrar ${escapeHtml(v.label)}" aria-pressed="false">ver</button>` : ""}</span>
     </label>`,
   ).join("");
   container.querySelectorAll("[data-var]").forEach((input) => {
@@ -1677,6 +1832,120 @@ function renderVarsPanel() {
       renderRoomBadge();
       render();
     });
+  });
+  container.querySelectorAll("[data-secret-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = container.querySelector(`[data-var="${button.dataset.secretToggle}"]`);
+      if (!input) return;
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "ver" : "ocultar";
+      button.setAttribute("aria-pressed", String(!visible));
+    });
+  });
+}
+
+function renderRoomSelect() {
+  const select = document.querySelector("[data-room-select]");
+  if (!select) return;
+  select.innerHTML = state.rooms.map((room) => `<option value="${escapeHtml(room.id)}" ${room.id === state.activeRoomId ? "selected" : ""}>${escapeHtml(room.name || "Room sin nombre")}</option>`).join("");
+  const persist = document.querySelector("[data-persist-secret]");
+  if (persist) persist.checked = state.persistSecret;
+}
+
+function activateRoom(roomId) {
+  if (!roomStore || !roomId || roomId === state.activeRoomId) return;
+  saveProfile();
+  roomStore.setActive(roomId);
+  state.activeRoomId = roomId;
+  const active = state.rooms.find((room) => room.id === roomId);
+  state.profile = { ...profileFromRoom(active), ...getRoomSecret(roomId) };
+  applyProfile();
+  const ip = document.querySelector("[data-room-ip]");
+  if (ip) ip.value = state.profile.ip;
+  renderVarsPanel();
+  renderRoomSelect();
+  renderRoomTrack();
+  render();
+  showToast(`Room activa: ${active?.name || "sin nombre"}`, "ok");
+}
+
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function bindRoomActions() {
+  document.querySelector("[data-room-select]")?.addEventListener("change", (event) => activateRoom(event.target.value));
+  document.querySelector("[data-persist-secret]")?.addEventListener("change", (event) => {
+    state.persistSecret = event.target.checked;
+    saveRoomSecret(state.activeRoomId);
+    showToast(state.persistSecret ? "Secreto guardado localmente" : "Secreto solo durante esta sesión", "ok");
+  });
+  document.querySelector("[data-room-new]")?.addEventListener("click", () => {
+    const name = window.prompt("Nombre de la nueva room", "Nueva room");
+    if (!name?.trim() || !roomStore) return;
+    const room = roomStore.create(profileToRoom({ ...BLANK_PROFILE }, name.trim()));
+    state.rooms = roomStore.list();
+    activateRoom(room.id);
+  });
+  document.querySelector("[data-room-rename]")?.addEventListener("click", () => {
+    const active = state.rooms.find((room) => room.id === state.activeRoomId);
+    const name = window.prompt("Nuevo nombre de la room", active?.name || "");
+    if (!name?.trim() || !roomStore || !state.activeRoomId) return;
+    roomStore.update(state.activeRoomId, { name: name.trim() });
+    state.rooms = roomStore.list();
+    renderRoomSelect();
+    showToast("Room renombrada", "ok");
+  });
+  document.querySelector("[data-room-duplicate]")?.addEventListener("click", () => {
+    if (!roomStore || !state.activeRoomId) return;
+    const room = roomStore.duplicate(state.activeRoomId);
+    state.rooms = roomStore.list();
+    activateRoom(room.id);
+    showToast("Room duplicada", "ok");
+  });
+  document.querySelector("[data-room-delete]")?.addEventListener("click", () => {
+    if (!roomStore || !state.activeRoomId || state.rooms.length < 2) {
+      showToast("Conserva al menos una room", "warn");
+      return;
+    }
+    const active = state.rooms.find((room) => room.id === state.activeRoomId);
+    if (!window.confirm(`Eliminar ${active?.name || "esta room"}? Esta accion no se puede deshacer.`)) return;
+    const next = state.rooms.find((room) => room.id !== state.activeRoomId);
+    roomStore.storage.remove(secretStorageKey(state.activeRoomId));
+    roomStore.sessionStorage.remove(secretStorageKey(state.activeRoomId));
+    roomStore.remove(state.activeRoomId);
+    state.rooms = roomStore.list();
+    state.activeRoomId = "";
+    activateRoom(next?.id);
+    showToast("Room eliminada", "ok");
+  });
+  document.querySelector("[data-room-export]")?.addEventListener("click", () => {
+    if (!roomStore) return;
+    try {
+      const name = (state.rooms.find((room) => room.id === state.activeRoomId)?.name || "room").replace(/[^a-z0-9.-]/gi, "_");
+      downloadFile(`${name}.json`, roomStore.export(state.activeRoomId), "application/json;charset=utf-8");
+      showToast("Room exportada sin secretos", "ok");
+    } catch { showToast("No se pudo exportar la room", "warn"); }
+  });
+  document.querySelector("[data-room-import]")?.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !roomStore) return;
+    try {
+      const incoming = roomStore.import(await file.text(), { activate: true });
+      state.rooms = roomStore.list();
+      activateRoom(incoming[0]?.id || roomStore.activeId());
+      showToast("Room importada", "ok");
+    } catch (error) { showToast(error.message || "Import inválido", "warn"); }
+    event.target.value = "";
   });
 }
 
@@ -1711,6 +1980,20 @@ function renderNotes() {
   renderNotesMeta();
 }
 
+function offerProgressSuggestions(text) {
+  const suggestions = suggestProgress(text);
+  if (!suggestions.length) return;
+  const label = suggestions.map((item) => item.label).join(" · ");
+  if (!window.confirm(`${label}. ¿Aplicar este progreso?`)) return;
+  state.profile.progress = { ...(state.profile.progress || {}) };
+  suggestions.forEach((item) => {
+    const key = item.key === "credential" ? "creds" : item.key === "shell" ? "foothold" : item.key === "root" ? "privesc" : item.key;
+    state.profile.progress[key] = true;
+  });
+  saveProfile();
+  renderRoomTrack();
+}
+
 function bindNoteButtons() {
   document.querySelectorAll("[data-note]").forEach((button) => {
     if (button.dataset.noteBound) return;
@@ -1722,6 +2005,7 @@ function bindNoteButtons() {
       const notes = document.querySelector("[data-notes]");
       if (notes && document.activeElement !== notes) notes.value = state.profile.notes;
       renderNotesMeta();
+      offerProgressSuggestions(button.dataset.note);
       showToast("Guardado en notas", "ok");
     });
   });
@@ -1794,6 +2078,23 @@ function bindRoomPanel() {
       renderNotesMeta();
     });
   }
+  const templateKeys = { finding: "hallazgo", credential: "credencial", shell: "comando", next: "siguiente" };
+  document.querySelectorAll("[data-note-template]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const type = templateKeys[button.dataset.noteTemplate] || "hallazgo";
+      state.profile.notes = insertNoteTemplate(state.profile.notes, type, {
+        host: state.profile.ip,
+        usuario: state.profile.user,
+        tipo: state.profile.hash ? "hash" : state.profile.key ? "key" : "password",
+        comando: type === "comando" ? "# describe la shell o el comando" : "",
+      });
+      saveProfile();
+      renderNotes();
+      const textarea = document.querySelector("[data-notes]");
+      textarea?.focus();
+      offerProgressSuggestions(type);
+    });
+  });
   const notesCopy = document.querySelector("[data-notes-copy]");
   if (notesCopy) {
     notesCopy.addEventListener("click", async () => {
@@ -1826,6 +2127,13 @@ function bindRoomPanel() {
       URL.revokeObjectURL(url);
     });
   }
+  document.querySelector("[data-notes-report]")?.addEventListener("click", () => {
+    const room = state.rooms.find((item) => item.id === state.activeRoomId) || profileToRoom(state.profile);
+    const bundle = createExportBundle(room, { redact: true });
+    const name = (room.name || room.targetIp || "room").replace(/[^a-z0-9.-]/gi, "_");
+    downloadFile(`writeup-${name}.md`, bundle.md, "text/markdown;charset=utf-8");
+    showToast("Writeup exportado sin secretos", "ok");
+  });
   const notesDrawer = document.querySelector("[data-notes-drawer]");
   const notesToggle = document.querySelector("[data-notes-toggle]");
   const setNotesOpen = (open) => {
@@ -1902,7 +2210,10 @@ function renderModeToggle() {
   const hint = document.querySelector("[data-list-hint]");
   if (toggle) {
     toggle.querySelectorAll("button").forEach((button) => {
-      button.classList.toggle("active", button.dataset.modeVal === state.mode);
+      const selected = button.dataset.modeVal === state.mode;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
     });
   }
   if (hint) {
@@ -2010,7 +2321,10 @@ function theoryRowHtml(slug) {
 
 function renderLearn() {
   document.querySelectorAll("[data-learn-tabs] button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.learnVal === state.learnMode);
+    const selected = button.dataset.learnVal === state.learnMode;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
   });
   if (state.learnMode === "concepts") renderConcepts();
   else renderGuides();
@@ -2285,6 +2599,7 @@ function renderGuides() {
 
 function setView(view) {
   state.view = view === "aprender" ? "aprender" : "practica";
+  try { localStorage.setItem(LAST_VIEW_KEY, state.view); } catch { /* optional preference */ }
   const isLearn = state.view === "aprender";
   const learn = document.querySelector("[data-learn]");
   const quickbar = document.querySelector(".quickbar");
@@ -2293,7 +2608,10 @@ function setView(view) {
   if (quickbar) quickbar.hidden = isLearn;
   if (workbench) workbench.hidden = isLearn;
   document.querySelectorAll("[data-view-tabs] button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.viewVal === state.view);
+    const selected = button.dataset.viewVal === state.view;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
   });
   if (isLearn) renderLearn();
   else render();
@@ -2305,6 +2623,32 @@ function bindViewTabs() {
       setView(button.dataset.viewVal);
       writeHash(true);
     });
+  });
+}
+
+function bindTabKeyboard() {
+  document.querySelectorAll('[role="tablist"]').forEach((tablist) => {
+    tablist.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+      if (!tabs.length) return;
+      event.preventDefault();
+      const current = tabs.indexOf(document.activeElement);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[next].focus();
+      tabs[next].click();
+    });
+  });
+}
+
+function bindFiltersToggle() {
+  const toggle = document.querySelector("[data-filters-toggle]");
+  const panel = document.querySelector("[data-filters-panel]");
+  if (!toggle || !panel) return;
+  toggle.addEventListener("click", () => {
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    panel.toggleAttribute("hidden", !expanded);
   });
 }
 
@@ -2334,9 +2678,11 @@ function renderGuidedPractica() {
   const examples = ["nmap", "hydra", "sqli", "smb", "privesc", "reverse shell"]
     .map((q) => `<button type="button" class="guided-example" data-guided-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
     .join("");
+  const firstRun = state.firstRun ? `<div class="guided-first-run"><strong>¿Qué vas a hacer hoy?</strong><button type="button" data-first-practica>Resolver una room</button><button type="button" data-first-learn>Aprender una técnica</button></div>` : "";
   container.innerHTML = `<div class="guided">
       <h2>Por donde empiezas?</h2>
       <p>Elige una fase, usa un atajo de arriba, o busca un comando o herramienta.</p>
+      ${firstRun}
       <div class="guided-block"><span class="guided-label">Fases</span><div class="guided-row">${phases}</div></div>
       <div class="guided-block"><span class="guided-label">Ejemplos de busqueda</span><div class="guided-row">${examples}</div></div>
       <p class="guided-hint">Tambien tienes la pestana <b>Aprender</b> para la teoria de cada tecnica.</p>
@@ -2358,11 +2704,21 @@ function renderGuidedPractica() {
       render();
     });
   });
+  container.querySelector("[data-first-practica]")?.addEventListener("click", () => {
+    state.firstRun = false;
+    markPracticaSeen();
+    render();
+  });
+  container.querySelector("[data-first-learn]")?.addEventListener("click", () => {
+    state.firstRun = false;
+    setView("aprender");
+    writeHash(true);
+  });
 }
 
 function render() {
   applyProfile();
-  let sections = filterSections(state.data.sections, state);
+  let sections = rankSectionsForContext(filterSections(state.data.sections, state));
   if (state.favOnly) sections = sections.filter((section) => state.favs.has(section.slug));
   state.visible = sections;
   if (!sections.some((section) => section.slug === state.activeSlug)) {
@@ -2540,7 +2896,8 @@ async function init() {
   state.concepts = Array.isArray(state.data.concepts) ? state.data.concepts : [];
   state.paths = Array.isArray(state.data.paths) ? state.data.paths : [];
   state.activeConcept = state.concepts[0]?.id || "";
-  state.profile = loadProfile();
+  initializeRooms();
+  try { state.view = localStorage.getItem(LAST_VIEW_KEY) === "aprender" ? "aprender" : "practica"; } catch { state.view = "practica"; }
   applyProfile();
   loadFavs();
   state.commandIndex = state.data.sections.flatMap((section) =>
@@ -2566,8 +2923,10 @@ async function init() {
     render();
   });
   renderVarsPanel();
+  renderRoomSelect();
   renderRoomTrack();
   bindRoomPanel();
+  bindRoomActions();
   bindModeToggle();
   document.querySelector("[data-fav-only]")?.addEventListener("click", () => {
     markPracticaSeen();
@@ -2579,6 +2938,8 @@ async function init() {
   bindExplain();
   bindViewTabs();
   bindLearnTabs();
+  bindTabKeyboard();
+  bindFiltersToggle();
   trackTopbarHeight();
   window.addEventListener("popstate", () => {
     applyHashToState();

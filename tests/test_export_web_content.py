@@ -113,7 +113,7 @@ class ExportWebContentTests(unittest.TestCase):
         )
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],
-            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security"],
+            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
         )
         self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
 
@@ -175,6 +175,32 @@ class ExportWebContentTests(unittest.TestCase):
 
         self.assertEqual(tags["Ultra quick start"], ["recon", "workflow"])
         self.assertEqual(tags["Windows privesc"], ["windows"])
+
+    def test_command_metadata_is_curated_and_attached_to_real_commands(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+
+        self.assertGreaterEqual(payload["stats"]["totalCommandMetadata"], 20)
+        self.assertEqual(payload["stats"]["totalCommandMetadata"], len(payload["commandMetadata"]))
+        keys = {(section["slug"], command) for section in payload["sections"] for command in section["commands"]}
+        for item in payload["commandMetadata"]:
+            self.assertIn((item["sectionSlug"], item["command"]), keys)
+            self.assertTrue(item["objective"])
+            self.assertIn(item["noise"], export_web_content.ENUMS["noise"])
+            self.assertIn(item["risk"], export_web_content.ENUMS["risk"])
+
+    def test_command_metadata_validator_catches_orphans_duplicates_and_bad_enums(self):
+        sections = [{"slug": "demo", "commands": ["echo ok"]}]
+        item = {
+            "sectionSlug": "missing", "command": "echo nope", "objective": "x", "tool": "sh",
+            "environment": "kali", "targetOS": "linux", "credentialsRequired": False,
+            "credentialType": "none", "privileges": "user", "noise": "quiet", "risk": "safe",
+            "preconditions": [], "expectedOutput": "x", "successSignal": "x", "commonErrors": [],
+            "alternative": "", "checkedVersion": "1.0", "reviewedAt": "2026-07-10",
+        }
+        errors = export_web_content.validate_command_metadata([item, dict(item)], sections)
+        self.assertTrue(any("orphan" in error for error in errors))
+        self.assertTrue(any("duplicate" in error for error in errors))
+        self.assertTrue(any("invalid noise" in error for error in errors))
 
 
 if __name__ == "__main__":

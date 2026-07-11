@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>THM Fieldbook</title>
     <meta name="description" content="Base de consulta rapida para playbooks de TryHackMe y CTF." />
     <meta name="color-scheme" content="dark" />
@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=20260710-notas-fab2" />
+    <link rel="stylesheet" href="./styles.css?v=20260711-impact" />
   </head>
   <body>
     <div class="scanline" aria-hidden="true"></div>
@@ -53,8 +53,20 @@
       <section class="roompanel" id="roompanel" data-roompanel aria-label="Variables y notas de la room" hidden>
         <div class="roompanel-inner">
           <div class="roompanel-head">
-            <h2>Variables de la room</h2>
-            <p>Se sustituyen en cada comando. Persisten al recargar. Lo que dejes en <b>rojo</b> sigue sin resolver.</p>
+            <div>
+              <h2>Variables de la room</h2>
+              <p>Se sustituyen en cada comando. Los secretos no se guardan sin tu permiso.</p>
+            </div>
+            <div class="room-actions" aria-label="Gestionar rooms">
+              <label class="sr-only" for="roomselect">Room activa</label>
+              <select id="roomselect" data-room-select aria-label="Room activa"></select>
+              <button type="button" class="room-action" data-room-new>Nueva</button>
+              <button type="button" class="room-action" data-room-rename>Renombrar</button>
+              <button type="button" class="room-action" data-room-duplicate>Duplicar</button>
+              <button type="button" class="room-action" data-room-export>Exportar</button>
+              <label class="room-action room-import">Importar<input data-room-import type="file" accept="application/json" hidden /></label>
+              <button type="button" class="room-action" data-room-delete>Eliminar</button>
+            </div>
           </div>
           <div class="vars" data-vars></div>
 
@@ -84,8 +96,9 @@
             </details>
           </div>
 
-          <div class="roompanel-foot">
-            <button type="button" class="reset-room" data-reset-room>Reset room</button>
+        <div class="roompanel-foot">
+          <label class="secret-persist"><input type="checkbox" data-persist-secret /> Guardar secreto solo en este navegador</label>
+          <button type="button" class="reset-room" data-reset-room>Reset room</button>
           </div>
         </div>
       </section>
@@ -94,13 +107,13 @@
     <main class="shell" id="top">
       <div class="viewbar">
         <div class="view-tabs" data-view-tabs role="tablist" aria-label="Modo de la app">
-          <button type="button" class="active" data-view-val="practica" role="tab">Practica</button>
-          <button type="button" data-view-val="aprender" role="tab">Aprender</button>
+          <button type="button" class="active" data-view-val="practica" role="tab" aria-selected="true" aria-controls="practica-panel" id="tab-practica">Practica</button>
+          <button type="button" data-view-val="aprender" role="tab" aria-selected="false" aria-controls="aprender-panel" id="tab-aprender">Aprender</button>
         </div>
         <div class="roomtrack" data-roomtrack aria-label="Progreso de la room"></div>
       </div>
 
-      <section class="quickbar" aria-label="Accesos rapidos por situacion">
+      <section class="quickbar" id="practica-panel" role="tabpanel" aria-labelledby="tab-practica" aria-label="Accesos rapidos por situacion">
         <div class="stats" aria-label="Resumen de contenido">
           <span class="stat"><b data-total>0</b><small>temas</small></span>
           <span class="stat"><b data-command-total>0</b><small>comandos</small></span>
@@ -111,6 +124,8 @@
 
       <section class="workbench">
         <aside class="finder" aria-label="Filtros y resultados">
+          <button type="button" class="filters-toggle" data-filters-toggle aria-expanded="true" aria-controls="finderfilters">Filtros</button>
+          <div id="finderfilters" data-filters-panel>
           <div class="filter-block">
             <h2>Fase</h2>
             <div class="chips" data-phases></div>
@@ -118,6 +133,7 @@
           <div class="filter-block">
             <h2>Tema</h2>
             <div class="chips" data-tags></div>
+          </div>
           </div>
 
           <div class="list-head">
@@ -137,10 +153,10 @@
         <article class="detail" data-detail aria-live="polite"></article>
       </section>
 
-      <section class="learn" data-learn aria-label="Aprender" hidden>
+      <section class="learn" id="aprender-panel" role="tabpanel" aria-labelledby="tab-aprender" data-learn aria-label="Aprender" hidden>
         <div class="learn-tabs" data-learn-tabs role="tablist" aria-label="Tipo de contenido">
-          <button type="button" class="active" data-learn-val="guides" role="tab">Guias paso a paso</button>
-          <button type="button" data-learn-val="concepts" role="tab">Conceptos</button>
+          <button type="button" class="active" data-learn-val="guides" role="tab" aria-selected="true">Guias paso a paso</button>
+          <button type="button" data-learn-val="concepts" role="tab" aria-selected="false">Conceptos</button>
         </div>
         <aside class="learn-list" data-guide-list aria-label="Indice"></aside>
         <article class="learn-detail" data-guide-detail aria-live="polite"></article>
@@ -160,12 +176,19 @@
         <div class="notes-drawer-actions">
           <button type="button" class="notes-btn" data-notes-copy title="Copiar todas las notas">copiar</button>
           <button type="button" class="notes-btn" data-notes-download title="Descargar como .txt">.txt</button>
+          <button type="button" class="notes-btn" data-notes-report title="Descargar writeup Markdown">.md</button>
           <button type="button" class="notes-close" data-notes-close title="Cerrar" aria-label="Cerrar">&#10005;</button>
         </div>
+      </div>
+      <div class="notes-templates" role="group" aria-label="Añadir a notas">
+        <button type="button" data-note-template="finding">+ hallazgo</button>
+        <button type="button" data-note-template="credential">+ credencial</button>
+        <button type="button" data-note-template="shell">+ shell</button>
+        <button type="button" data-note-template="next">+ siguiente paso</button>
       </div>
       <textarea data-notes spellcheck="false" placeholder="Puertos abiertos, hostnames, creds encontradas, siguiente paso... (o pulsa +nota en cualquier comando)"></textarea>
     </aside>
 
-    <script type="module" src="./app.mjs?v=20260710-notas-fab2"></script>
+    <script type="module" src="./app.mjs?v=20260711-impact"></script>
   </body>
 </html>
