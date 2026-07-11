@@ -62,4 +62,5 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 
 - ✅ Lote 0 — web crípticos + cracking (39 total).
 - ✅ Lote 1+2 — Active Directory completo (enum, kerberos, lateral, dump, AD CS): 22 fichas → **61 total**. Cubre AD entero de una (no hizo falta partir en 2).
-- ⬜ Lotes 3-12 pendientes. Siguiente: Lote 3 (Linux privesc).
+- ✅ Lote 3 — Linux privesc (SUID, sudo/GTFOBins, LD_PRELOAD, caps, cron/pspy/tar-wildcard, python hijack, /etc/passwd, NFS no_root_squash, docker/lxd, kernel): 25 fichas → **86 total**.
+- ⬜ Lotes 4-12 pendientes. Siguiente: Lote 4 (Windows privesc · A).
