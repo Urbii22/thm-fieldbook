@@ -70,4 +70,5 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 - ✅ Lote 8 — Pivoting (ss/arp enum interno, ssh -D/-R, chisel server/client, ligolo tun/proxy/agent/route, proxychains config/curl/nmap, nslookup DNS interno, /etc/hosts): 15 fichas → **162 total**.
 - ✅ Lote 9 — CVE / exploits (leer/auditar PoC con sed+grep, --check, whatweb fingerprint, reproducir con curl, gcc compilar, script evidencia): 7 fichas → **169 total**. Resto de la seccion = comentarios/glue (sin ficha).
 - ✅ Lote 10 — Web ficheros/ejec + SQLi + WP (LFI php filter/proc/log poisoning/php:input/filter-chain, upload bypass, weevely, .git dump; sqlmap batch/dbs/dump/os-shell; wpscan + wp-json users): 18 fichas → **187 total**.
-- ⬜ Lotes 11-12 pendientes. Siguiente: Lote 11 (Web discovery/APIs, dedupe ffuf por tecnica).
+- ✅ Lote 11 — Web discovery/APIs (1 ficha por tecnica: katana crawl, ffuf dirs/files/vhost/api, arjun params; api base/swagger, metodos HTTP, IDOR, jwt_tool, graphql): 12 fichas → **199 total**. Resto ffuf/wfuzz/gobuster/feroxbuster = fallback por dedupe.
+- ⬜ Lote 12 pendiente. Siguiente: Lote 12 (Recon servicios, dedupe por servicio).

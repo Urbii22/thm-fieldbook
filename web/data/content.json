@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 187
+    "totalCommandMetadata": 199
   },
   "tags": [
     "active-directory",
@@ -12330,6 +12330,279 @@
         "REST users deshabilitada (403/vacio)"
       ],
       "alternative": "wpscan --enumerate u",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "katana -u $URL -d 3",
+      "objective": "Crawlear la web para mapear endpoints",
+      "tool": "katana",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "URLs, formularios y parametros que la app enlaza.",
+      "successSignal": "Descubres rutas y parametros sin fuzzear a ciegas.",
+      "commonErrors": [
+        "SPA con rutas por JS (usa -headless)"
+      ],
+      "alternative": "gospider / hakrawler",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404",
+      "objective": "Fuzzear directorios ocultos",
+      "tool": "ffuf",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Rutas que existen (200/301/403) filtrando 404.",
+      "successSignal": "Aparece un directorio no enlazado (admin, backup, api).",
+      "commonErrors": [
+        "Todo devuelve 200 (soft-404): filtra por -fs tamano",
+        "403 masivos"
+      ],
+      "alternative": "feroxbuster / gobuster dir",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "ffuf -u \"$URL/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt -e .php,.txt,.html,.bak,.old,.zip -fc 404",
+      "objective": "Fuzzear ficheros probando extensiones",
+      "tool": "ffuf",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Ficheros con esas extensiones (backups, fuentes).",
+      "successSignal": "Un .bak/.old/.zip filtra codigo o credenciales.",
+      "commonErrors": [
+        "Extensiones equivocadas para ese stack"
+      ],
+      "alternative": "-x en gobuster/feroxbuster",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "ffuf -u \"$URL/\" -H \"Host: FUZZ.target.local\" -w subdomains.txt -fs 0",
+      "objective": "Descubrir virtual hosts (vhosts)",
+      "tool": "ffuf",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [
+        "Saber el dominio base"
+      ],
+      "expectedOutput": "Subdominios que devuelven contenido distinto por cabecera Host.",
+      "successSignal": "Un vhost oculto sirve una app diferente.",
+      "commonErrors": [
+        "Filtrar por -fs 0 no vale si el default no es 0 (ajusta)"
+      ],
+      "alternative": "gobuster vhost",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "arjun -u \"$URL/page.php\"",
+      "objective": "Descubrir parametros ocultos (GET/POST)",
+      "tool": "arjun",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Parametros que la pagina acepta pero no muestra.",
+      "successSignal": "Un parametro oculto habilita LFI/SQLi/debug.",
+      "commonErrors": [
+        "Sin parametros nuevos detectados"
+      ],
+      "alternative": "ffuf con FUZZ en query/body",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-discovery",
+      "command": "ffuf -u \"$URL/api/FUZZ\" -w /usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt -fc 404",
+      "objective": "Fuzzear endpoints de una API",
+      "tool": "ffuf",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "caution",
+      "preconditions": [
+        "Sospecha de una API bajo /api"
+      ],
+      "expectedOutput": "Endpoints validos de la API.",
+      "successSignal": "Aparece un endpoint sin documentar que atacar.",
+      "commonErrors": [
+        "La API versiona (/api/v1): ajusta la ruta"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS $URL/api/ ; curl -sS $URL/api/v1/",
+      "objective": "Localizar la base de la API",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Respuestas que revelan si hay API y su version.",
+      "successSignal": "Un JSON o error de API confirma la ruta base.",
+      "commonErrors": [
+        "404 en ambas: prueba /v2, /rest, /graphql"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS $URL/swagger.json ; curl -sS $URL/openapi.json ; curl -sS $URL/api-docs",
+      "objective": "Buscar la documentacion de la API",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El esquema OpenAPI/Swagger si esta expuesto.",
+      "successSignal": "Sale el listado completo de endpoints y parametros.",
+      "commonErrors": [
+        "Docs no publicas (404)"
+      ],
+      "alternative": "/swagger-ui / /redoc",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS -i -X PUT \"$URL/api/resource\" -H 'Content-Type: application/json' -d '{}'",
+      "objective": "Probar metodos HTTP no previstos",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Como responde la API a PUT/DELETE/PATCH.",
+      "successSignal": "Un metodo no controlado permite crear/editar sin permiso.",
+      "commonErrors": [
+        "405 Method Not Allowed (bien protegido)"
+      ],
+      "alternative": "OPTIONS para ver metodos permitidos",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS \"$URL/api/orders/5\" -H \"Authorization: Bearer $TOKEN\"",
+      "objective": "Probar IDOR cambiando el identificador",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": true,
+      "credentialType": "token",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Un token valido de tu usuario"
+      ],
+      "expectedOutput": "El recurso del id pedido (deberia ser solo el tuyo).",
+      "successSignal": "Ves datos de otro usuario: IDOR/BOLA confirmado.",
+      "commonErrors": [
+        "Devuelve 403 (autorizacion correcta)"
+      ],
+      "alternative": "fuzzear el id con ffuf",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "jwt_tool TOKEN",
+      "objective": "Analizar y atacar un JWT",
+      "tool": "jwt_tool",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "token",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Cabecera, claims y checks (alg:none, clave debil...).",
+      "successSignal": "Detecta alg:none o firma crackeable para forjar un token.",
+      "commonErrors": [
+        "Firma robusta y sin fallos de config"
+      ],
+      "alternative": "decodificar en jwt.io",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{users{id username email role}}\"}'",
+      "objective": "Consultar datos por GraphQL",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Un endpoint GraphQL accesible"
+      ],
+      "expectedOutput": "Los campos pedidos (aqui usuarios y roles).",
+      "successSignal": "Extraes datos sensibles con una sola query.",
+      "commonErrors": [
+        "Campo inexistente en el schema (usa introspection)"
+      ],
+      "alternative": "introspection para mapear el schema",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
