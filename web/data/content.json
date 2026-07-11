@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 109
+    "totalCommandMetadata": 131
   },
   "tags": [
     "active-directory",
@@ -10514,6 +10514,504 @@
         "CLSID incorrecto para ese OS"
       ],
       "alternative": "PrintSpoofer / GodPotato",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "hashid 'HASH'",
+      "objective": "Identificar el tipo de un hash",
+      "tool": "hashid",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Posibles formatos y el modo -m de hashcat.",
+      "successSignal": "Sabes que modo (-m) o formato usar para crackear.",
+      "commonErrors": [
+        "Varios formatos coinciden: prueba el mas probable"
+      ],
+      "alternative": "name-that-hash (nth)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "ssh2john id_rsa > id_rsa.hash",
+      "objective": "Extraer el hash de una clave SSH protegida",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "key",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Una id_rsa con passphrase"
+      ],
+      "expectedOutput": "Un fichero con el hash listo para john.",
+      "successSignal": "Se genera id_rsa.hash con formato $sshng$.",
+      "commonErrors": [
+        "La clave no tiene passphrase (nada que crackear)"
+      ],
+      "alternative": "john --wordlist",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "keepass2john vault.kdbx > keepass.hash",
+      "objective": "Extraer el hash de una base KeePass",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "key",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El hash de la clave maestra del .kdbx.",
+      "successSignal": "keepass.hash con $keepass$ para crackear.",
+      "commonErrors": [
+        "Version de kdbx no soportada por tu keepass2john"
+      ],
+      "alternative": "john --wordlist",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "zip2john secret.zip > zip.hash",
+      "objective": "Extraer el hash de un ZIP cifrado",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El hash de la contrasena del ZIP.",
+      "successSignal": "zip.hash con el formato PKZIP/ZIP para john.",
+      "commonErrors": [
+        "El ZIP no esta cifrado"
+      ],
+      "alternative": "john --wordlist",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "office2john doc.docx > office.hash",
+      "objective": "Extraer el hash de un documento Office",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El hash de la contrasena del documento.",
+      "successSignal": "office.hash listo para crackear con john/hashcat.",
+      "commonErrors": [
+        "El documento no tiene contrasena"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "john --wordlist=/usr/share/wordlists/rockyou.txt keepass.hash",
+      "objective": "Crackear un hash con john y diccionario",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Un fichero .hash generado por *2john"
+      ],
+      "expectedOutput": "La contrasena si esta en el diccionario.",
+      "successSignal": "john imprime la clave junto al nombre del hash.",
+      "commonErrors": [
+        "La clave no esta en rockyou (prueba reglas)"
+      ],
+      "alternative": "hashcat con -m adecuado",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "john --show hash.txt",
+      "objective": "Mostrar las contrasenas ya crackeadas",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los hashes con su clave ya recuperada del pot.",
+      "successSignal": "Ves usuario:contrasena de lo crackeado antes.",
+      "commonErrors": [
+        "Aun no hay nada crackeado para ese fichero"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "hashcat --example-hashes | grep -i ntlm -n",
+      "objective": "Buscar el modo -m correcto por ejemplo",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El numero de modo y un hash de ejemplo del formato.",
+      "successSignal": "Confirmas el -m que corresponde a tu hash.",
+      "commonErrors": [
+        "El termino buscado no aparece: prueba otro alias"
+      ],
+      "alternative": "hashid",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "hashcat -m 3200 bcrypt.hash /usr/share/wordlists/rockyou.txt",
+      "objective": "Crackear un hash bcrypt",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "La contrasena si cae con el diccionario.",
+      "successSignal": "hashcat marca Cracked (bcrypt es lento: paciencia).",
+      "commonErrors": [
+        "bcrypt es muy lento por diseno",
+        "GPU necesaria para ir rapido"
+      ],
+      "alternative": "john --format=bcrypt",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "kpcli --kdb database.kdbx",
+      "objective": "Abrir una base KeePass ya crackeada",
+      "tool": "kpcli",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Tener la clave maestra del .kdbx"
+      ],
+      "expectedOutput": "Un prompt para navegar las entradas del vault.",
+      "successSignal": "Con show -f sacas usuarios y contrasenas guardadas.",
+      "commonErrors": [
+        "Clave maestra incorrecta"
+      ],
+      "alternative": "keepassxc-cli",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "grep -riE 'password|passwd|secret|api_key' /var/www /home /opt 2>/dev/null | head",
+      "objective": "Grepear secretos en rutas comunes (Linux)",
+      "tool": "grep",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Lineas con credenciales o claves en codigo/config.",
+      "successSignal": "Una password o api_key en claro en un config/script.",
+      "commonErrors": [
+        "Mucho ruido: acota rutas o patrones"
+      ],
+      "alternative": "linpeas seccion de creds",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "find / \\( -name '*.kdbx' -o -name 'id_rsa' -o -name '.env' \\) 2>/dev/null",
+      "objective": "Buscar ficheros de credenciales por nombre",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Rutas de vaults, claves SSH y ficheros .env.",
+      "successSignal": "Aparece un id_rsa o .kdbx que puedes leer.",
+      "commonErrors": [
+        "Sin permiso de lectura sobre los que salen"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "find / \\( -name logins.json -o -name key4.db -o -name signons.sqlite \\) 2>/dev/null",
+      "objective": "Localizar el almacen de credenciales de Firefox",
+      "tool": "find",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "logins.json + key4.db del perfil de Firefox.",
+      "successSignal": "Tienes los dos ficheros para descifrar con firefox_decrypt.",
+      "commonErrors": [
+        "El perfil no guarda contrasenas"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "python3 firefox_decrypt.py ~/.mozilla/firefox/*.default-release/",
+      "objective": "Descifrar las contrasenas de Firefox",
+      "tool": "firefox_decrypt",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Copia del perfil (logins.json + key4.db)"
+      ],
+      "expectedOutput": "Usuarios y contrasenas guardados en el navegador.",
+      "successSignal": "Salen credenciales en claro reutilizables.",
+      "commonErrors": [
+        "Master password puesta (pide clave)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "lazagne.exe all",
+      "objective": "Recolectar credenciales del sistema (Windows)",
+      "tool": "lazagne",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Credenciales de navegadores, wifi, apps y sistema.",
+      "successSignal": "LaZagne saca claves guardadas reutilizables.",
+      "commonErrors": [
+        "AV detecta lazagne",
+        "Poco que recolectar"
+      ],
+      "alternative": "mimikatz para LSASS",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "file archivo; strings -n 8 archivo",
+      "objective": "Ver tipo y cadenas legibles de un fichero",
+      "tool": "strings",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El tipo real del fichero y texto embebido.",
+      "successSignal": "Aparece una flag, credencial o pista en las cadenas.",
+      "commonErrors": [
+        "Fichero binario/comprimido sin cadenas utiles"
+      ],
+      "alternative": "binwalk",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "exiftool imagen.jpg",
+      "objective": "Leer metadatos de una imagen/fichero",
+      "tool": "exiftool",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Metadatos EXIF: autor, GPS, software, comentarios.",
+      "successSignal": "Un campo esconde una pista o credencial.",
+      "commonErrors": [
+        "Metadatos limpiados"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "binwalk -e archivo",
+      "objective": "Extraer ficheros embebidos",
+      "tool": "binwalk",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Ficheros ocultos dentro del contenedor (firmwares, zips, imgs).",
+      "successSignal": "binwalk talla un archivo oculto con datos utiles.",
+      "commonErrors": [
+        "Nada embebido detectado"
+      ],
+      "alternative": "foremost",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "steghide info imagen.jpg ; steghide extract -sf imagen.jpg",
+      "objective": "Extraer datos ocultos con steghide",
+      "tool": "steghide",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Info del contenedor y el fichero oculto extraido.",
+      "successSignal": "Sale un fichero embebido (a veces pide passphrase).",
+      "commonErrors": [
+        "Necesita passphrase (usa stegseek)",
+        "Solo soporta JPG/BMP/WAV/AU"
+      ],
+      "alternative": "stegseek",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "stegseek imagen.jpg /usr/share/wordlists/rockyou.txt",
+      "objective": "Romper la passphrase de steghide por fuerza bruta",
+      "tool": "stegseek",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Sospecha de datos ocultos con steghide"
+      ],
+      "expectedOutput": "La passphrase y el fichero oculto extraido.",
+      "successSignal": "stegseek encuentra la clave y vuelca el contenido.",
+      "commonErrors": [
+        "La passphrase no esta en el diccionario"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "zsteg -a imagen.png",
+      "objective": "Buscar datos ocultos en PNG/BMP",
+      "tool": "zsteg",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Datos escondidos en los bits LSB de la imagen.",
+      "successSignal": "zsteg revela texto o un fichero en los planos de bits.",
+      "commonErrors": [
+        "Solo sirve para PNG/BMP",
+        "Sin datos LSB"
+      ],
+      "alternative": "stegsolve",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "loot-y-secretos",
+      "command": "cat ~/.bash_history 2>/dev/null",
+      "objective": "Leer el historial de comandos del usuario",
+      "tool": "cat",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Comandos previos, a veces con credenciales tecleadas.",
+      "successSignal": "Una contrasena o token paso por la linea de comandos.",
+      "commonErrors": [
+        "Historial vaciado o enlazado a /dev/null"
+      ],
+      "alternative": "~/.zsh_history / ~/.mysql_history",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }

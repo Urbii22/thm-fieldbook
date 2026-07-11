@@ -319,7 +319,7 @@ assert.deepEqual(
 );
 
 for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260711-fichas-winB/);
+  assert.match(asset, /20260711-fichas-loot/);
 }
 
 assert.match(js, /registration\.update\(\)/);
