@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 162
+    "totalCommandMetadata": 169
   },
   "tags": [
     "active-directory",
@@ -11742,6 +11742,165 @@
       "successSignal": "Puedes usar el hostname (util para vhosts/TLS internos).",
       "commonErrors": [
         "IP o nombre equivocados"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "sed -n '1,220p' exploit.py",
+      "objective": "Leer el exploit antes de ejecutarlo",
+      "tool": "sed",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Las primeras lineas del PoC (que hace y como se usa).",
+      "successSignal": "Entiendes parametros y confirmas que no es malicioso.",
+      "commonErrors": [
+        "Nunca ejecutes un PoC sin leerlo (puede borrar o robar)"
+      ],
+      "alternative": "less / bat",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "grep -nEi 'rm|del|format|shutdown|useradd|chmod|curl|wget|socket|subprocess' exploit.py",
+      "objective": "Buscar codigo peligroso dentro del PoC",
+      "tool": "grep",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Lineas con acciones destructivas o de red sospechosas.",
+      "successSignal": "Confirmas que el PoC no hace nada raro fuera del exploit.",
+      "commonErrors": [
+        "Un match no siempre es malicioso: revisa el contexto"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "python3 exploit.py --check --url $URL",
+      "objective": "Ejecutar el PoC en modo comprobacion",
+      "tool": "python",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "El exploit soporta un modo --check no destructivo"
+      ],
+      "expectedOutput": "Si el objetivo es vulnerable, sin llegar a explotar.",
+      "successSignal": "El PoC responde 'vulnerable' antes de lanzar el payload.",
+      "commonErrors": [
+        "Sin modo check: reproduce la parte minima a mano"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "whatweb -a 3 $URL",
+      "objective": "Fingerprint del stack web para casar CVE",
+      "tool": "whatweb",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "CMS, framework, servidor y versiones detectadas.",
+      "successSignal": "Una version concreta que buscar en searchsploit/CVE.",
+      "commonErrors": [
+        "Cabeceras ofuscadas o version oculta"
+      ],
+      "alternative": "nmap -sV / wappalyzer",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "curl -i -X POST $URL/endpoint -d 'param=test'",
+      "objective": "Reproducir la peticion vulnerable a mano",
+      "tool": "curl",
+      "environment": "attacker",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "La respuesta cruda (status + headers + body).",
+      "successSignal": "Ves el comportamiento anomalo que el CVE describe.",
+      "commonErrors": [
+        "Falta un header/cookie que la app exige"
+      ],
+      "alternative": "Burp Repeater",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "gcc exploit.c -o exploit",
+      "objective": "Compilar un exploit en C",
+      "tool": "gcc",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Codigo C revisado"
+      ],
+      "expectedOutput": "Un binario listo para ejecutar en el objetivo.",
+      "successSignal": "Compila sin errores.",
+      "commonErrors": [
+        "Faltan libs/headers",
+        "Compilar en la MISMA arch/glibc del objetivo"
+      ],
+      "alternative": "gcc -static para portabilidad",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "cve-y-exploits",
+      "command": "script -a evidence/exploit_run.log",
+      "objective": "Grabar la sesion como evidencia",
+      "tool": "script",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Todo lo que ocurra en la terminal queda en el log.",
+      "successSignal": "Tienes traza reproducible de la explotacion (informe).",
+      "commonErrors": [
+        "Recordar 'exit' para cerrar el log"
       ],
       "alternative": "",
       "checkedVersion": "2025.1",

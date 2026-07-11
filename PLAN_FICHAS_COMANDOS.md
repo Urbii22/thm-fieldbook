@@ -68,4 +68,5 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 - ✅ Lote 6 — Cracking + loot (hashid, *2john ssh/keepass/zip/office, john/hashcat, kpcli; grep/find secretos, firefox_decrypt, lazagne, exiftool/binwalk/steghide/stegseek/zsteg, bash_history): 22 fichas → **131 total**.
 - ✅ Lote 7 — Credenciales / acceso (nxc smb/winrm validar+spray, mysql, sudo -l, hydra ssh/http-post, responder/ntlmrelayx, hashcat -m 5600, smbclient -L; estabilizar TTY stty/socat, transferencias wget/certutil): 16 fichas → **147 total**.
 - ✅ Lote 8 — Pivoting (ss/arp enum interno, ssh -D/-R, chisel server/client, ligolo tun/proxy/agent/route, proxychains config/curl/nmap, nslookup DNS interno, /etc/hosts): 15 fichas → **162 total**.
-- ⬜ Lotes 9-12 pendientes. Siguiente: Lote 9 (CVE / exploits: searchsploit, msfvenom, PoC).
+- ✅ Lote 9 — CVE / exploits (leer/auditar PoC con sed+grep, --check, whatweb fingerprint, reproducir con curl, gcc compilar, script evidencia): 7 fichas → **169 total**. Resto de la seccion = comentarios/glue (sin ficha).
+- ⬜ Lotes 10-12 pendientes. Siguiente: Lote 10 (Web ficheros/ejec + SQLi + WordPress).
