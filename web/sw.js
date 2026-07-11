@@ -1,5 +1,5 @@
-const CACHE = "thm-fieldbook-v59";
-const VERSION = "20260711-fichas-creds";
+const CACHE = "thm-fieldbook-v60";
+const VERSION = "20260711-fichas-pivot";
 const ASSETS = [
   "./",
   "./index.html",
