@@ -3272,6 +3272,17 @@ tr:last-child td {
 .room-actions select, .room-action, .notes-templates button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); padding: 0 10px; font: 11px var(--mono); }
 .room-action { display: inline-flex; align-items: center; cursor: pointer; }
 .room-action:hover, .notes-templates button:hover { border-color: var(--green); color: var(--ink); }
+.usage-toggle { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); cursor: pointer; padding: 0 10px; font: 11px var(--mono); }
+.usage-toggle:hover { border-color: var(--green); color: var(--ink); }
+.usage-modal h2 { margin: 0 34px 8px 0; font-size: 20px; }
+.usage-modal > p { color: var(--muted); line-height: 1.55; }
+.usage-steps { display: grid; gap: 10px; margin: 16px 0; padding-left: 22px; color: var(--muted); line-height: 1.5; }
+.usage-steps b, .usage-expectations h3 { color: var(--ink); }
+.usage-expectations { border-top: 1px solid var(--line-soft); padding-top: 12px; }
+.usage-expectations h3 { margin: 0 0 8px; font-size: 14px; }
+.usage-expectations dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 12px; margin: 0; color: var(--muted); line-height: 1.45; }
+.usage-expectations dt { color: var(--green-hi); }
+.usage-expectations dd { margin: 0; }
 .secret-input-wrap { position: relative; display: block; }
 .secret-input-wrap input { width: 100%; padding-right: 56px; }
 .secret-toggle { position: absolute; right: 6px; top: 6px; min-height: 28px; border: 0; border-radius: 5px; background: var(--panel-hi); color: var(--muted); cursor: pointer; font: 10px var(--mono); }
@@ -3299,4 +3310,6 @@ tr:last-child td {
   .finder { gap: 12px; }
   .notes-drawer { width: 100%; max-width: none; padding-bottom: max(18px, env(safe-area-inset-bottom)); }
   .notes-fab { min-height: 44px; min-width: 44px; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); }
+  .usage-toggle { min-height: 44px; }
+  .usage-expectations dl { grid-template-columns: 1fr; gap: 3px; }
 }

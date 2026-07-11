@@ -732,6 +732,50 @@ function closeCmdModal() {
   if (el) el.hidden = true;
 }
 
+function ensureUsageGuide() {
+  let el = document.querySelector("[data-usage-modal]");
+  if (el) return el;
+  el = document.createElement("div");
+  el.className = "cmd-modal-backdrop usage-modal-backdrop";
+  el.setAttribute("data-usage-modal", "");
+  el.hidden = true;
+  el.innerHTML = `<div class="cmd-modal-box usage-modal" role="dialog" aria-modal="true" aria-labelledby="usage-guide-title"></div>`;
+  document.body.appendChild(el);
+  el.addEventListener("click", (event) => {
+    if (event.target === el) closeUsageGuide();
+  });
+  return el;
+}
+
+function closeUsageGuide() {
+  const el = document.querySelector("[data-usage-modal]");
+  if (el) el.hidden = true;
+}
+
+function openUsageGuide() {
+  const el = ensureUsageGuide();
+  const box = el.querySelector(".usage-modal");
+  box.innerHTML = `
+    <button type="button" class="cmd-modal-close" data-usage-close aria-label="Cerrar">&times;</button>
+    <h2 id="usage-guide-title">Como usar Fieldbook</h2>
+    <p>Escribe un hallazgo real, revisa el playbook que aparece y guarda solo la evidencia util para decidir el siguiente paso.</p>
+    <ol class="usage-steps">
+      <li><b>1. Crea una room.</b> Pulsa <code>room</code>, anade target, puertos y contexto. Password, hash y key solo se conservan durante la sesion salvo que actives el guardado local.</li>
+      <li><b>2. Busca lo que has encontrado.</b> Ejemplos: <code>445</code>, <code>tengo smb 445</code>, <code>web 403</code>, <code>jwt</code>, <code>sudo NOPASSWD vim</code> o <code>shell linux www-data</code>.</li>
+      <li><b>3. Lee el resultado principal.</b> Un puerto conocido abre su servicio y acciones prioritarias. Las demas coincidencias son secciones relacionadas, no instrucciones para ejecutar todo.</li>
+      <li><b>4. Ajusta y valida.</b> Completa variables como <code>$IP</code>, <code>$USER</code> y <code>$PASS</code>. Usa el boton <code>i</code> para ver objetivo, requisitos, senal de exito, ruido y errores comunes.</li>
+      <li><b>5. Registra la evidencia.</b> Anade un hallazgo, credencial, shell o siguiente paso a Notas. Acepta la sugerencia de progreso solo si ya lo confirmaste.</li>
+      <li><b>6. Cierra la room.</b> Exporta las notas como Markdown para tener un writeup reproducible y exporta la room sin secretos si quieres guardarla o compartirla.</li>
+    </ol>
+    <section class="usage-expectations"><h3>Que esperar de una busqueda</h3><dl><dt><code>445</code></dt><dd>Playbook SMB, comandos iniciales y enlace al detalle.</dd><dt><code>tengo credenciales</code></dt><dd>Rutas de validacion, reutilizacion y acceso relacionadas.</dd><dt><code>shell muere</code></dt><dd>Estabilizacion de shell y diagnostico de listener/TTY.</dd><dt>Sin resultado claro</dt><dd>Prueba un servicio, puerto, tecnologia, error o evidencia concreta; no una pregunta generica.</dd></dl></section>`;
+  box.querySelector("[data-usage-close]").addEventListener("click", closeUsageGuide);
+  el.hidden = false;
+}
+
+function bindUsageGuide() {
+  document.querySelector("[data-usage-guide]")?.addEventListener("click", openUsageGuide);
+}
+
 function openCmdModal(raw) {
   if (!raw) return;
   const el = ensureCmdModal();
@@ -2807,6 +2851,12 @@ function bindKeyboard() {
         closeCmdModal();
         return;
       }
+      const usageModal = document.querySelector("[data-usage-modal]");
+      if (usageModal && !usageModal.hidden) {
+        event.preventDefault();
+        closeUsageGuide();
+        return;
+      }
     }
     if ((event.key === "/" || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k")) && !isTyping(event.target)) {
       event.preventDefault();
@@ -2927,6 +2977,7 @@ async function init() {
   renderRoomTrack();
   bindRoomPanel();
   bindRoomActions();
+  bindUsageGuide();
   bindModeToggle();
   document.querySelector("[data-fav-only]")?.addEventListener("click", () => {
     markPracticaSeen();

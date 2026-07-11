@@ -327,6 +327,8 @@ assert.match(js, /controllerchange/);
 assert.match(sw, /SKIP_WAITING/);
 
 assert.match(html, /<h1\b[^>]*>/);
+assert.match(html, /data-usage-guide/);
+assert.match(js, /function openUsageGuide\(\)/);
 
 // Mojibake guard across every shipped text asset (UTF-8 accidentally re-encoded
 // shows up as these Latin-1 lead bytes). Keeps "vÃ­ctima / â˜…"-style breakage out.
