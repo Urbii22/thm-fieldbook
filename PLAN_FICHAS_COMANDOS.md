@@ -66,4 +66,5 @@ Notas de reparto: AD (30), Linux privesc (27), Win privesc (35), Recon (40) se p
 - ✅ Lote 4 — Windows privesc · A (systeminfo/qfe, winpeas/certutil, servicios: sc query/qc, accesschk, binPath hijack, unquoted path, schtasks, autoruns Run, AlwaysInstallElevated + msiexec): 14 fichas → **100 total**.
 - ✅ Lote 5 — Windows privesc · B (software vuln, cmdkey, busqueda dir/findstr de secretos, unattend.xml, PSReadLine history, potato: PrintSpoofer/GodPotato/JuicyPotato): 9 fichas → **109 total**. windows-privesc cerrado (25 fichas).
 - ✅ Lote 6 — Cracking + loot (hashid, *2john ssh/keepass/zip/office, john/hashcat, kpcli; grep/find secretos, firefox_decrypt, lazagne, exiftool/binwalk/steghide/stegseek/zsteg, bash_history): 22 fichas → **131 total**.
-- ⬜ Lotes 7-12 pendientes. Siguiente: Lote 7 (Credenciales / acceso: credenciales-y-acceso, acceso-inicial).
+- ✅ Lote 7 — Credenciales / acceso (nxc smb/winrm validar+spray, mysql, sudo -l, hydra ssh/http-post, responder/ntlmrelayx, hashcat -m 5600, smbclient -L; estabilizar TTY stty/socat, transferencias wget/certutil): 16 fichas → **147 total**.
+- ⬜ Lotes 8-12 pendientes. Siguiente: Lote 8 (Pivoting: chisel, ligolo, ssh -L/-D/-R, proxychains).
