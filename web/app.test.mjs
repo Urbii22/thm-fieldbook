@@ -153,6 +153,8 @@ const content = JSON.parse(readFileSync(new URL("./data/content.json", import.me
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
 assert.match(html, /data-filters-toggle aria-expanded="false"/);
 assert.match(html, /data-filters-panel hidden/);
+assert.match(html, /<details class="room-actions-more">[\s\S]*data-room-duplicate[\s\S]*data-room-delete[\s\S]*<\/details>/);
+assert.match(html, /<details class="room-tools">[\s\S]*data-rev-type[\s\S]*data-rev-listener[\s\S]*<\/details>/);
 
 for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster", "wfuzz"]) {
   assert.ok(

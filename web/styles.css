@@ -3303,6 +3303,17 @@ tr:last-child td {
 .room-actions select, .room-action, .notes-templates button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); padding: 0 10px; font: 11px var(--mono); }
 .room-action { display: inline-flex; align-items: center; cursor: pointer; }
 .room-action:hover, .notes-templates button:hover { border-color: var(--green); color: var(--ink); }
+.room-actions-more { position: relative; }
+.room-actions-more > summary, .room-tools > summary { min-height: 36px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); cursor: pointer; padding: 0 10px; font: 11px var(--mono); list-style: none; }
+.room-actions-more > summary::-webkit-details-marker, .room-tools > summary::-webkit-details-marker { display: none; }
+.room-actions-more > summary::after, .room-tools > summary::after { content: "+"; margin-left: 10px; color: var(--green-hi); }
+.room-actions-more[open] > summary::after, .room-tools[open] > summary::after { content: "-"; }
+.room-actions-secondary { position: absolute; z-index: 3; top: calc(100% + 6px); right: 0; display: grid; min-width: 140px; gap: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: var(--shadow); padding: 8px; }
+.room-actions-secondary .room-action { width: 100%; }
+.room-action-danger { color: var(--coral); }
+.room-tools { margin-top: 14px; }
+.room-tools > summary { width: max-content; }
+.room-tools[open] > summary { margin-bottom: 8px; }
 .usage-toggle { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-hi); color: var(--muted); cursor: pointer; padding: 0 10px; font: 11px var(--mono); }
 .usage-toggle:hover { border-color: var(--green); color: var(--ink); }
 .usage-modal h2 { margin: 0 34px 8px 0; font-size: 20px; }

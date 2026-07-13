@@ -63,39 +63,47 @@
               <select id="roomselect" data-room-select aria-label="Room activa"></select>
               <button type="button" class="room-action" data-room-new>Nueva</button>
               <button type="button" class="room-action" data-room-rename>Renombrar</button>
-              <button type="button" class="room-action" data-room-duplicate>Duplicar</button>
-              <button type="button" class="room-action" data-room-export>Exportar</button>
-              <label class="room-action room-import">Importar<input data-room-import type="file" accept="application/json" hidden /></label>
-              <button type="button" class="room-action" data-room-delete>Eliminar</button>
+              <details class="room-actions-more">
+                <summary>Mas</summary>
+                <div class="room-actions-secondary">
+                  <button type="button" class="room-action" data-room-duplicate>Duplicar</button>
+                  <button type="button" class="room-action" data-room-export>Exportar</button>
+                  <label class="room-action room-import">Importar<input data-room-import type="file" accept="application/json" hidden /></label>
+                  <button type="button" class="room-action room-action-danger" data-room-delete>Eliminar</button>
+                </div>
+              </details>
             </div>
           </div>
           <div class="vars" data-vars></div>
 
-          <div class="revshell-block">
-            <div class="revshell-head">
-              <h2>Reverse shell</h2>
-              <div class="revshell-controls">
-                <label class="rev-ctl">
-                  <span>Tipo</span>
-                  <select data-rev-type></select>
-                </label>
-                <label class="rev-ctl">
-                  <span>LPORT</span>
-                  <input data-rev-lport type="text" inputmode="numeric" placeholder="4444" spellcheck="false" />
-                </label>
-                <span class="rev-lhost">LHOST = <b data-rev-lhost>ATTACKER_IP</b></span>
+          <details class="room-tools">
+            <summary>Utilidades de shell</summary>
+            <div class="revshell-block">
+              <div class="revshell-head">
+                <h2>Reverse shell</h2>
+                <div class="revshell-controls">
+                  <label class="rev-ctl">
+                    <span>Tipo</span>
+                    <select data-rev-type></select>
+                  </label>
+                  <label class="rev-ctl">
+                    <span>LPORT</span>
+                    <input data-rev-lport type="text" inputmode="numeric" placeholder="4444" spellcheck="false" />
+                  </label>
+                  <span class="rev-lhost">LHOST = <b data-rev-lhost>ATTACKER_IP</b></span>
+                </div>
               </div>
+              <div class="rev-out" data-rev-out></div>
+              <div class="rev-enc" data-rev-enc></div>
+              <p class="rev-listener-label">Listener</p>
+              <div class="rev-out" data-rev-listener></div>
+              <details class="rev-stabilize-wrap">
+                <summary>Estabilizar TTY (tras recibir la shell)</summary>
+                <p class="rev-stab-hint">Lanza el PTY en la victima, luego <b>Ctrl+Z</b>, ejecuta el <b>stty</b> en tu maquina y <b>fg</b> para volver.</p>
+                <div class="rev-stabilize" data-rev-stabilize></div>
+              </details>
             </div>
-            <div class="rev-out" data-rev-out></div>
-            <div class="rev-enc" data-rev-enc></div>
-            <p class="rev-listener-label">Listener</p>
-            <div class="rev-out" data-rev-listener></div>
-            <details class="rev-stabilize-wrap">
-              <summary>Estabilizar TTY (tras recibir la shell)</summary>
-              <p class="rev-stab-hint">Lanza el PTY en la victima, luego <b>Ctrl+Z</b>, ejecuta el <b>stty</b> en tu maquina y <b>fg</b> para volver.</p>
-              <div class="rev-stabilize" data-rev-stabilize></div>
-            </details>
-          </div>
+          </details>
 
         <div class="roompanel-foot">
           <label class="secret-persist"><input type="checkbox" data-persist-secret /> Guardar secreto solo en este navegador</label>
