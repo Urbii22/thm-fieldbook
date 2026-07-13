@@ -18,6 +18,7 @@ import {
   describeCommand,
   commandExplanationFor,
   getPracticeDensityState,
+  studyPromptsFor,
 } from "./app.mjs";
 
 // ---- Bloc de notas: capturar comandos sin pisar lo escrito ----
@@ -145,6 +146,18 @@ assert.deepEqual(getPracticeDensityState({ query: "445", tag: "all", phase: "all
 });
 assert.equal(getPracticeDensityState({ query: "", tag: "web", phase: "all", favOnly: false }, false).guided, false);
 assert.equal(getPracticeDensityState({ view: "learn", query: "", tag: "all", phase: "all", favOnly: false }, false).guided, false);
+const studyConcept = {
+  title: "Kerberoasting",
+  summary: "Obtiene material crackeable de cuentas de servicio.",
+  que: "Solicita tickets TGS para analizarlos fuera de linea.",
+  necesitas: ["Usuario de dominio", "SPN valido"],
+  confirmacion: "Se obtiene un hash TGS en formato compatible.",
+  pasos: ["Enumerar SPN antes de solicitar tickets."],
+};
+const studyPrompts = studyPromptsFor(studyConcept);
+assert.equal(studyPrompts.length, 4);
+assert.equal(studyPrompts[0].answer, studyConcept.que);
+assert.match(studyPrompts[1].answer, /Usuario de dominio/);
 
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
@@ -153,6 +166,7 @@ const content = JSON.parse(readFileSync(new URL("./data/content.json", import.me
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
 assert.match(html, /data-filters-toggle aria-expanded="false"/);
 assert.match(html, /data-filters-panel hidden/);
+assert.match(html, /data-learn-val="study"[^>]*>Estudiar \(opcional\)/);
 assert.match(html, /<details class="room-actions-more">[\s\S]*data-room-duplicate[\s\S]*data-room-delete[\s\S]*<\/details>/);
 assert.match(html, /<details class="room-tools">[\s\S]*data-rev-type[\s\S]*data-rev-listener[\s\S]*<\/details>/);
 

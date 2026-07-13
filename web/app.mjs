@@ -1841,7 +1841,7 @@ function writeHash(push) {
   let target;
   if (state.view === "aprender") {
     // #aprender/<mode>/<id> so a concept/guide is shareable and survives reload.
-    const id = state.learnMode === "concepts" ? state.activeConcept : state.activeGuide;
+    const id = ["concepts", "study"].includes(state.learnMode) ? state.activeConcept : state.activeGuide;
     target = `#aprender/${state.learnMode}${id ? `/${encodeURIComponent(id)}` : ""}${q}`;
   } else {
     target = state.activeSlug ? `#${state.activeSlug}${q}` : q ? `#${q}` : "#";
@@ -1864,10 +1864,10 @@ function applyHashToState() {
   if (pathPart.startsWith("aprender")) {
     const parts = pathPart.split("/");
     state.view = "aprender";
-    state.learnMode = parts[1] === "concepts" ? "concepts" : "guides";
+    state.learnMode = ["concepts", "study"].includes(parts[1]) ? parts[1] : "guides";
     const id = decodeURIComponent(parts[2] || "");
     if (id) {
-      if (state.learnMode === "concepts") state.activeConcept = id;
+      if (["concepts", "study"].includes(state.learnMode)) state.activeConcept = id;
       else state.activeGuide = id;
     }
   } else {
@@ -2608,7 +2608,8 @@ function renderLearn() {
     button.setAttribute("aria-selected", String(selected));
     button.tabIndex = selected ? 0 : -1;
   });
-  if (state.learnMode === "concepts") renderConcepts();
+  if (state.learnMode === "study") renderStudy();
+  else if (state.learnMode === "concepts") renderConcepts();
   else renderGuides();
 }
 
@@ -2679,6 +2680,78 @@ function conceptMatches(concept, terms) {
     ].join(" "),
   );
   return terms.every((term) => hay.includes(term));
+}
+
+export function studyPromptsFor(concept) {
+  if (!concept) return [];
+  const firstStep = (concept.pasos || [])[0];
+  const evidence = concept.confirmacion || concept.resultado || (concept.senales || [])[0];
+  return [
+    { label: "Explica", question: `Explica ${concept.title} con tus propias palabras.`, answer: concept.que || concept.summary },
+    { label: "Decide", question: "Que necesitas comprobar antes de usar esta tecnica?", answer: (concept.necesitas || []).join("; ") || concept.cuando },
+    { label: "Interpreta", question: "Que evidencia confirmaria que vas por el camino correcto?", answer: evidence },
+    { label: "Siguiente paso", question: "Cual seria tu siguiente comprobacion manual?", answer: firstStep || concept.resultado },
+  ].filter((item) => item.answer);
+}
+
+function renderStudy() {
+  const listEl = document.querySelector("[data-guide-list]");
+  const detailEl = document.querySelector("[data-guide-detail]");
+  if (!listEl || !detailEl) return;
+  const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
+  const matches = state.concepts.filter((concept) => conceptMatches(concept, terms));
+  if (!matches.length) {
+    listEl.innerHTML = `<p class="list-empty">No hay temas de estudio para "${escapeHtml(state.query)}".</p>`;
+    detailEl.removeAttribute("style");
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Prueba otra busqueda</strong><p>El modo Estudiar usa los conceptos existentes y no genera contenido automaticamente.</p></div>`;
+    return;
+  }
+  if (!matches.some((concept) => concept.id === state.activeConcept)) state.activeConcept = matches[0].id;
+  listEl.innerHTML = matches
+    .map((concept) => `<button type="button" class="concept-item ${state.activeConcept === concept.id ? "active" : ""}" style="${phaseStyle(concept.phase)}" data-study-concept="${escapeHtml(concept.id)}">
+      <span class="guide-item-phase">${escapeHtml(phaseLabel(concept.phase))}</span>
+      <strong>${escapeHtml(concept.title)}</strong>
+      <span class="guide-item-sum">${escapeHtml(concept.summary)}</span>
+    </button>`)
+    .join("");
+  listEl.querySelectorAll("[data-study-concept]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeConcept = button.dataset.studyConcept;
+      renderStudy();
+      writeHash(false);
+      detailEl.scrollIntoView({ block: "nearest" });
+    });
+  });
+  const concept = conceptById(state.activeConcept);
+  const cards = studyPromptsFor(concept);
+  detailEl.setAttribute("style", phaseStyle(concept.phase));
+  detailEl.innerHTML = `<header class="guide-head study-head">
+      <span class="detail-phase">Modo opcional</span>
+      <h2>${escapeHtml(concept.title)}</h2>
+      <p>Responde primero y abre cada bloque solo para contrastar tu razonamiento.</p>
+    </header>
+    <div class="study-cards">${cards.map((card, index) => `<details class="study-card">
+      <summary><span>${index + 1}. ${escapeHtml(card.label)}</span>${escapeHtml(card.question)}</summary>
+      <div class="study-answer"><span>Referencia</span><p>${conceptProseHtml(card.answer, [])}</p></div>
+    </details>`).join("")}</div>
+    <section class="study-assessment" aria-label="Autoevaluacion manual">
+      <h3>Como te ha ido?</h3>
+      <p>Elige una opcion solo para reflexionar. No cambia tu progreso ni se guarda.</p>
+      <div class="study-assessment-actions">
+        <button type="button" data-study-level="No lo entiendo" aria-pressed="false">No lo entiendo</button>
+        <button type="button" data-study-level="Con ayuda" aria-pressed="false">Con ayuda</button>
+        <button type="button" data-study-level="Puedo explicarlo" aria-pressed="false">Puedo explicarlo</button>
+      </div>
+      <p class="study-assessment-status" data-study-status aria-live="polite"></p>
+    </section>`;
+  const levelButtons = [...detailEl.querySelectorAll("[data-study-level]")];
+  levelButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      levelButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      const status = detailEl.querySelector("[data-study-status]");
+      if (status) status.textContent = `Autoevaluacion: ${button.dataset.studyLevel}.`;
+    });
+  });
 }
 
 function conceptPageHtml(concept, terms) {
@@ -2937,7 +3010,7 @@ function bindFiltersToggle() {
 function bindLearnTabs() {
   document.querySelectorAll("[data-learn-tabs] button").forEach((button) => {
     button.addEventListener("click", () => {
-      state.learnMode = button.dataset.learnVal === "concepts" ? "concepts" : "guides";
+      state.learnMode = ["concepts", "study"].includes(button.dataset.learnVal) ? button.dataset.learnVal : "guides";
       renderLearn();
       writeHash(false);
     });

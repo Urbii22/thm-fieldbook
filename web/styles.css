@@ -2493,6 +2493,23 @@ tr:last-child td {
   color: var(--ink);
 }
 
+.study-head .detail-phase { color: var(--amber); }
+.study-cards { display: grid; gap: 10px; }
+.study-card { border: 1px solid var(--line); border-left: 3px solid var(--phase, var(--green)); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.study-card > summary { display: grid; gap: 6px; cursor: pointer; padding: 14px 16px; color: var(--ink); line-height: 1.45; }
+.study-card > summary span { color: var(--phase, var(--green-hi)); font: 11px var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
+.study-card[open] > summary { border-bottom: 1px solid var(--line); background: var(--panel-hi); }
+.study-answer { padding: 14px 16px; }
+.study-answer > span { color: var(--faint); font: 10.5px var(--mono); text-transform: uppercase; }
+.study-answer p { margin: 6px 0 0; color: var(--muted); line-height: 1.6; }
+.study-assessment { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); padding: 16px; }
+.study-assessment h3 { margin: 0 0 5px; font-size: 15px; }
+.study-assessment > p { margin: 0; color: var(--muted); font-size: 12.5px; }
+.study-assessment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.study-assessment-actions button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); cursor: pointer; padding: 0 12px; }
+.study-assessment-actions button[aria-pressed="true"] { border-color: var(--green); background: rgba(63, 185, 80, 0.09); color: var(--green-hi); }
+.study-assessment .study-assessment-status { min-height: 18px; margin-top: 10px; color: var(--green-hi); font-family: var(--mono); }
+
 .concept-path {
   display: grid;
   gap: 8px;
