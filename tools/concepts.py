@@ -821,6 +821,53 @@ CONCEPTS = [
         ],
     },
     {
+        "id": "format-string-vulnerability",
+        "title": "Format strings: leer memoria con printf",
+        "phase": "access",
+        "section": "cve-y-exploits",
+        "summary": "Si el usuario controla el formato de printf, especificadores como %p y una posicion como %5$s pueden revelar memoria del proceso.",
+        "que": "Una vulnerabilidad de cadena de formato aparece cuando una funcion variadica de la familia printf usa entrada externa como formato, por ejemplo printf(username), en vez de tratarla como datos con printf(\"%s\", username). Los especificadores que introduce el usuario consumen valores que la funcion interpreta como argumentos: %p los muestra como punteros, %s intenta dereferenciarlos como cadenas y %n escribe en memoria.",
+        "porque": "printf no puede saber cuantos argumentos validos recibio aparte de la cadena de formato. Si esa cadena pide conversiones que el programa no proporciono, la funcion sigue leyendo valores segun la convencion de llamada y la arquitectura. Esto puede filtrar pila, punteros o secretos que ya estaban cargados en memoria, aunque el programa nunca pretendiera imprimirlos.",
+        "cuando": "En laboratorios autorizados con aplicaciones nativas C/C++, revisa llamadas como printf(input), fprintf(stream, input), snprintf(buffer, size, input) o syslog(input). Sin codigo fuente, sospecha si texto con %p se interpreta y devuelve valores hexadecimales en lugar de mostrarse literalmente.",
+        "no_aplica": [
+            "La entrada se pasa como dato a un formato constante, por ejemplo printf(\"%s\", input).",
+            "El servicio devuelve literalmente %p, %x y %s sin interpretarlos.",
+            "El valor controlado nunca llega al argumento de formato de una funcion compatible con printf.",
+        ],
+        "confirmacion": "Compara una entrada normal con una sonda corta de %p en un laboratorio autorizado. Considera confirmado el fallo si printf interpreta los especificadores y devuelve valores con aspecto de puntero; con fuente, printf(input) confirma directamente la causa raiz.",
+        "resultado": "Una salida de punteros o palabras de memoria que no formaban parte de la respuesta normal. Si un offset ya identificado apunta a texto valido, una posicion como %5$s puede demostrar una fuga concreta; no recorras %s a ciegas porque dereferencia direcciones y puede cerrar el proceso.",
+        "necesitas": [
+            "Entrada controlada que alcance una funcion de formato.",
+            "Una conexion reproducible y permiso para probar el servicio.",
+            "Limites de intentos y criterio de parada si el proceso se reinicia o deja de responder.",
+        ],
+        "senales": [
+            "El codigo contiene printf(variable) en lugar de printf(\"%s\", variable).",
+            "%p produce direcciones o valores hexadecimales distintos en vez de texto literal.",
+            "La sintaxis posicional %5$p permite consultar una posicion concreta de forma reproducible.",
+            "La memoria filtrada contiene texto en little-endian o una referencia a un buffer sensible.",
+        ],
+        "pasos": [
+            "Revisa el flujo de datos: confirma si la entrada termina siendo el argumento de formato y separa otros fallos presentes, como gets() y su buffer overflow.",
+            "Guarda una respuesta base y prueba pocos %p. Es una sonda menos peligrosa que %s porque muestra el valor sin dereferenciarlo.",
+            "Si se confirma, enumera un rango pequeno con posiciones como %1$p, %2$p y %3$p, y anota offsets estables. Los offsets cambian con arquitectura, compilador y layout.",
+            "Usa %N$s (donde N es el offset) solo sobre una posicion que ya parezca un puntero valido y detente si el servicio cae. El especificador literal %n escribe en memoria y queda fuera de esta comprobacion basica.",
+            "Documenta entrada, offset, dato filtrado e impacto. Corrige con un formato constante, elimina gets() por separado y activa avisos de compilacion como -Wformat-security.",
+        ],
+        "commands": [
+            {
+                "cmd": "printf '%%p|%%p|%%p\\n' | nc -w 2 $IP <PUERTO>",
+                "why": "Envia una sonda corta y repetible. %p muestra valores sin tratarlos como direcciones de cadenas, por lo que es preferible para confirmar antes de usar %s.",
+                "out": "Valores tipo 0x7f... o (nil) en lugar de los caracteres %p. Compara siempre con la respuesta base: texto literal significa que este vector no se confirmo.",
+            },
+            {
+                "cmd": "for i in $(seq 1 20); do printf '%%%d$p\\n' \"$i\" | nc -w 2 $IP <PUERTO>; done",
+                "why": "Consulta posiciones concretas con %n$p dentro de un rango pequeno para localizar valores reproducibles sin dereferenciarlos.",
+                "out": "Una salida por offset. Anota posiciones con punteros plausibles o bytes que representen texto; no asumas que el mismo offset sirve en otro binario.",
+            },
+        ],
+    },
+    {
         "id": "cracking",
         "title": "Identificar y crackear hashes",
         "phase": "access",
@@ -3014,6 +3061,12 @@ PATHS = [
         "title": "Exploits y CVEs",
         "summary": "Aprovechar vulnerabilidades publicas sin ejecutar basura a ciegas ni romper la maquina.",
         "concepts": ["explotar-cve", "metasploit-workflow"],
+    },
+    {
+        "id": "binarios-memoria-ruta",
+        "title": "Binarios y memoria: complementario",
+        "summary": "Fundamentos que aparecen en algunas rooms de C/C++, fuera del nucleo prioritario de PT1.",
+        "concepts": ["format-string-vulnerability"],
     },
     {
         "id": "windows-privesc-esencial-ruta",

@@ -124,6 +124,18 @@ class ExportWebContentTests(unittest.TestCase):
         for path in payload["paths"]:
             self.assertLessEqual(len(path["concepts"]), 7, f"ruta demasiado densa: {path['id']}")
 
+    def test_format_string_room_learning_is_complementary_and_actionable(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        concepts = {concept["id"]: concept for concept in payload["concepts"]}
+        paths = {path["id"]: path for path in payload["paths"]}
+
+        concept = concepts["format-string-vulnerability"]
+        self.assertEqual(concept["section"], "cve-y-exploits")
+        self.assertIn("%p", concept["confirmacion"])
+        self.assertIn("%s", concept["resultado"])
+        self.assertIn("complementario", paths["binarios-memoria-ruta"]["title"].lower())
+        self.assertEqual(paths["binarios-memoria-ruta"]["concepts"], ["format-string-vulnerability"])
+
     def test_full_guide_commands_are_merged_into_existing_sections(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())
 
