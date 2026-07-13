@@ -2940,10 +2940,16 @@ PATHS = [
         "concepts": ["ssti", "ssrf", "xxe", "xss", "file-upload", "filtros-incompletos", "command-injection"],
     },
     {
+        "id": "web-pruebas-manuales-ruta",
+        "title": "Web: pruebas manuales con Burp",
+        "summary": "Interceptar una peticion, aislar una variable y comprobar que controles aplica realmente el servidor.",
+        "concepts": ["burp-manual-testing", "client-side-controls"],
+    },
+    {
         "id": "web-autorizacion-apis-ruta",
         "title": "Web: autorización y APIs",
         "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
-        "concepts": ["burp-manual-testing", "client-side-controls", "api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
+        "concepts": ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
     },
     {
         "id": "shells-y-acceso",
@@ -2963,7 +2969,6 @@ PATHS = [
             "capabilities",
             "cron-abuse",
             "writable-sensitive-files",
-            "docker-container-escape",
         ],
     },
     {
@@ -2977,7 +2982,7 @@ PATHS = [
             "sudo-ld-preload",
             "group-abuse-linux",
             "nfs-no-root-squash",
-            "kernel-exploits-linux",
+            "docker-container-escape",
         ],
     },
     {
@@ -2990,7 +2995,13 @@ PATHS = [
         "id": "enumeracion-servicios-ruta",
         "title": "Enumeracion de servicios",
         "summary": "Cada servicio se enumera distinto. SMB, DNS, FTP, SNMP, NFS, LDAP y SMTP: que mirar en cada uno.",
-        "concepts": ["smb-enum", "dns-enum", "ftp-enum", "snmp-enum", "nfs-enum", "ldap-enum", "smtp-enum", "database-enumeration", "mssql-lateral"],
+        "concepts": ["smb-enum", "dns-enum", "ftp-enum", "snmp-enum", "nfs-enum", "ldap-enum", "smtp-enum"],
+    },
+    {
+        "id": "bases-de-datos-ruta",
+        "title": "Bases de datos y movimiento lateral",
+        "summary": "Enumerar motores de datos y distinguir lectura, ejecucion y salto a otros servicios.",
+        "concepts": ["database-enumeration", "mssql-lateral"],
     },
     {
         "id": "credenciales-ruta",
@@ -3026,8 +3037,13 @@ PATHS = [
             "dll-hijacking",
             "sebackup-serestore",
             "uac-bypass",
-            "kernel-exploits-windows",
         ],
+    },
+    {
+        "id": "kernel-ultimo-recurso-ruta",
+        "title": "Kernel exploits: ultimo recurso",
+        "summary": "Validar version, parche y arquitectura antes de asumir el riesgo de explotar el kernel en Linux o Windows.",
+        "concepts": ["kernel-exploits-linux", "kernel-exploits-windows"],
     },
     {
         "id": "active-directory-ruta",

@@ -43,7 +43,9 @@ Reorientar THM Fieldbook hacia contenido fiable, actualizado y facil de consulta
 - [x] Regenerar contenido y alinear la version PWA.
 - [x] Fijar PT1 de TryHackMe como certificacion objetivo y crear su mapa de cobertura.
 - [x] Completar la base teorica PT1: alcance/ROE, client-side, trafico, segmentacion, ACL/trusts, Metasploit, OPSEC e informe.
-- [ ] Revisar transversalmente la teoria PT1 y corregir huecos detectados durante rooms reales.
+- [x] Revisar transversalmente estructura, cobertura, enlaces, solapamientos y profundidad de la teoria PT1.
+- [x] Preparar una plantilla reutilizable de hallazgo e informe PT1 e integrarla en el export Markdown.
+- [ ] Ampliar solo los huecos que aparezcan durante rooms reales.
 - [ ] Crear simulacros solo despues de esa revision, dentro del modo Estudiar opcional.
 
 ## Plan de trabajo

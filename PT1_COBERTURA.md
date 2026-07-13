@@ -42,12 +42,14 @@ Fuentes tecnicas primarias: [Burp Suite documentation](https://portswigger.net/b
 
 La base teorica se considera completa cuando estan cubiertos los seis dominios oficiales y cada tema explica que es, cuando aplica, que evidencia lo confirma y cuando detenerse. Esta puerta queda cubierta en el contenido actual.
 
-Antes de crear simulacros, el siguiente trabajo editorial sera:
+Estado antes de crear simulacros:
 
-1. Revisar consistencia, enlaces y solapamientos de toda la teoria PT1.
-2. Ampliar solo conceptos que una room real revele como insuficientes.
-3. Preparar una plantilla reutilizable de hallazgo e informe.
-4. Despues, crear simulacros de decision y gestion de las 48 horas como modo opcional.
+1. Revision de consistencia, enlaces, solapamientos y densidad: completada.
+2. Plantilla reutilizable de hallazgo e informe: completada e integrada en el export `.md PT1`.
+3. Ampliacion de conceptos que una room real revele como insuficientes: continua y basada en evidencia.
+4. Simulacros de decision y gestion de las 48 horas: pendientes y siempre dentro del modo opcional.
+
+El detalle de la auditoria y sus decisiones esta en `PT1_REVISION_TEORICA.md`. La plantilla editable independiente esta en `PLANTILLA_INFORME_PT1.md`.
 
 ## Criterio de preparacion
 

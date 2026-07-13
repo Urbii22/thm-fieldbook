@@ -6,7 +6,7 @@
     "totalTags": 9,
     "totalGuides": 11,
     "totalConcepts": 84,
-    "totalPaths": 15,
+    "totalPaths": 18,
     "totalCommandMetadata": 215
   },
   "tags": [
@@ -8378,12 +8378,19 @@
       ]
     },
     {
+      "id": "web-pruebas-manuales-ruta",
+      "title": "Web: pruebas manuales con Burp",
+      "summary": "Interceptar una peticion, aislar una variable y comprobar que controles aplica realmente el servidor.",
+      "concepts": [
+        "burp-manual-testing",
+        "client-side-controls"
+      ]
+    },
+    {
       "id": "web-autorizacion-apis-ruta",
       "title": "Web: autorización y APIs",
       "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
       "concepts": [
-        "burp-manual-testing",
-        "client-side-controls",
         "api-testing-model",
         "auth-session-security",
         "idor-bola",
@@ -8415,8 +8422,7 @@
         "suid",
         "capabilities",
         "cron-abuse",
-        "writable-sensitive-files",
-        "docker-container-escape"
+        "writable-sensitive-files"
       ]
     },
     {
@@ -8430,7 +8436,7 @@
         "sudo-ld-preload",
         "group-abuse-linux",
         "nfs-no-root-squash",
-        "kernel-exploits-linux"
+        "docker-container-escape"
       ]
     },
     {
@@ -8455,7 +8461,14 @@
         "snmp-enum",
         "nfs-enum",
         "ldap-enum",
-        "smtp-enum",
+        "smtp-enum"
+      ]
+    },
+    {
+      "id": "bases-de-datos-ruta",
+      "title": "Bases de datos y movimiento lateral",
+      "summary": "Enumerar motores de datos y distinguir lectura, ejecucion y salto a otros servicios.",
+      "concepts": [
         "database-enumeration",
         "mssql-lateral"
       ]
@@ -8503,7 +8516,15 @@
         "registry-autoruns",
         "dll-hijacking",
         "sebackup-serestore",
-        "uac-bypass",
+        "uac-bypass"
+      ]
+    },
+    {
+      "id": "kernel-ultimo-recurso-ruta",
+      "title": "Kernel exploits: ultimo recurso",
+      "summary": "Validar version, parche y arquitectura antes de asumir el riesgo de explotar el kernel en Linux o Windows.",
+      "concepts": [
+        "kernel-exploits-linux",
         "kernel-exploits-windows"
       ]
     },

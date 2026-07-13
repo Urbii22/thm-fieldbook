@@ -111,11 +111,18 @@ class ExportWebContentTests(unittest.TestCase):
             paths["web-inyecciones-ruta"]["concepts"],
             ["ssti", "ssrf", "xxe", "xss", "file-upload", "filtros-incompletos", "command-injection"],
         )
+        self.assertEqual(paths["web-pruebas-manuales-ruta"]["concepts"], ["burp-manual-testing", "client-side-controls"])
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],
-            ["burp-manual-testing", "client-side-controls", "api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
+            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
         )
         self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
+
+    def test_learning_paths_stay_focused(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+
+        for path in payload["paths"]:
+            self.assertLessEqual(len(path["concepts"]), 7, f"ruta demasiado densa: {path['id']}")
 
     def test_full_guide_commands_are_merged_into_existing_sections(self):
         payload = export_web_content.build_payload(export_web_content.load_source_sections())

@@ -54,7 +54,7 @@ const LEGACY_IP_KEY = "thm-room-ip";
 const FAVS_KEY = "thm-favs";
 const RECENT_KEY = "thm-recent";
 const LAST_VIEW_KEY = "thm-last-view";
-const APP_VERSION = "20260713-pt1-theory";
+const APP_VERSION = "20260713-pt1-report";
 let suppressHash = false;
 let roomStore;
 
@@ -2446,8 +2446,8 @@ function bindRoomPanel() {
     const room = state.rooms.find((item) => item.id === state.activeRoomId) || profileToRoom(state.profile);
     const bundle = createExportBundle(room, { redact: true });
     const name = (room.name || room.targetIp || "room").replace(/[^a-z0-9.-]/gi, "_");
-    downloadFile(`writeup-${name}.md`, bundle.md, "text/markdown;charset=utf-8");
-    showToast("Writeup exportado sin secretos", "ok");
+    downloadFile(`informe-pt1-${name}.md`, bundle.md, "text/markdown;charset=utf-8");
+    showToast("Informe PT1 exportado; revisa secretos antes de compartir", "ok");
   });
   const notesDrawer = document.querySelector("[data-notes-drawer]");
   const notesToggle = document.querySelector("[data-notes-toggle]");
