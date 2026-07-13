@@ -32,6 +32,17 @@ Reorientar THM Fieldbook hacia contenido fiable, actualizado y facil de consulta
 5. Accesibilidad y pulido de escritorio.
 6. Publicacion y validacion final.
 
+## Estado de implementacion (2026-07-13)
+
+- [x] Auditar la cobertura real y distinguir fichas curadas de explicaciones generales.
+- [x] Corregir los comandos SMB prioritarios y la semantica de flags de NetExec.
+- [x] Reducir la densidad inicial de Practica y mantener filtros cerrados.
+- [x] Simplificar las acciones y utilidades del panel de room.
+- [x] Incorporar Estudiar como modo voluntario, sin progreso automatico.
+- [x] Mejorar foco y teclado en dialogos y Notas.
+- [x] Regenerar contenido y alinear la version PWA.
+- [ ] Priorizar la siguiente revision editorial de conceptos, guias y rutas segun las certificaciones elegidas.
+
 ## Plan de trabajo
 
 ### 1. Auditar el contenido actual

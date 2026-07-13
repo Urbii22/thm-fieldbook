@@ -377,9 +377,9 @@ assert.deepEqual(
   "busqueda con y sin tilde debe devolver el mismo resultado",
 );
 
-for (const asset of [html, js, sw]) {
-  assert.match(asset, /20260711-fichas-recon/);
-}
+const releaseVersion = "20260713-content-density";
+for (const asset of [html, js, sw]) assert.ok(asset.includes(releaseVersion), `falta version PWA ${releaseVersion}`);
+assert.match(sw, /thm-fieldbook-v65/);
 
 assert.match(js, /registration\.update\(\)/);
 assert.match(js, /controllerchange/);
