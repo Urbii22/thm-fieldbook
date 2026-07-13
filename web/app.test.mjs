@@ -15,6 +15,7 @@ import {
   PORT_DB,
   lookupPort,
   appendToNotes,
+  describeCommand,
 } from "./app.mjs";
 
 // ---- Bloc de notas: capturar comandos sin pisar lo escrito ----
@@ -170,6 +171,22 @@ assert.equal(resolveSlug("un-slug-cualquiera-no-redirigido"), "un-slug-cualquier
 const smb = lookupPort("445");
 assert.ok(smb && smb.known && smb.svc === "SMB", "445 deberia resolver a SMB");
 assert.ok(smb.cmds.length && sectionSlugs.has(resolveSlug(smb.slug)), "445 apunta a seccion inexistente");
+assert.equal(smb.cmds[0], "nxc smb $IP -u '' -p '' --shares", "445 debe proponer una enumeracion de shares verificable");
+assert.equal(PORT_DB["139"].cmds[0], smb.cmds[0], "139 y 445 deben compartir la comprobacion SMB prioritaria");
+assert.ok(
+  content.commandMetadata.some((item) => item.command === smb.cmds[0] && item.sectionSlug === smb.slug),
+  "el comando SMB prioritario debe tener metadata curada",
+);
+
+const nxcParts = describeCommand(smb.cmds[0]).parts;
+assert.equal(nxcParts.find((part) => part.token === "-u")?.desc, "usuario o fichero de usuarios");
+assert.equal(nxcParts.find((part) => part.token === "-p")?.desc, "contrasena o fichero de contrasenas");
+assert.equal(nxcParts.find((part) => part.token === "--shares")?.desc, "lista recursos compartidos y permisos");
+const emptyNxcValues = nxcParts.filter((part) => part.token === "''").map((part) => part.desc);
+assert.deepEqual(emptyNxcValues, [
+  "usuario, cuenta vacia o fichero de usuarios",
+  "contrasena vacia, valor o fichero de contrasenas",
+]);
 // Formatos de entrada aceptados.
 assert.equal(lookupPort("puerto 80").svc, "HTTP");
 assert.equal(lookupPort("port 6379/tcp").svc, "Redis");

@@ -215,12 +215,12 @@ export const PORT_DB = {
   "110": { svc: "POP3", note: "Buzon de correo. Con credenciales, lee mensajes en busca de secretos.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script pop3-capabilities $IP"] },
   "111": { svc: "rpcbind / NFS portmapper", note: "Mapa de servicios RPC. Lista programas registrados; suele delatar NFS (mira 2049).", slug: "recon-y-servicios", cmds: ["rpcinfo -p $IP", "nmap -p $PORT --script rpcinfo $IP"] },
   "135": { svc: "MSRPC (Windows)", note: "Endpoint mapper de Windows. Enumera interfaces y valida usuarios/DCOM.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script msrpc-enum $IP", "impacket-rpcdump $IP"] },
-  "139": { svc: "NetBIOS / SMB", note: "SMB sobre NetBIOS. Enumera shares y sesiones nulas igual que el 445.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p ''", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
+  "139": { svc: "NetBIOS / SMB", note: "SMB sobre NetBIOS. Enumera shares y sesiones nulas igual que el 445.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p '' --shares", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
   "143": { svc: "IMAP", note: "Buzon de correo. Con credenciales, lee carpetas en busca de loot.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script imap-capabilities $IP"] },
   "161": { svc: "SNMP (UDP)", note: "Gestion de red sobre UDP. Prueba community 'public': suele filtrar procesos, usuarios y hasta credenciales.", slug: "recon-y-servicios", cmds: ["snmpwalk -v2c -c public $IP", "nmap -sU -p $PORT --script snmp-info $IP"] },
   "389": { svc: "LDAP", note: "Directorio (a menudo AD). Consulta el naming context base con bind anonimo para volcar objetos.", slug: "active-directory", cmds: ["ldapsearch -x -H ldap://$IP:$PORT -s base namingcontexts", "nmap -p $PORT --script ldap-rootdse $IP"] },
   "443": { svc: "HTTPS", note: "Web cifrada. Igual que HTTP pero mira ademas el certificado: revela hostnames y subdominios.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/", "ffuf -u https://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
-  "445": { svc: "SMB", note: "Comparticion de ficheros Windows. Sesion nula, listado de shares y enumeracion de usuarios; pilar en AD.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p ''", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
+  "445": { svc: "SMB", note: "Comparticion de ficheros Windows. Sesion nula, listado de shares y enumeracion de usuarios; pilar en AD.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p '' --shares", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
   "465": { svc: "SMTPS", note: "SMTP cifrado. Mismo juego que el 25 pero sobre TLS.", slug: "recon-y-servicios", cmds: ["openssl s_client -connect $IP:$PORT", "nmap -p $PORT --script smtp-commands $IP"] },
   "512": { svc: "rexec (r-services)", note: "Ejecucion remota legacy. Junto a 513/514: si confia en hosts, da shell sin password.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script rexec-brute $IP"] },
   "513": { svc: "rlogin (r-services)", note: "Login remoto legacy. Con .rhosts permisivo entras sin credenciales.", slug: "recon-y-servicios", cmds: ["rlogin $IP -l root", "nmap -p $PORT --script rlogin-brute $IP"] },
@@ -727,6 +727,76 @@ const TOOL_PURPOSE = {
   getcap: "Lista capabilities de binarios (vector de escalada Linux).",
 };
 
+// Los flags cortos cambian de significado entre herramientas. Este mapa
+// contextual tiene prioridad sobre FLAG_HELP para no presentar inferencias
+// genericas como conocimiento verificado.
+const TOOL_FLAG_HELP = {
+  nmap: {
+    "-p": "puertos objetivo",
+    "-p-": "todos los 65535 puertos",
+    "-sC": "scripts NSE por defecto",
+    "-sV": "deteccion de servicios y versiones",
+    "-sU": "escaneo UDP",
+    "-sS": "escaneo SYN",
+    "-sT": "escaneo TCP connect",
+    "-Pn": "omite el descubrimiento por ping",
+    "-n": "desactiva la resolucion DNS",
+    "-O": "deteccion del sistema operativo",
+    "-A": "OS, versiones, scripts y traceroute",
+    "-oN": "guarda la salida en formato normal",
+    "-oA": "guarda la salida en los formatos principales",
+  },
+  ffuf: {
+    "-u": "URL con el marcador FUZZ",
+    "-w": "wordlist utilizada para el fuzzing",
+    "-H": "cabecera HTTP personalizada",
+  },
+  hashcat: {
+    "-m": "modo o tipo de hash",
+    "-a": "modo de ataque",
+  },
+  curl: {
+    "-u": "credenciales HTTP usuario:contrasena",
+    "-H": "cabecera HTTP personalizada",
+    "-i": "incluye las cabeceras de respuesta",
+    "-x": "proxy utilizado para la peticion",
+  },
+  nxc: {
+    "-u": "usuario o fichero de usuarios",
+    "-p": "contrasena o fichero de contrasenas",
+    "-H": "hash NTLM para autenticacion",
+    "--shares": "lista recursos compartidos y permisos",
+    "--rid-brute": "enumera cuentas mediante RID cycling",
+    "--continue-on-success": "continua tras encontrar una credencial valida",
+  },
+  netexec: {
+    "-u": "usuario o fichero de usuarios",
+    "-p": "contrasena o fichero de contrasenas",
+    "-H": "hash NTLM para autenticacion",
+    "--shares": "lista recursos compartidos y permisos",
+    "--rid-brute": "enumera cuentas mediante RID cycling",
+    "--continue-on-success": "continua tras encontrar una credencial valida",
+  },
+  crackmapexec: {
+    "-u": "usuario o fichero de usuarios",
+    "-p": "contrasena o fichero de contrasenas",
+    "-H": "hash NTLM para autenticacion",
+    "--shares": "lista recursos compartidos y permisos",
+    "--rid-brute": "enumera cuentas mediante RID cycling",
+    "--continue-on-success": "continua tras encontrar una credencial valida",
+  },
+};
+
+const TOOL_VALUE_HELP = {
+  nmap: { "-p": "puerto(s) objetivo" },
+  ffuf: { "-u": "URL objetivo", "-w": "ruta de la wordlist", "-H": "nombre y valor de la cabecera" },
+  hashcat: { "-m": "identificador del tipo de hash", "-a": "identificador del modo de ataque" },
+  curl: { "-u": "usuario y contrasena HTTP", "-H": "nombre y valor de la cabecera", "-x": "URL del proxy" },
+  nxc: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
+  netexec: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
+  crackmapexec: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
+};
+
 // Base tool -> "que esperas obtener" (senal de exito). Se muestra en el modal
 // cuando el comando no tiene una ficha curada, para que TODO comando explique
 // claramente su resultado esperado, no solo los 23 con metadata a mano.
@@ -815,16 +885,17 @@ function baseTool(token) {
   return clean;
 }
 
-const PORT_FLAGS = new Set(["-p", "--port", "-p-", "-dport", "--dport", "--top-ports"]);
+const PORT_FLAGS = new Set(["--port", "-dport", "--dport", "--top-ports"]);
 
-function classifyToken(token, index, prevToken) {
+function classifyToken(token, index, prevToken, tool) {
   if (VAR_HELP[token]) return VAR_HELP[token];
   if (/^\$[A-Za-z_]+$/.test(token) || /^<[A-Za-z]/.test(token) || token === "ATTACKER_IP") {
     return "variable: reemplaza por tu valor";
   }
   if (index === 0) return "herramienta principal";
-  if (token.startsWith("--")) return FLAG_HELP[token] || "opcion (forma larga)";
-  if (token.startsWith("-")) return FLAG_HELP[token] || "flag / opcion";
+  if (token.startsWith("--")) return TOOL_FLAG_HELP[tool]?.[token] || FLAG_HELP[token] || `opcion de ${tool || "la herramienta"}`;
+  if (token.startsWith("-")) return TOOL_FLAG_HELP[tool]?.[token] || FLAG_HELP[token] || `flag de ${tool || "la herramienta"}`;
+  if (TOOL_VALUE_HELP[tool]?.[prevToken]) return TOOL_VALUE_HELP[tool][prevToken];
   if (/^https?:\/\//.test(token)) return "URL objetivo";
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(token)) return "direccion IP";
   if (/[/\\]/.test(token) || /\.(txt|lst|list|conf|xml|json|pcap|php|sh|py|exe|elf)$/i.test(token)) {
@@ -846,13 +917,13 @@ function effectiveTool(tokens) {
   return baseTool(tokens[i] || tokens[0] || "");
 }
 
-function describeCommand(raw) {
+export function describeCommand(raw) {
   const tokens = String(raw).split(/\s+/).filter(Boolean);
   const base = effectiveTool(tokens);
   let purpose = TOOL_PURPOSE[base];
   if (!purpose) purpose = FLAG_HELP[base] ? `${capitalize(FLAG_HELP[base])}.` : "Comando de shell.";
   const expect = TOOL_EXPECT[base] || "";
-  const parts = tokens.map((token, index) => ({ token, desc: classifyToken(token, index, tokens[index - 1]) }));
+  const parts = tokens.map((token, index) => ({ token, desc: classifyToken(token, index, tokens[index - 1], base) }));
   const seen = new Set();
   const vars = [];
   for (const token of tokens) {
