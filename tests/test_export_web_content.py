@@ -113,7 +113,7 @@ class ExportWebContentTests(unittest.TestCase):
         )
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],
-            ["burp-manual-testing", "api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
+            ["burp-manual-testing", "client-side-controls", "api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
         )
         self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
 
@@ -168,10 +168,27 @@ class ExportWebContentTests(unittest.TestCase):
         concepts = {concept["id"]: concept for concept in payload["concepts"]}
         guides = {guide["id"]: guide for guide in payload["guides"]}
 
-        for concept_id in ("burp-manual-testing", "network-traffic-mitm", "ad-tickets-trusts", "pentest-reporting"):
+        for concept_id in (
+            "burp-manual-testing",
+            "client-side-controls",
+            "packet-analysis",
+            "network-traffic-mitm",
+            "network-segmentation-firewalls",
+            "ad-tickets-trusts",
+            "metasploit-workflow",
+            "rules-of-engagement-scope",
+            "persistence-cleanup-opsec",
+            "pentest-reporting",
+        ):
             self.assertIn(concept_id, concepts)
             self.assertTrue(concepts[concept_id]["confirmacion"])
             self.assertTrue(concepts[concept_id]["resultado"])
+
+        paths = {path["id"]: path["concepts"] for path in payload["paths"]}
+        self.assertEqual(
+            paths["pt1-reporting-ruta"],
+            ["rules-of-engagement-scope", "persistence-cleanup-opsec", "pentest-reporting"],
+        )
 
         self.assertIn("pt1-engagement", guides)
         self.assertEqual(guides["pt1-engagement"]["section"], "notas-y-cierre")

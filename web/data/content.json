@@ -5,7 +5,7 @@
     "totalCommands": 441,
     "totalTags": 9,
     "totalGuides": 11,
-    "totalConcepts": 78,
+    "totalConcepts": 84,
     "totalPaths": 15,
     "totalCommandMetadata": 215
   },
@@ -8037,6 +8037,271 @@
       ]
     },
     {
+      "id": "rules-of-engagement-scope",
+      "title": "Alcance y Rules of Engagement",
+      "phase": "recon",
+      "section": "mentalidad-y-preparacion",
+      "summary": "Definir activos, acciones permitidas, limites y contactos antes de empezar cualquier prueba.",
+      "que": "El alcance identifica que sistemas, cuentas y ventanas se pueden probar. Las Rules of Engagement (ROE) convierten ese alcance en reglas operativas: tecnicas permitidas, exclusiones, horarios, manejo de datos, contacto de emergencia y criterio de parada.",
+      "porque": "Una tecnica puede ser valida y aun asi quedar fuera de autorizacion. Trabajar desde una ROE evita afectar terceros, perder evidencia o confundir un hallazgo con una accion no acordada.",
+      "cuando": "Antes del primer paquete y cada vez que aparezca un dominio, host, cuenta o red que no estaba descrito inicialmente.",
+      "no_aplica": [
+        "Nunca asumas que un activo relacionado esta autorizado por compartir dominio o red.",
+        "Una flag o acceso tecnico no amplia por si solo el alcance."
+      ],
+      "confirmacion": "Puedes responder por escrito que activos entran, que tecnicas estan permitidas, cuando debes parar y a quien debes avisar.",
+      "resultado": "Una referencia breve de alcance y ROE que guia todas las decisiones y deja las dudas bloqueadas hasta recibir autorizacion.",
+      "necesitas": [
+        "Lista de activos y cuentas",
+        "Ventana temporal",
+        "Tecnicas permitidas y prohibidas",
+        "Contacto y criterio de parada"
+      ],
+      "senales": [
+        "In scope",
+        "Out of scope",
+        "Stop condition",
+        "Emergency contact",
+        "Data handling"
+      ],
+      "pasos": [
+        "Resume el alcance en tus notas.",
+        "Separa autorizaciones de restricciones.",
+        "Registra hora de inicio y contacto.",
+        "Detente ante activos ambiguos.",
+        "Anota cualquier cambio autorizado."
+      ],
+      "commands": [
+        {
+          "cmd": "mkdir -p notes; touch notes/scope.md notes/timeline.md notes/cleanup.md",
+          "why": "Crea desde el inicio registros separados para autorizacion, cronologia y artefactos que deberan retirarse.",
+          "out": "Tres notas vacias que estructuran el engagement antes de probar."
+        }
+      ]
+    },
+    {
+      "id": "client-side-controls",
+      "title": "Controles client-side y validacion del servidor",
+      "phase": "enumeration",
+      "section": "web-apis-y-autorizacion",
+      "summary": "Todo valor controlado por el navegador puede modificarse; la seguridad real debe imponerse en el servidor.",
+      "que": "JavaScript, campos hidden, botones deshabilitados, validaciones HTML y datos almacenados en el navegador mejoran la interfaz, pero el cliente controla la peticion final. El servidor debe repetir validacion, autenticacion y autorizacion sobre cada operacion.",
+      "porque": "Burp o curl permiten omitir la interfaz y cambiar parametros, metodos, cookies y cuerpos. Si el backend confia en role=admin, price, user_id o una comprobacion hecha solo en JavaScript, el control se puede saltar.",
+      "cuando": "Cuando la interfaz oculta acciones, limita valores o decide permisos antes de enviar una peticion al backend.",
+      "no_aplica": [
+        "Cambiar la interfaz sin conseguir una respuesta distinta del servidor no demuestra impacto.",
+        "Un 403 consistente al repetir la peticion indica que el backend si aplica el control."
+      ],
+      "confirmacion": "Captura una peticion valida, cambia una sola propiedad controlada por el cliente y compara la respuesta con otra cuenta o rol.",
+      "resultado": "Evidencia reproducible de que el servidor acepta o rechaza correctamente el cambio, separada del comportamiento visual del navegador.",
+      "necesitas": [
+        "Peticion base valida",
+        "Parametro o accion que la UI restringe",
+        "Dos cuentas cuando se pruebe autorizacion"
+      ],
+      "senales": [
+        "hidden",
+        "disabled",
+        "localStorage",
+        "role",
+        "price",
+        "user_id",
+        "Validacion JavaScript"
+      ],
+      "pasos": [
+        "Observa la peticion real.",
+        "Identifica el dato que impone la UI.",
+        "Repite en Repeater.",
+        "Cambia solo ese dato.",
+        "Compara por cuenta, status y cuerpo."
+      ],
+      "commands": [
+        {
+          "cmd": "curl -i \"$URL/profile?user_id=1001\" -H \"Cookie: session=$COOKIE\"",
+          "why": "Reproduce directamente una peticion autenticada para comprobar si el servidor valida la propiedad del recurso.",
+          "out": "Un 403 confirma control; datos de otra cuenta confirman un fallo de autorizacion."
+        }
+      ]
+    },
+    {
+      "id": "packet-analysis",
+      "title": "Captura y analisis de paquetes",
+      "phase": "enumeration",
+      "section": "recon-y-servicios",
+      "summary": "Separar captura, filtrado e interpretacion para reconstruir conversaciones de red sin intervenir en ellas.",
+      "que": "Una captura PCAP conserva paquetes observados en una interfaz. Los filtros de captura reducen que se guarda; los filtros de visualizacion seleccionan despues que analizar. Seguir un stream reconstruye la conversacion de una sesion TCP.",
+      "porque": "Mirar paquetes aislados produce conclusiones pobres. Relacionar DNS, establecimiento TCP, protocolo de aplicacion, autenticacion y errores permite identificar hosts, servicios y datos expuestos con evidencia temporal.",
+      "cuando": "Cuando tienes permiso y visibilidad de una interfaz, una PCAP de una room o necesitas entender por que dos sistemas no se comunican.",
+      "no_aplica": [
+        "No ver trafico no demuestra que el servicio no exista: puede faltar visibilidad, interfaz o ventana temporal.",
+        "TLS protege el contenido aunque metadatos como IP, puerto, SNI y tiempos sigan siendo visibles."
+      ],
+      "confirmacion": "Filtra por protocolo o host, sigue el stream relevante y relaciona cada conclusion con paquetes y marcas de tiempo.",
+      "resultado": "Una secuencia explicable de quien inicio la conexion, que protocolo uso, que respondio el destino y donde fallo.",
+      "necesitas": [
+        "PCAP o interfaz autorizada",
+        "Rango temporal",
+        "Hipotesis de protocolo, host o puerto"
+      ],
+      "senales": [
+        "DNS",
+        "SYN/SYN-ACK",
+        "Retransmission",
+        "HTTP",
+        "SMB2",
+        "Kerberos",
+        "Follow stream"
+      ],
+      "pasos": [
+        "Confirma interfaz y tiempo.",
+        "Captura con el menor filtro necesario.",
+        "Aplica filtros de visualizacion.",
+        "Sigue la conversacion.",
+        "Registra paquetes que sustentan la conclusion."
+      ],
+      "commands": [
+        {
+          "cmd": "tshark -r capture.pcap -Y 'dns or http or kerberos or smb2'",
+          "why": "Aplica un filtro de visualizacion reproducible sobre una captura ya obtenida sin modificar el trafico.",
+          "out": "Paquetes relevantes con tiempo, origen, destino, protocolo y resumen."
+        }
+      ]
+    },
+    {
+      "id": "network-segmentation-firewalls",
+      "title": "Segmentacion, rutas y firewalls",
+      "phase": "pivot",
+      "section": "pivoting",
+      "summary": "Distinguir que redes conoce cada host, que camino sigue el trafico y que control permite o bloquea cada direccion.",
+      "que": "La segmentacion separa redes y limita sus flujos mediante rutas, ACL y firewalls. Alcanzable describe que existe un camino; permitido describe que los controles dejan pasar protocolo, puerto y direccion concretos.",
+      "porque": "Un host comprometido puede tener rutas que Kali no posee. Tambien puede aceptar conexiones salientes pero bloquear entrantes, motivo por el que un tunel reverse funciona donde uno directo falla.",
+      "cuando": "Cuando aparecen varias interfaces, subredes internas, puertos filtered, respuestas asimetricas o servicios accesibles solo desde otro host.",
+      "no_aplica": [
+        "Closed indica que el host respondio pero no hay servicio; filtered suele indicar ausencia de respuesta o filtrado y exige otra hipotesis.",
+        "Un tunel no concede permisos de aplicacion: solo cambia la conectividad."
+      ],
+      "confirmacion": "Compara rutas e interfaces desde ambos extremos y prueba un unico host/puerto conocido antes de lanzar enumeracion amplia.",
+      "resultado": "Un mapa de origen, destino, ruta, direccion permitida y punto de filtrado que justifica si necesitas pivot o port forwarding.",
+      "necesitas": [
+        "Interfaces y tabla de rutas",
+        "Origen y destino concretos",
+        "Puerto de control conocido"
+      ],
+      "senales": [
+        "ip route",
+        "Dos interfaces",
+        "filtered",
+        "Timeout",
+        "Egress permitido",
+        "Red interna"
+      ],
+      "pasos": [
+        "Dibuja redes por host.",
+        "Compara las rutas.",
+        "Prueba un puerto conocido.",
+        "Identifica direccion y control.",
+        "Elige tunel o forwarding minimo."
+      ],
+      "commands": [
+        {
+          "cmd": "ip route",
+          "why": "Muestra que redes conoce el host actual y por que interfaz o gateway intentara alcanzarlas.",
+          "out": "Prefijos, gateways e interfaces que revelan redes internas y posibles pivots."
+        }
+      ]
+    },
+    {
+      "id": "metasploit-workflow",
+      "title": "Flujo de trabajo con Metasploit",
+      "phase": "access",
+      "section": "cve-y-exploits",
+      "summary": "Elegir y validar un modulo por sus precondiciones, no por ejecutar automaticamente el primer resultado.",
+      "que": "Metasploit organiza exploits, auxiliares, payloads y modulos post. Un modulo solo es apropiado cuando producto, version, arquitectura, autenticacion y opciones coinciden con el objetivo.",
+      "porque": "El framework acelera configuracion y manejo de sesiones, pero no elimina la necesidad de entender el fallo. info, options y check permiten revisar precondiciones; una reproduccion manual suele dar mejor evidencia y control cuando es sencilla.",
+      "cuando": "Cuando existe un modulo mantenido que coincide con la version o cuando necesitas gestionar payloads y sesiones de forma reproducible en un laboratorio.",
+      "no_aplica": [
+        "No uses un modulo si no puedes explicar su mecanismo, alcance y efectos.",
+        "Si la comprobacion manual es corta y suficiente, Metasploit puede anadir complejidad sin aportar evidencia."
+      ],
+      "confirmacion": "Documenta modulo y fuente, revisa info/options, configura RHOSTS/RPORT y LHOST/LPORT, usa check si existe y valida la sesion con una accion inocua.",
+      "resultado": "Una decision justificada entre modulo y explotacion manual, con opciones, salida y sesion asociadas al activo correcto.",
+      "necesitas": [
+        "Producto y version",
+        "Modulo aplicable",
+        "Arquitectura y conectividad",
+        "Payload permitido"
+      ],
+      "senales": [
+        "exploit",
+        "auxiliary",
+        "post",
+        "RHOSTS",
+        "LHOST",
+        "check",
+        "session"
+      ],
+      "pasos": [
+        "Busca por producto/CVE.",
+        "Lee info y referencias.",
+        "Revisa todas las opciones.",
+        "Ejecuta check si existe.",
+        "Valida y registra la sesion.",
+        "Compara con la via manual."
+      ],
+      "commands": [
+        {
+          "cmd": "msfconsole -q",
+          "why": "Abre el framework sin banner para buscar y revisar modulos; no ejecuta ningun exploit por si mismo.",
+          "out": "Prompt de Metasploit desde el que usar search, info, options y check de forma deliberada."
+        }
+      ]
+    },
+    {
+      "id": "persistence-cleanup-opsec",
+      "title": "Persistencia, limpieza y OPSEC",
+      "phase": "closeout",
+      "section": "notas-y-cierre",
+      "summary": "Tratar persistencia y artefactos como cambios controlados que deben justificarse, registrarse y retirarse.",
+      "que": "Persistencia demuestra que un acceso podria sobrevivir a una sesion o reinicio. En un pentest se valida solo si esta autorizada y con el mecanismo menos invasivo. Limpieza significa retirar cuentas, claves, tareas, binarios y datos creados por el tester; no borrar logs del sistema ni ocultar actividad.",
+      "porque": "Cada cambio aumenta riesgo operativo y puede dejar una puerta abierta. Un registro de artefactos permite revertir exactamente lo creado, preservar evidencia y comunicar cualquier elemento que no pudo eliminarse.",
+      "cuando": "Solo cuando la ROE autoriza persistencia o cuando una tecnica deja ficheros, procesos, listeners, reglas, cuentas o credenciales temporales.",
+      "no_aplica": [
+        "No establezcas persistencia solo para demostrar acceso que ya esta confirmado.",
+        "Borrar logs o alterar evidencia defensiva no forma parte de una limpieza profesional."
+      ],
+      "confirmacion": "Cada artefacto tiene propietario, ruta o identificador, hora de creacion, motivo, evidencia y estado final; una comprobacion posterior confirma su retirada.",
+      "resultado": "Sistema sin accesos ni artefactos del tester, evidencia conservada fuera del objetivo y excepciones comunicadas al responsable.",
+      "necesitas": [
+        "ROE",
+        "Inventario de cambios",
+        "Copia de evidencia",
+        "Metodo de rollback"
+      ],
+      "senales": [
+        "Cuenta creada",
+        "Clave SSH",
+        "Scheduled task",
+        "Servicio",
+        "Binario",
+        "Listener",
+        "Cleanup pending"
+      ],
+      "pasos": [
+        "Registra antes de cambiar.",
+        "Usa el mecanismo minimo.",
+        "Captura evidencia.",
+        "Revierte en orden seguro.",
+        "Verifica y comunica excepciones."
+      ],
+      "commands": [
+        {
+          "cmd": "find /tmp -user \"$(id -un)\" -newermt \"$START_TIME\" -ls 2>/dev/null",
+          "why": "Localiza ficheros temporales del usuario creados durante la ventana para compararlos con el inventario de limpieza.",
+          "out": "Lista de candidatos; revisa propiedad y proposito antes de retirar solo artefactos propios."
+        }
+      ]
+    },
+    {
       "id": "pentest-reporting",
       "title": "Informe profesional y gestion del tiempo PT1",
       "phase": "closeout",
@@ -8118,6 +8383,7 @@
       "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
       "concepts": [
         "burp-manual-testing",
+        "client-side-controls",
         "api-testing-model",
         "auth-session-security",
         "idor-bola",
@@ -8174,7 +8440,8 @@
       "concepts": [
         "recon-metodologia",
         "fingerprinting-servicios",
-        "tcp-vs-udp"
+        "tcp-vs-udp",
+        "packet-analysis"
       ]
     },
     {
@@ -8211,7 +8478,8 @@
       "title": "Exploits y CVEs",
       "summary": "Aprovechar vulnerabilidades publicas sin ejecutar basura a ciegas ni romper la maquina.",
       "concepts": [
-        "explotar-cve"
+        "explotar-cve",
+        "metasploit-workflow"
       ]
     },
     {
@@ -8258,6 +8526,7 @@
       "title": "Pivoting",
       "summary": "Cuando la maquina comprometida ve una red interna que tu no alcanzas: usarla de puente con tuneles.",
       "concepts": [
+        "network-segmentation-firewalls",
         "pivoting-tunel",
         "pivot-troubleshooting"
       ]
@@ -8267,6 +8536,8 @@
       "title": "PT1: reporting y entrega",
       "summary": "Gestionar la ventana de examen y convertir la evidencia tecnica en un informe profesional reproducible.",
       "concepts": [
+        "rules-of-engagement-scope",
+        "persistence-cleanup-opsec",
         "pentest-reporting"
       ]
     }

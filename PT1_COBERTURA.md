@@ -4,6 +4,8 @@ Objetivo principal: preparar la certificacion Penetration Tester Level 1 (PT1) d
 
 Fuente de referencia: [PT1 Training Content](https://help.tryhackme.com/en/articles/11172303-pt1-training-content), consultada el 2026-07-13.
 
+Fuentes tecnicas primarias: [Burp Suite documentation](https://portswigger.net/burp/documentation/contents), [Wireshark User's Guide](https://www.wireshark.org/docs/wsug_html_chunked/), [Metasploit documentation](https://docs.rapid7.com/metasploit/) y [NIST SP 800-115](https://csrc.nist.gov/pubs/sp/800/115/final).
+
 ## Principios
 
 - Fieldbook apoya decisiones, interpretacion y aprendizaje; no ejecuta acciones por el usuario.
@@ -16,11 +18,11 @@ Fuente de referencia: [PT1 Training Content](https://help.tryhackme.com/en/artic
 | Dominio oficial PT1 | Cobertura actual | Refuerzo prioritario |
 | --- | --- | --- |
 | Reconnaissance & Enumeration | Fuerte: Nmap, DNS, subdominios, fingerprinting y servicios | Mantener actualizado y practicar interpretacion de outputs |
-| Web Application Testing | Fuerte en OWASP, APIs, auth, sesiones, uploads e inyecciones | Burp y comparacion manual incorporados; falta ampliar controles client-side |
-| Network Penetration Testing | Fuerte en SMB, RDP, FTP, SSH, SNMP, credenciales y pivoting | Trafico, poisoning, relay y segmentacion incorporados; falta captura pasiva mas profunda |
+| Web Application Testing | Fuerte en OWASP, APIs, auth, sesiones, uploads e inyecciones | Burp, comparacion manual y controles client-side incorporados |
+| Network Penetration Testing | Fuerte en SMB, RDP, FTP, SSH, SNMP, credenciales y pivoting | Captura pasiva, poisoning, relay, segmentacion y firewalls incorporados |
 | Active Directory Exploitation | Fuerte en enumeracion, roasting, PTH, BloodHound y AD CS | Pass-the-Ticket, ACL y trusts incorporados; ampliar abuso de permisos/trusts con casos guiados |
-| Exploitation & Post-Exploitation | Fuerte en CVE, shells, transferencia y privesc Linux/Windows | Revisar Metasploit, persistencia basica, limpieza y OPSEC dentro del alcance |
-| Reporting & Time Management | Antes parcial | Guia PT1 de 48 horas e informe profesional incorporada como prioridad maxima |
+| Exploitation & Post-Exploitation | Fuerte en CVE, shells, transferencia y privesc Linux/Windows | Flujo de Metasploit y cierre seguro incorporados; ampliar solo con casos reales de rooms |
+| Reporting & Time Management | Completa como base teorica | Alcance/ROE, guia PT1 de 48 horas e informe profesional incorporados |
 
 ## Contenido PT1 incorporado
 
@@ -28,16 +30,24 @@ Fuente de referencia: [PT1 Training Content](https://help.tryhackme.com/en/artic
 - Concepto `network-traffic-mitm`.
 - Concepto `ad-tickets-trusts`.
 - Concepto `pentest-reporting`.
+- Concepto `rules-of-engagement-scope`.
+- Concepto `client-side-controls`.
+- Concepto `packet-analysis`.
+- Concepto `network-segmentation-firewalls`.
+- Concepto `metasploit-workflow`.
+- Concepto `persistence-cleanup-opsec`.
 - Guia `pt1-engagement` con cinco fases desde alcance hasta QA del informe.
 
-## Siguiente orden editorial
+## Puerta de teoria antes de simulacros
 
-1. Controles client-side y flujo completo de Burp con dos cuentas.
-2. Captura e interpretacion de trafico con filtros reproducibles.
-3. ACL y trusts de AD mediante casos de decision, no recetas aisladas.
-4. Metasploit frente a explotacion manual y criterios para elegir.
-5. Persistencia, limpieza y OPSEC limitadas al alcance del laboratorio.
-6. Plantilla de informe PT1 y simulacro de gestion de las 48 horas.
+La base teorica se considera completa cuando estan cubiertos los seis dominios oficiales y cada tema explica que es, cuando aplica, que evidencia lo confirma y cuando detenerse. Esta puerta queda cubierta en el contenido actual.
+
+Antes de crear simulacros, el siguiente trabajo editorial sera:
+
+1. Revisar consistencia, enlaces y solapamientos de toda la teoria PT1.
+2. Ampliar solo conceptos que una room real revele como insuficientes.
+3. Preparar una plantilla reutilizable de hallazgo e informe.
+4. Despues, crear simulacros de decision y gestion de las 48 horas como modo opcional.
 
 ## Criterio de preparacion
 

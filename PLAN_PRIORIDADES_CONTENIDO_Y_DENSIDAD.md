@@ -42,7 +42,9 @@ Reorientar THM Fieldbook hacia contenido fiable, actualizado y facil de consulta
 - [x] Mejorar foco y teclado en dialogos y Notas.
 - [x] Regenerar contenido y alinear la version PWA.
 - [x] Fijar PT1 de TryHackMe como certificacion objetivo y crear su mapa de cobertura.
-- [ ] Completar los lotes editoriales PT1 restantes: client-side, trafico, ACL/trusts, Metasploit y OPSEC.
+- [x] Completar la base teorica PT1: alcance/ROE, client-side, trafico, segmentacion, ACL/trusts, Metasploit, OPSEC e informe.
+- [ ] Revisar transversalmente la teoria PT1 y corregir huecos detectados durante rooms reales.
+- [ ] Crear simulacros solo despues de esa revision, dentro del modo Estudiar opcional.
 
 ## Plan de trabajo
 
