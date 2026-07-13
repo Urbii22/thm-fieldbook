@@ -113,7 +113,7 @@ class ExportWebContentTests(unittest.TestCase):
         )
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],
-            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
+            ["burp-manual-testing", "api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
         )
         self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
 
@@ -162,6 +162,20 @@ class ExportWebContentTests(unittest.TestCase):
         section_slugs = {s["slug"] for s in payload["sections"]}
         for guide in payload["guides"]:
             self.assertIn(guide["section"], section_slugs, f"guia {guide['id']} apunta a seccion inexistente")
+
+    def test_pt1_priority_domains_have_learning_content(self):
+        payload = export_web_content.build_payload(export_web_content.load_source_sections())
+        concepts = {concept["id"]: concept for concept in payload["concepts"]}
+        guides = {guide["id"]: guide for guide in payload["guides"]}
+
+        for concept_id in ("burp-manual-testing", "network-traffic-mitm", "ad-tickets-trusts", "pentest-reporting"):
+            self.assertIn(concept_id, concepts)
+            self.assertTrue(concepts[concept_id]["confirmacion"])
+            self.assertTrue(concepts[concept_id]["resultado"])
+
+        self.assertIn("pt1-engagement", guides)
+        self.assertEqual(guides["pt1-engagement"]["section"], "notas-y-cierre")
+        self.assertEqual(len(guides["pt1-engagement"]["steps"]), 5)
 
     def test_curated_tags_keep_filters_focused(self):
         payload = export_web_content.build_payload(

@@ -4,9 +4,9 @@
     "totalSections": 24,
     "totalCommands": 441,
     "totalTags": 9,
-    "totalGuides": 10,
-    "totalConcepts": 74,
-    "totalPaths": 14,
+    "totalGuides": 11,
+    "totalConcepts": 78,
+    "totalPaths": 15,
     "totalCommandMetadata": 215
   },
   "tags": [
@@ -4650,6 +4650,61 @@
           "decide": "Si el control funciona, pasa al siguiente endpoint del inventario; si falla, conserva el caso minimo y enlazalo con [[idor-bola]]."
         }
       ]
+    },
+    {
+      "id": "pt1-engagement",
+      "title": "PT1: engagement de 48 horas e informe",
+      "phase": "closeout",
+      "section": "notas-y-cierre",
+      "summary": "Organizar alcance, evidencias, hallazgos y reporte como un pentest completo, no como una sucesion de flags.",
+      "steps": [
+        {
+          "title": "Divide la ventana antes de tocar el objetivo",
+          "idea": "PT1 evalua un engagement completo dentro de una ventana de 48 horas. Reserva bloques para reconocimiento, explotacion, reenumeracion, evidencias y redaccion. Define tambien una hora de corte: seguir atacando hasta el ultimo minuto suele producir un informe incompleto.",
+          "commands": [],
+          "look": "Alcance, activos, credenciales iniciales, hora de inicio, restricciones y entregables.",
+          "decide": "Si no puedes explicar que esta dentro de alcance y cuando dejaras de explotar, aun no empieces las pruebas."
+        },
+        {
+          "title": "Crea una estructura de evidencia reproducible",
+          "idea": "Cada hallazgo debe conservar origen, comando o peticion, salida relevante, captura y decision desbloqueada. La evidencia se recoge durante la prueba; reconstruirla al final consume tiempo y puede ser imposible.",
+          "commands": [
+            {
+              "cmd": "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+              "why": "Separa outputs, loot y capturas desde el inicio para poder citar rutas concretas en el informe.",
+              "out": "Directorios vacios preparados para guardar cada evidencia en su contexto."
+            },
+            {
+              "cmd": "touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md",
+              "why": "Mantiene indice, credenciales, comandos y cronologia separados sin depender de la memoria.",
+              "out": "Cuatro ficheros listos para actualizar durante todo el engagement."
+            }
+          ],
+          "look": "Hora, activo, identidad usada, evidencia obtenida y siguiente decision para cada avance.",
+          "decide": "Si un resultado no cambia ninguna decision ni demuestra impacto, no merece ocupar el centro del informe."
+        },
+        {
+          "title": "Convierte la cadena de ataque en hallazgos",
+          "idea": "No redactes una lista cronologica de comandos. Agrupa por causa raiz: condicion vulnerable, pasos minimos, evidencia, impacto y activos afectados. Separa la vulnerabilidad del camino completo que permitio encadenarla con otras.",
+          "commands": [],
+          "look": "Titulo preciso, precondiciones, prueba reproducible, resultado observado, impacto y causa raiz.",
+          "decide": "Dos tecnicas con la misma causa raiz suelen ser un hallazgo; dos causas independientes deben mantenerse separadas."
+        },
+        {
+          "title": "Prioriza por impacto y explica la mitigacion",
+          "idea": "La severidad no depende de lo espectacular del payload, sino del impacto demostrable y de las condiciones necesarias. La mitigacion debe corregir la causa raiz: permisos, validacion, segmentacion, configuracion o gestion de credenciales.",
+          "commands": [],
+          "look": "Confidencialidad, integridad, disponibilidad, privilegios obtenidos, alcance lateral y facilidad de explotacion.",
+          "decide": "Si la mitigacion solo bloquea tu payload concreto, revisala: probablemente no corrige la vulnerabilidad."
+        },
+        {
+          "title": "Haz QA antes de entregar",
+          "idea": "Reserva el ultimo bloque para repetir los pasos minimos desde tus notas, revisar capturas, eliminar secretos innecesarios y comprobar que un tercero entiende el ataque sin haber estado en la room.",
+          "commands": [],
+          "look": "Pasos numerados, evidencias legibles, activos correctos, impacto coherente, mitigaciones accionables y ausencia de passwords en claro innecesarias.",
+          "decide": "Entrega cuando cada afirmacion importante tenga evidencia y cada hallazgo pueda reproducirse dentro del alcance."
+        }
+      ]
     }
   ],
   "concepts": [
@@ -7838,6 +7893,197 @@
           "out": "Hash SHA-256 para comparar con la referencia."
         }
       ]
+    },
+    {
+      "id": "burp-manual-testing",
+      "title": "Burp Suite y pruebas web manuales",
+      "phase": "enumeration",
+      "section": "web-discovery",
+      "summary": "Usar Proxy, Repeater, Intruder y Decoder para entender y comparar peticiones antes de automatizar.",
+      "que": "Burp Suite permite interceptar el trafico del navegador, modificar una variable y repetir la peticion. Proxy descubre la superficie real; Repeater compara hipotesis; Intruder automatiza una variacion acotada; Decoder transforma datos sin asumir que decodificar equivale a romper seguridad.",
+      "porque": "Las vulnerabilidades web aparecen al comparar contextos: dos cuentas, dos objetos, un parametro o un metodo distinto. Una prueba manual controlada conserva el resto de variables y produce evidencia explicable.",
+      "cuando": "Cuando una aplicacion usa formularios, cookies, tokens, APIs o controles del navegador que necesitas observar y modificar.",
+      "no_aplica": [
+        "No envies trafico fuera del alcance definido.",
+        "Intruder no sustituye una hipotesis ni justifica fuerza bruta indiscriminada."
+      ],
+      "confirmacion": "Repite una peticion base y cambia una sola variable; registra la diferencia de status, longitud, cabeceras y cuerpo.",
+      "resultado": "Una peticion reproducible que demuestra o descarta una hipotesis sin depender de una herramienta automatica.",
+      "necesitas": [
+        "Navegador configurado con el proxy",
+        "CA de laboratorio instalada cuando haya HTTPS",
+        "Una peticion base valida"
+      ],
+      "senales": [
+        "Cookie de sesion",
+        "Authorization Bearer",
+        "Parametro id",
+        "Metodo HTTP",
+        "Control solo en JavaScript"
+      ],
+      "pasos": [
+        "Captura una peticion limpia en Proxy.",
+        "Enviala a Repeater.",
+        "Cambia una sola variable.",
+        "Compara respuesta esperada y observada.",
+        "Guarda request y response como evidencia."
+      ],
+      "commands": [
+        {
+          "cmd": "curl -i $URL/",
+          "why": "Establece una respuesta HTTP base fuera del navegador para comparar status y cabeceras.",
+          "out": "Status, cabeceras y cuerpo de referencia."
+        }
+      ]
+    },
+    {
+      "id": "network-traffic-mitm",
+      "title": "Trafico de red, poisoning y relay",
+      "phase": "access",
+      "section": "credenciales-y-acceso",
+      "summary": "Distinguir observacion pasiva, captura de autenticacion y relay activo dentro del mismo segmento.",
+      "que": "Observar trafico describe protocolos y flujos; poisoning responde a resoluciones inseguras para provocar autenticacion; relay reenvia esa autenticacion a otro servicio. Son niveles de intervencion y riesgo diferentes.",
+      "porque": "LLMNR/NBT-NS y NTLM pueden exponer hashes NetNTLM o permitir relay cuando la firma SMB no es obligatoria. La segmentacion y los controles de firma determinan si el ataque atraviesa la red.",
+      "cuando": "En un segmento de laboratorio donde aparecen broadcasts de resolucion, autenticacion NTLM y objetivos con SMB signing desactivado.",
+      "no_aplica": [
+        "No estas en el mismo segmento ni tienes un pivot con visibilidad del broadcast.",
+        "SMB signing es obligatorio en los objetivos de relay.",
+        "El alcance no autoriza poisoning o manipulacion de trafico."
+      ],
+      "confirmacion": "Separa evidencia pasiva, hash capturado y autenticacion reenviada; no presentes una captura como si ya implicara ejecucion.",
+      "resultado": "Sabes si existe solo exposicion de credenciales, posibilidad de crackeo offline o una ruta de relay con impacto lateral.",
+      "necesitas": [
+        "Interfaz correcta",
+        "Mismo segmento o pivot adecuado",
+        "Alcance que permita trafico activo"
+      ],
+      "senales": [
+        "LLMNR",
+        "NBT-NS",
+        "NetNTLMv2",
+        "SMB signing disabled",
+        "Broadcast",
+        "Segmentacion"
+      ],
+      "pasos": [
+        "Identifica interfaz y alcance.",
+        "Observa antes de responder.",
+        "Captura una autenticacion de laboratorio.",
+        "Comprueba signing en objetivos.",
+        "Solo entonces evalua relay y documenta impacto."
+      ],
+      "commands": [
+        {
+          "cmd": "sudo responder -I tun0 -wv",
+          "why": "Escucha y responde en la interfaz autorizada para capturar autenticacion de laboratorio.",
+          "out": "Hash NetNTLMv2 con usuario y host de origen."
+        },
+        {
+          "cmd": "impacket-ntlmrelayx -tf targets.txt -smb2support",
+          "why": "Prueba relay solo contra objetivos previamente validados sin firma SMB obligatoria.",
+          "out": "Autenticacion aceptada o rechazo que confirma el control defensivo."
+        }
+      ]
+    },
+    {
+      "id": "ad-tickets-trusts",
+      "title": "Pass-the-Ticket, ACL y trusts en Active Directory",
+      "phase": "access",
+      "section": "active-directory",
+      "summary": "Transformar tickets, permisos de objetos y relaciones de confianza en rutas de movimiento lateral explicables.",
+      "que": "Pass-the-Ticket reutiliza un TGT o TGS valido sin conocer la password. Las ACL conceden acciones sobre objetos del dominio y los trusts conectan limites de autenticacion entre dominios o bosques.",
+      "porque": "AD decide acceso por identidades, tickets y permisos encadenados. Un ticket robado o una ACL como GenericAll, WriteDACL o ForceChangePassword puede abrir una ruta que no aparece al mirar solo grupos directos.",
+      "cuando": "Cuando obtienes un ccache/kirbi, BloodHound muestra una arista abusada o el dominio mantiene trusts con otros dominios.",
+      "no_aplica": [
+        "El ticket esta expirado, pertenece a otro realm o el reloj no esta sincronizado.",
+        "La arista de BloodHound no concede una accion util sobre el objetivo.",
+        "El dominio confiado queda fuera de alcance."
+      ],
+      "confirmacion": "Comprueba identidad, realm, validez temporal y servicio accesible con Kerberos; valida cada ACL o trust antes de ejecutar cambios.",
+      "resultado": "Una ruta de identidad a recurso o privilegio con precondiciones, limite de alcance e impacto demostrable.",
+      "necesitas": [
+        "DNS y hora correctos",
+        "Ticket valido o credencial de dominio",
+        "Mapa de ACL/trusts",
+        "Objetivo dentro de alcance"
+      ],
+      "senales": [
+        "ccache",
+        "kirbi",
+        "KRB5CCNAME",
+        "GenericAll",
+        "WriteDACL",
+        "ForceChangePassword",
+        "TrustedDomain"
+      ],
+      "pasos": [
+        "Confirma realm, DNS y hora.",
+        "Inspecciona tickets y permisos.",
+        "Selecciona una accion minima.",
+        "Valida acceso Kerberos sin password.",
+        "Documenta la cadena completa."
+      ],
+      "commands": [
+        {
+          "cmd": "impacket-getTGT $DOMAIN/$USER:$PASS -dc-ip $IP",
+          "why": "Obtiene un TGT de laboratorio y crea el ccache que usaras para validar autenticacion por ticket.",
+          "out": "Fichero ccache y periodo de validez del ticket."
+        },
+        {
+          "cmd": "export KRB5CCNAME=$USER.ccache; impacket-psexec -k -no-pass $DOMAIN/$USER@$DC_FQDN",
+          "why": "Demuestra autenticacion Kerberos con ticket sin volver a enviar la password.",
+          "out": "Acceso autorizado o error de realm, DNS, hora o permisos que debes interpretar."
+        }
+      ]
+    },
+    {
+      "id": "pentest-reporting",
+      "title": "Informe profesional y gestion del tiempo PT1",
+      "phase": "closeout",
+      "section": "notas-y-cierre",
+      "summary": "Convertir evidencias y cadenas de ataque en hallazgos reproducibles, priorizados y utiles para un cliente.",
+      "que": "Un informe de pentest explica alcance, metodologia, hallazgos, evidencias, impacto, causa raiz y mitigaciones. La gestion del tiempo reserva capacidad para redactar y revisar dentro de la ventana de 48 horas.",
+      "porque": "Obtener acceso demuestra habilidad tecnica; comunicar que fallo, que impacto tuvo y como corregirlo demuestra capacidad profesional y es parte explicita de PT1.",
+      "cuando": "Desde el inicio del engagement: la evidencia se recoge durante las pruebas y se transforma en informe antes de agotar la ventana.",
+      "no_aplica": [
+        "Una captura sin contexto no sustituye pasos reproducibles.",
+        "Una lista de comandos o flags no es un informe de vulnerabilidades."
+      ],
+      "confirmacion": "Un tercero puede repetir los pasos minimos, relacionar cada afirmacion con una evidencia y entender la mitigacion sin preguntarte que ocurrio.",
+      "resultado": "Informe conciso con resumen ejecutivo, alcance, metodologia, hallazgos priorizados, ataque encadenado y recomendaciones accionables.",
+      "necesitas": [
+        "Notas y cronologia",
+        "Requests/outputs/capturas",
+        "Activos y cuentas afectados",
+        "Hora de corte para redaccion y QA"
+      ],
+      "senales": [
+        "Causa raiz",
+        "Impacto",
+        "Evidencia",
+        "Reproduccion",
+        "Mitigacion",
+        "Attack path"
+      ],
+      "pasos": [
+        "Reserva tiempo de informe.",
+        "Agrupa evidencia por causa raiz.",
+        "Redacta pasos minimos e impacto.",
+        "Prioriza y propone mitigacion.",
+        "Haz QA y elimina secretos innecesarios."
+      ],
+      "commands": [
+        {
+          "cmd": "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+          "why": "Separa evidencia desde el inicio para citarla sin reconstruirla al final.",
+          "out": "Estructura de trabajo reproducible."
+        },
+        {
+          "cmd": "touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md",
+          "why": "Crea los registros minimos para indice, credenciales, comandos y cronologia.",
+          "out": "Ficheros de notas listos para mantener durante las 48 horas."
+        }
+      ]
     }
   ],
   "paths": [
@@ -7871,6 +8117,7 @@
       "title": "Web: autorización y APIs",
       "summary": "Modelo de pruebas de API, sesiones, IDOR/BOLA, JWT y GraphQL.",
       "concepts": [
+        "burp-manual-testing",
         "api-testing-model",
         "auth-session-security",
         "idor-bola",
@@ -7955,7 +8202,8 @@
         "keepass-kdbx",
         "cracking",
         "fuerza-bruta-online",
-        "credential-reuse"
+        "credential-reuse",
+        "network-traffic-mitm"
       ]
     },
     {
@@ -8000,6 +8248,7 @@
         "kerberos",
         "asrep-kerberoast",
         "ntlm-pth",
+        "ad-tickets-trusts",
         "bloodhound",
         "ad-cs"
       ]
@@ -8011,6 +8260,14 @@
       "concepts": [
         "pivoting-tunel",
         "pivot-troubleshooting"
+      ]
+    },
+    {
+      "id": "pt1-reporting-ruta",
+      "title": "PT1: reporting y entrega",
+      "summary": "Gestionar la ventana de examen y convertir la evidencia tecnica en un informe profesional reproducible.",
+      "concepts": [
+        "pentest-reporting"
       ]
     }
   ],

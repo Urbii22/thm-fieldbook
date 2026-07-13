@@ -783,4 +783,59 @@ GUIDES = [
             },
         ],
     },
+    {
+        "id": "pt1-engagement",
+        "title": "PT1: engagement de 48 horas e informe",
+        "phase": "closeout",
+        "section": "notas-y-cierre",
+        "summary": "Organizar alcance, evidencias, hallazgos y reporte como un pentest completo, no como una sucesion de flags.",
+        "steps": [
+            {
+                "title": "Divide la ventana antes de tocar el objetivo",
+                "idea": "PT1 evalua un engagement completo dentro de una ventana de 48 horas. Reserva bloques para reconocimiento, explotacion, reenumeracion, evidencias y redaccion. Define tambien una hora de corte: seguir atacando hasta el ultimo minuto suele producir un informe incompleto.",
+                "commands": [],
+                "look": "Alcance, activos, credenciales iniciales, hora de inicio, restricciones y entregables.",
+                "decide": "Si no puedes explicar que esta dentro de alcance y cuando dejaras de explotar, aun no empieces las pruebas.",
+            },
+            {
+                "title": "Crea una estructura de evidencia reproducible",
+                "idea": "Cada hallazgo debe conservar origen, comando o peticion, salida relevante, captura y decision desbloqueada. La evidencia se recoge durante la prueba; reconstruirla al final consume tiempo y puede ser imposible.",
+                "commands": [
+                    {
+                        "cmd": "mkdir -p nmap web loot creds hashes screenshots exploits notes",
+                        "why": "Separa outputs, loot y capturas desde el inicio para poder citar rutas concretas en el informe.",
+                        "out": "Directorios vacios preparados para guardar cada evidencia en su contexto.",
+                    },
+                    {
+                        "cmd": "touch notes/00-index.md notes/creds.md notes/commands.md notes/timeline.md",
+                        "why": "Mantiene indice, credenciales, comandos y cronologia separados sin depender de la memoria.",
+                        "out": "Cuatro ficheros listos para actualizar durante todo el engagement.",
+                    },
+                ],
+                "look": "Hora, activo, identidad usada, evidencia obtenida y siguiente decision para cada avance.",
+                "decide": "Si un resultado no cambia ninguna decision ni demuestra impacto, no merece ocupar el centro del informe.",
+            },
+            {
+                "title": "Convierte la cadena de ataque en hallazgos",
+                "idea": "No redactes una lista cronologica de comandos. Agrupa por causa raiz: condicion vulnerable, pasos minimos, evidencia, impacto y activos afectados. Separa la vulnerabilidad del camino completo que permitio encadenarla con otras.",
+                "commands": [],
+                "look": "Titulo preciso, precondiciones, prueba reproducible, resultado observado, impacto y causa raiz.",
+                "decide": "Dos tecnicas con la misma causa raiz suelen ser un hallazgo; dos causas independientes deben mantenerse separadas.",
+            },
+            {
+                "title": "Prioriza por impacto y explica la mitigacion",
+                "idea": "La severidad no depende de lo espectacular del payload, sino del impacto demostrable y de las condiciones necesarias. La mitigacion debe corregir la causa raiz: permisos, validacion, segmentacion, configuracion o gestion de credenciales.",
+                "commands": [],
+                "look": "Confidencialidad, integridad, disponibilidad, privilegios obtenidos, alcance lateral y facilidad de explotacion.",
+                "decide": "Si la mitigacion solo bloquea tu payload concreto, revisala: probablemente no corrige la vulnerabilidad.",
+            },
+            {
+                "title": "Haz QA antes de entregar",
+                "idea": "Reserva el ultimo bloque para repetir los pasos minimos desde tus notas, revisar capturas, eliminar secretos innecesarios y comprobar que un tercero entiende el ataque sin haber estado en la room.",
+                "commands": [],
+                "look": "Pasos numerados, evidencias legibles, activos correctos, impacto coherente, mitigaciones accionables y ausencia de passwords en claro innecesarias.",
+                "decide": "Entrega cuando cada afirmacion importante tenga evidencia y cada hallazgo pueda reproducirse dentro del alcance.",
+            },
+        ],
+    },
 ]

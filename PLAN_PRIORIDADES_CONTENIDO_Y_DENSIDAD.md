@@ -41,7 +41,8 @@ Reorientar THM Fieldbook hacia contenido fiable, actualizado y facil de consulta
 - [x] Incorporar Estudiar como modo voluntario, sin progreso automatico.
 - [x] Mejorar foco y teclado en dialogos y Notas.
 - [x] Regenerar contenido y alinear la version PWA.
-- [ ] Priorizar la siguiente revision editorial de conceptos, guias y rutas segun las certificaciones elegidas.
+- [x] Fijar PT1 de TryHackMe como certificacion objetivo y crear su mapa de cobertura.
+- [ ] Completar los lotes editoriales PT1 restantes: client-side, trafico, ACL/trusts, Metasploit y OPSEC.
 
 ## Plan de trabajo
 
@@ -193,6 +194,8 @@ git diff --check
 7. `fix(a11y): improve desktop focus and contrast`
 8. `chore: export and release updated Fieldbook content`
 
-## Pregunta pendiente
+## Certificacion objetivo
 
-- Elegir las certificaciones que determinaran la prioridad editorial y el futuro mapeo de contenidos.
+- PT1 de TryHackMe es la referencia editorial principal.
+- La prioridad es adquirir capacidad practica y explicable para optar cuanto antes a puestos junior de pentesting.
+- El detalle de cobertura y los huecos se mantienen en `PT1_COBERTURA.md`.
