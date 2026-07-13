@@ -167,6 +167,8 @@ const contentCommandIndex = content.sections.flatMap((section) => section.comman
 assert.match(html, /data-filters-toggle aria-expanded="false"/);
 assert.match(html, /data-filters-panel hidden/);
 assert.match(html, /data-learn-val="study"[^>]*>Estudiar \(opcional\)/);
+assert.match(js, /return `<button type="button" class="cmd-info"[^>]*data-explain=/);
+assert.match(js, /el\.addEventListener\("keydown", trapDialogFocus\)/);
 assert.match(html, /<details class="room-actions-more">[\s\S]*data-room-duplicate[\s\S]*data-room-delete[\s\S]*<\/details>/);
 assert.match(html, /<details class="room-tools">[\s\S]*data-rev-type[\s\S]*data-rev-listener[\s\S]*<\/details>/);
 

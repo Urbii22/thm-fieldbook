@@ -937,7 +937,7 @@ export function describeCommand(raw) {
 }
 
 function infoMarkFor(rawCommand) {
-  return `<span class="cmd-info" data-explain="${escapeHtml(rawCommand)}" role="button" tabindex="0" title="Explicar comando" aria-label="Explicar comando">i</span>`;
+  return `<button type="button" class="cmd-info" data-explain="${escapeHtml(rawCommand)}" title="Explicar comando" aria-label="Explicar comando">i</button>`;
 }
 
 export function commandExplanationFor(raw, data = state.data) {
@@ -958,12 +958,45 @@ function ensureCmdModal() {
   el.addEventListener("click", (event) => {
     if (event.target === el) closeCmdModal();
   });
+  el.addEventListener("keydown", trapDialogFocus);
   return el;
 }
 
+const dialogFocusOrigins = new WeakMap();
+
+function trapDialogFocus(event) {
+  if (event.key !== "Tab") return;
+  const dialog = event.currentTarget;
+  const focusable = [...dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((item) => !item.disabled && item.tabIndex >= 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function showDialog(el) {
+  dialogFocusOrigins.set(el, document.activeElement);
+  el.hidden = false;
+  el.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
+}
+
+function hideDialog(el) {
+  if (!el) return;
+  el.hidden = true;
+  const origin = dialogFocusOrigins.get(el);
+  dialogFocusOrigins.delete(el);
+  origin?.focus?.();
+}
+
 function closeCmdModal() {
-  const el = document.querySelector("[data-cmd-modal]");
-  if (el) el.hidden = true;
+  hideDialog(document.querySelector("[data-cmd-modal]"));
 }
 
 function ensureUsageGuide() {
@@ -978,12 +1011,12 @@ function ensureUsageGuide() {
   el.addEventListener("click", (event) => {
     if (event.target === el) closeUsageGuide();
   });
+  el.addEventListener("keydown", trapDialogFocus);
   return el;
 }
 
 function closeUsageGuide() {
-  const el = document.querySelector("[data-usage-modal]");
-  if (el) el.hidden = true;
+  hideDialog(document.querySelector("[data-usage-modal]"));
 }
 
 function openUsageGuide() {
@@ -1003,7 +1036,7 @@ function openUsageGuide() {
     </ol>
     <section class="usage-expectations"><h3>Que esperar de una busqueda</h3><dl><dt><code>445</code></dt><dd>Playbook SMB, comandos iniciales y enlace al detalle.</dd><dt><code>tengo credenciales</code></dt><dd>Rutas de validacion, reutilizacion y acceso relacionadas.</dd><dt><code>shell muere</code></dt><dd>Estabilizacion de shell y diagnostico de listener/TTY.</dd><dt>Sin resultado claro</dt><dd>Prueba un servicio, puerto, tecnologia, error o evidencia concreta; no una pregunta generica.</dd></dl></section>`;
   box.querySelector("[data-usage-close]").addEventListener("click", closeUsageGuide);
-  el.hidden = false;
+  showDialog(el);
 }
 
 function bindUsageGuide() {
@@ -1047,7 +1080,7 @@ function openCmdModal(raw) {
     ${varsHtml}
     <button type="button" class="cmd-modal-copy" data-copy="${escapeHtml(adapted)}">copiar comando</button>`;
   box.querySelector("[data-cmd-close]").addEventListener("click", closeCmdModal);
-  el.hidden = false;
+  showDialog(el);
   bindCopyButtons();
 }
 
@@ -2418,10 +2451,15 @@ function bindRoomPanel() {
   });
   const notesDrawer = document.querySelector("[data-notes-drawer]");
   const notesToggle = document.querySelector("[data-notes-toggle]");
+  let notesFocusOrigin = null;
   const setNotesOpen = (open) => {
     if (!notesDrawer || !notesToggle) return;
-    if (open) notesDrawer.removeAttribute("hidden");
-    else notesDrawer.setAttribute("hidden", "");
+    if (open) {
+      notesFocusOrigin = document.activeElement;
+      notesDrawer.removeAttribute("hidden");
+    } else {
+      notesDrawer.setAttribute("hidden", "");
+    }
     notesToggle.setAttribute("aria-expanded", String(open));
     notesToggle.classList.toggle("active", open);
     // Desplaza el boton a la izquierda del cajon abierto para que no quede
@@ -2432,6 +2470,10 @@ function bindRoomPanel() {
     if (open) {
       const ta = document.querySelector("[data-notes]");
       if (ta) ta.focus();
+    } else {
+      const origin = notesFocusOrigin;
+      notesFocusOrigin = null;
+      origin?.focus?.();
     }
   };
   if (notesToggle) {

@@ -1727,8 +1727,10 @@ code {
   place-items: center;
   width: 20px;
   height: 20px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
+  background: transparent;
   color: var(--muted);
   font-family: var(--mono);
   font-size: 12px;
