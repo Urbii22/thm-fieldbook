@@ -16,6 +16,8 @@ import {
   lookupPort,
   appendToNotes,
   describeCommand,
+  commandExplanationFor,
+  getPracticeDensityState,
 } from "./app.mjs";
 
 // ---- Bloc de notas: capturar comandos sin pisar lo escrito ----
@@ -131,11 +133,26 @@ assert.equal(commandText("nmap -sV $IP"), "nmap -sV $IP");
 assert.equal(commandText({ cmd: "id", why: "quien soy", out: "uid=0" }), "id quien soy uid=0");
 assert.equal(commandText({ cmd: "id" }), "id");
 
+assert.deepEqual(getPracticeDensityState({ query: "", tag: "all", phase: "all", favOnly: false }, false), {
+  queryActive: false,
+  pristine: true,
+  guided: true,
+});
+assert.deepEqual(getPracticeDensityState({ query: "445", tag: "all", phase: "all", favOnly: false }, false), {
+  queryActive: true,
+  pristine: false,
+  guided: false,
+});
+assert.equal(getPracticeDensityState({ query: "", tag: "web", phase: "all", favOnly: false }, false).guided, false);
+assert.equal(getPracticeDensityState({ view: "learn", query: "", tag: "all", phase: "all", favOnly: false }, false).guided, false);
+
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
 const sw = readFileSync(new URL("./sw.js", import.meta.url), "utf8");
 const content = JSON.parse(readFileSync(new URL("./data/content.json", import.meta.url), "utf8"));
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
+assert.match(html, /data-filters-toggle aria-expanded="false"/);
+assert.match(html, /data-filters-panel hidden/);
 
 for (const query of ["jwt_tool", "certutil", "ligolo", "gobuster", "wfuzz"]) {
   assert.ok(
@@ -187,6 +204,13 @@ assert.deepEqual(emptyNxcValues, [
   "usuario, cuenta vacia o fichero de usuarios",
   "contrasena vacia, valor o fichero de contrasenas",
 ]);
+const curatedSmbExplanation = commandExplanationFor(smb.cmds[0], content);
+assert.equal(curatedSmbExplanation.curated, true, "el SMB prioritario debe anunciar una ficha curada");
+assert.equal(curatedSmbExplanation.metadata?.objective, "Enumerar shares con sesion nula (NetExec)");
+const fallbackExplanation = commandExplanationFor("nmap -p $PORT --script ssh2-enum-algos $IP", content);
+assert.equal(fallbackExplanation.curated, false, "una variante sin ficha no debe presentarse como curada");
+assert.equal(fallbackExplanation.metadata, null);
+assert.equal(fallbackExplanation.info.tool, "nmap");
 // Formatos de entrada aceptados.
 assert.equal(lookupPort("puerto 80").svc, "HTTP");
 assert.equal(lookupPort("port 6379/tcp").svc, "Redis");

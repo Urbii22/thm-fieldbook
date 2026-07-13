@@ -933,15 +933,17 @@ export function describeCommand(raw) {
       vars.push({ token, desc: VAR_HELP[token] || "reemplaza por tu valor" });
     }
   }
-  return { purpose, expect, parts, vars };
+  return { tool: base, purpose, expect, parts, vars };
 }
 
 function infoMarkFor(rawCommand) {
   return `<span class="cmd-info" data-explain="${escapeHtml(rawCommand)}" role="button" tabindex="0" title="Explicar comando" aria-label="Explicar comando">i</span>`;
 }
 
-function commandMetadataFor(raw) {
-  return state.data?.commandMetadata?.find((item) => item.command === raw) || null;
+export function commandExplanationFor(raw, data = state.data) {
+  const info = describeCommand(raw);
+  const metadata = data?.commandMetadata?.find((item) => item.command === raw) || null;
+  return { info, metadata, curated: Boolean(metadata) };
 }
 
 function ensureCmdModal() {
@@ -1012,8 +1014,7 @@ function openCmdModal(raw) {
   if (!raw) return;
   const el = ensureCmdModal();
   const box = el.querySelector(".cmd-modal-box");
-  const info = describeCommand(raw);
-  const metadata = commandMetadataFor(raw);
+  const { info, metadata, curated } = commandExplanationFor(raw);
   const adapted = adaptCommand(raw, state.room);
   const risk = detectRisk(raw);
   const partsHtml = info.parts
@@ -1030,6 +1031,9 @@ function openCmdModal(raw) {
   const metadataHtml = metadata
     ? `<section class="cmd-modal-metadata"><h4>${escapeHtml(metadata.objective)}</h4><p><b>Señal de éxito:</b> ${escapeHtml(metadata.successSignal || metadata.expectedOutput || "Revisa la salida.")}</p>${metadata.preconditions?.length ? `<p><b>Antes:</b> ${escapeHtml(metadata.preconditions.join(" · "))}</p>` : ""}${metadata.commonErrors?.length ? `<p><b>Error común:</b> ${escapeHtml(metadata.commonErrors.join(" · "))}</p>` : ""}${metadata.alternative ? `<p><b>Alternativa:</b> <code>${escapeHtml(metadata.alternative)}</code></p>` : ""}<p class="cmd-meta-version">${escapeHtml(metadata.tool || "herramienta")} · revisado ${escapeHtml(metadata.reviewedAt || "sin fecha")}</p></section>`
     : "";
+  const provenanceHtml = curated
+    ? `<p class="cmd-modal-provenance curated">Ficha curada para este comando.</p>`
+    : `<p class="cmd-modal-provenance fallback">Explicacion general basada en la sintaxis. Confirma los flags con <code>${escapeHtml(info.tool || "comando")} --help</code> antes de usarla como referencia de estudio.</p>`;
   box.innerHTML = `
     <button type="button" class="cmd-modal-close" data-cmd-close aria-label="Cerrar">&times;</button>
     <code class="cmd-modal-cmd">${escapeHtml(adapted)}</code>
@@ -1037,6 +1041,7 @@ function openCmdModal(raw) {
     ${!metadata && info.expect ? `<p class="cmd-modal-expect"><b>Qué esperas obtener:</b> ${escapeHtml(info.expect)}</p>` : ""}
     ${riskHtml}
     ${metadataHtml}
+    ${provenanceHtml}
     <h4>Partes del comando</h4>
     <ul class="cmd-modal-parts">${partsHtml}</ul>
     ${varsHtml}
@@ -2943,34 +2948,30 @@ function markPracticaSeen() {
   state.practicaSeen = true;
 }
 
+export function getPracticeDensityState(filters, practicaSeen = false) {
+  const queryActive = Boolean(String(filters?.query || "").trim());
+  const pristine = !queryActive && (filters?.tag || "all") === "all" && (filters?.phase || "all") === "all" && !filters?.favOnly;
+  const inPractice = (filters?.view || "practica") === "practica";
+  return { queryActive, pristine, guided: inPractice && !practicaSeen && pristine };
+}
+
 // Guided first screen for Practica: instead of dumping the first section's full
-// command list, offer phases + example searches to reduce the initial wall.
+// command list, offer evidence-shaped searches to reduce the initial wall.
 function renderGuidedPractica() {
   const container = document.querySelector("[data-detail]");
   if (!container) return;
   container.style.removeProperty("--phase");
-  const phases = (state.data.phases || []).map(
-    (phase) => `<button type="button" class="guided-phase" style="${phaseStyle(phase)}" data-guided-phase="${escapeHtml(phase)}">${escapeHtml(phaseLabel(phase))}</button>`,
-  ).join("");
-  const examples = ["nmap", "hydra", "sqli", "smb", "privesc", "reverse shell"]
+  const examples = ["445", "web 403", "sudo NOPASSWD vim", "shell muere"]
     .map((q) => `<button type="button" class="guided-example" data-guided-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
     .join("");
   const firstRun = state.firstRun ? `<div class="guided-first-run"><strong>¿Qué vas a hacer hoy?</strong><button type="button" data-first-practica>Resolver una room</button><button type="button" data-first-learn>Aprender una técnica</button></div>` : "";
   container.innerHTML = `<div class="guided">
-      <h2>Por donde empiezas?</h2>
-      <p>Elige una fase, usa un atajo de arriba, o busca un comando o herramienta.</p>
+      <h2>Que has encontrado?</h2>
+      <p>Escribe un puerto, servicio, error, permiso o credencial. Fieldbook te lleva al siguiente playbook util.</p>
       ${firstRun}
-      <div class="guided-block"><span class="guided-label">Fases</span><div class="guided-row">${phases}</div></div>
-      <div class="guided-block"><span class="guided-label">Ejemplos de busqueda</span><div class="guided-row">${examples}</div></div>
-      <p class="guided-hint">Tambien tienes la pestana <b>Aprender</b> para la teoria de cada tecnica.</p>
+      <div class="guided-block"><span class="guided-label">Prueba con una evidencia real</span><div class="guided-row">${examples}</div></div>
+      <p class="guided-hint">Los filtros y el catalogo aparecen cuando sales de esta entrada guiada.</p>
     </div>`;
-  container.querySelectorAll("[data-guided-phase]").forEach((button) => {
-    button.addEventListener("click", () => {
-      markPracticaSeen();
-      state.phase = button.dataset.guidedPhase;
-      render();
-    });
-  });
   container.querySelectorAll("[data-guided-q]").forEach((button) => {
     button.addEventListener("click", () => {
       markPracticaSeen();
@@ -3020,8 +3021,10 @@ function render() {
   if (favBtn) favBtn.classList.toggle("active", state.favOnly);
   if (state.mode === "commands") renderCommandResults();
   else renderResults(sections);
-  const pristine = !state.query && state.tag === "all" && state.phase === "all" && !state.favOnly;
-  if (state.view === "practica" && !state.practicaSeen && pristine) {
+  const density = getPracticeDensityState(state, state.practicaSeen);
+  document.querySelector(".quickbar")?.classList.toggle("query-active", density.queryActive);
+  document.querySelector(".workbench")?.classList.toggle("guided", density.guided);
+  if (density.guided) {
     renderGuidedPractica();
   } else if (!renderCommandSearchDetail()) {
     renderDetail(active);
