@@ -111,10 +111,13 @@ class ExportWebContentTests(unittest.TestCase):
             paths["web-inyecciones-ruta"]["concepts"],
             ["ssti", "ssrf", "xxe", "xss", "file-upload", "filtros-incompletos", "command-injection"],
         )
-        self.assertEqual(paths["web-pruebas-manuales-ruta"]["concepts"], ["burp-manual-testing", "client-side-controls"])
+        self.assertEqual(
+            paths["web-pruebas-manuales-ruta"]["concepts"],
+            ["burp-manual-testing", "enum-wildcard-responses", "client-side-controls"],
+        )
         self.assertEqual(
             paths["web-autorizacion-apis-ruta"]["concepts"],
-            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors"],
+            ["api-testing-model", "auth-session-security", "idor-bola", "jwt-security", "graphql-security", "oauth-oidc-cors", "mfa-otp-bypass"],
         )
         self.assertNotIn("web-inyecciones-y-autorizacion-ruta", paths)
 
