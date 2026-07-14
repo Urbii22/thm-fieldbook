@@ -838,4 +838,93 @@ GUIDES = [
             },
         ],
     },
+    {
+        "id": "burp-suite",
+        "title": "Burp Suite de principio a fin",
+        "phase": "enumeration",
+        "section": "web-discovery",
+        "summary": "Que es, que puede hacer, cuando abrirlo y como usar cada modulo (Proxy, Repeater, Intruder, Decoder) sin perderte.",
+        "steps": [
+            {
+                "title": "Que es Burp y cuando abrirlo",
+                "idea": "Burp es un proxy que se mete ENTRE tu navegador y el servidor: cada peticion pasa por el, puedes verla, pararla y modificarla antes de que salga, y ver la respuesta cruda. Eso te da un control sobre la peticion que el navegador solo no permite. Abrelo siempre que trabajes una web y necesites: ver peticiones ocultas (APIs, llamadas AJAX), tocar parametros, cabeceras o cookies que el navegador no te deja editar, o repetir una peticion cambiando algo cada vez. Community Edition (gratis) cubre casi todo TryHackMe; Pro anade el scanner automatico y un Intruder sin limite de velocidad.",
+                "commands": [],
+                "look": "Piensa en Burp como unas 'pinzas' para la peticion HTTP: la agarras a mitad de camino y la manipulas. Todo lo demas (Repeater, Intruder) es reenviar esa peticion de formas distintas.",
+                "decide": "Si solo quieres fuzzear rutas o parametros a gran velocidad, ffuf va mejor. Burp brilla cuando necesitas ver y MANIPULAR peticiones concretas a mano.",
+            },
+            {
+                "title": "Montaje: proxy + navegador + certificado CA",
+                "idea": "Burp escucha por defecto en 127.0.0.1:8080 y tu navegador tiene que enviar su trafico ahi. Lo mas comodo es el navegador integrado de Burp (Proxy > Intercept > Open Browser): ya viene configurado y con el certificado puesto. Si prefieres tu Firefox, apunta su proxy a 127.0.0.1:8080 (usa la extension FoxyProxy) e instala el certificado CA de Burp para que las webs HTTPS no den error de certificado.",
+                "commands": [
+                    {
+                        "cmd": "http://burp",
+                        "why": "Con el proxy de Burp activo, esta URL magica sirve la pagina de Burp para descargar su certificado CA.",
+                        "out": "El boton 'CA Certificate' descarga un .der; importalo en el navegador como autoridad de confianza y HTTPS dejara de quejarse.",
+                    },
+                ],
+                "look": "El HTTP history (Proxy > HTTP history) llenandose de peticiones cuando navegas = el proxy funciona.",
+                "decide": "HTTPS da 'certificate error' -> te falta importar el CA. No ves trafico -> el navegador no esta apuntando al proxy 127.0.0.1:8080.",
+            },
+            {
+                "title": "Proxy / Intercept: parar y modificar en vuelo",
+                "idea": "Con 'Intercept is on', cada peticion se PARA antes de salir: editas URL, parametros, cabeceras o cuerpo y luego pulsas Forward para dejarla seguir, o Drop para descartarla. Es como pausar la web en mitad de una peticion. Ojo: con intercept ON el navegador se queda colgado hasta que hagas Forward, asi que la mayor parte del tiempo lo tendras OFF y trabajaras desde el HTTP history, donde queda registrada cada peticion ya enviada.",
+                "commands": [],
+                "look": "El boton Intercept is on/off y, en HTTP history, la lista de peticiones con su metodo, URL, status y longitud.",
+                "decide": "Para explorar: intercept OFF y revisa HTTP history. Para tocar UNA peticion concreta: intercept ON justo antes de mandarla, o mejor mandala a Repeater.",
+            },
+            {
+                "title": "Repeater: la herramienta que mas usaras",
+                "idea": "Repeater coge una peticion y te deja reenviarla las veces que quieras, cambiando lo que quieras entre envio y envio, con la respuesta al lado. Es el banco de pruebas manual: tantear una SQLi, tocar un id para probar IDOR, cambiar un rol o un valor de cookie, ajustar una cabecera. Flujo: en HTTP history, click derecho sobre la peticion > Send to Repeater, ve a la pestana Repeater y pulsa Send.",
+                "commands": [
+                    {
+                        "cmd": "Ctrl+R",
+                        "why": "Atajo para enviar la peticion seleccionada a Repeater desde Proxy o Target sin usar el menu.",
+                        "out": "La peticion aparece en una pestana nueva de Repeater, lista para editar y reenviar con Send (Ctrl+Space).",
+                    },
+                ],
+                "look": "La respuesta cruda (status, cabeceras, cuerpo) en cada envio. Compara como cambia al modificar tu entrada.",
+                "decide": "Si un cambio pequeno (una comilla, un id+1, otra cookie) altera la respuesta, tienes un hilo del que tirar (SQLi, IDOR, control de acceso). Si hay que probar muchos valores, pasa a Intruder.",
+            },
+            {
+                "title": "Intruder: automatizar un parametro",
+                "idea": "Cuando quieres probar MUCHOS valores en una posicion (usuarios, contrasenas, ids, payloads), Intruder automatiza el reenvio. Seleccionas el valor a variar y pulsas Add para marcar la posicion, eliges el tipo de ataque (Sniper, un payload sobre una posicion, es el mas comun) y cargas una lista. En Community Edition va con velocidad limitada, pero para las listas pequenas de THM sirve.",
+                "commands": [],
+                "look": "La tabla de resultados: ordenala por Status y por Length. Una fila con status o longitud DISTINTA del resto suele ser el acierto (login valido, id que existe, filtro que reacciona).",
+                "decide": "Diferencia clara en Status/Length -> ese es tu valor. Todo responde igual -> cambia la posicion o el tipo de payload. Para fuerza bruta grande y rapida, mejor hydra o ffuf por fuera.",
+            },
+            {
+                "title": "Decoder / Inspector: codificar y decodificar",
+                "idea": "La web usa codificaciones (URL, Base64, hex, HTML) y Burp te las traduce en un clic. Sirve para entender un token, una cookie o un parametro ofuscado, y para CONSTRUIR payloads que pasen filtros. Caso clasico: un filtro bloquea ';' y '|' pero no el salto de linea; codificas LF como %0A y lo cuelas como separador de comandos. En Burp moderno tienes el panel Inspector (a la derecha en Repeater) o el Decoder clasico.",
+                "commands": [
+                    {
+                        "cmd": "127.0.0.1%0Aid",
+                        "why": "%0A es un salto de linea URL-encoded; muchos backends lo decodifican y lo tratan como separador de comandos. Con Decoder pasas de texto a %0A y al reves.",
+                        "out": "Si la respuesta ejecuta 'id' ademas del ping esperado, el filtro era incompleto (concepto 'filtros incompletos' en Aprender).",
+                    },
+                ],
+                "look": "El texto ya codificado o decodificado, listo para pegar en Repeater sin romper la sintaxis de la peticion.",
+                "decide": "Un valor que parece Base64/hex -> decodificalo, suele esconder usuario, rol o firma. Un filtro bloquea un caracter -> prueba su version codificada.",
+            },
+            {
+                "title": "Target / Scope / Site map",
+                "idea": "La pestana Target > Site map construye un arbol de todo lo que has tocado (rutas, parametros, ficheros). Define un Scope (click derecho sobre el host > Add to scope) para que Burp registre SOLO tu objetivo y no ruido de terceros. Si navegas la web con el proxy puesto (e incluso pasas ffuf a traves de Burp), el site map se llena solo y afloran endpoints que no viste en el navegador.",
+                "commands": [],
+                "look": "Rutas y endpoints ocultos: llamadas AJAX, endpoints de API, ficheros .js que listan rutas dentro.",
+                "decide": "Endpoint de API o parametro nuevo -> a Repeater a probarlo. Fichero JS -> abrelo, suele revelar rutas y claves.",
+            },
+            {
+                "title": "Cuando Burp y cuando otra cosa (flujo)",
+                "idea": "Burp no reemplaza a ffuf ni a sqlmap; los complementa. Flujo tipico: navegas con el proxy puesto para llenar el site map, detectas peticiones interesantes, las llevas a Repeater para entenderlas y tantear bugs a mano, y cuando algo se repite lo automatizas. Puedes incluso encadenar sqlmap guardando la peticion desde Burp (click derecho > Save item) y pasandosela con -r, para que herede cookies y cabeceras exactas.",
+                "commands": [
+                    {
+                        "cmd": "sqlmap -r peticion.txt --batch",
+                        "why": "Guardas la peticion real desde Burp (Save item) y se la das a sqlmap con -r: hereda metodo, cookies y cabeceras sin reconstruirla a mano.",
+                        "out": "sqlmap prueba la inyeccion sobre esa peticion exacta; ideal para SQLi tras un login o en una API con cabeceras especificas.",
+                    },
+                ],
+                "look": "Que parte del trabajo es manual/exploratoria (Burp) y cual es repetitiva/masiva (herramientas de linea de comandos).",
+                "decide": "Manual y exploratorio -> Burp/Repeater. Fuzzing o fuerza bruta masiva -> ffuf/hydra. Explotar una SQLi ya confirmada -> sqlmap -r con la peticion de Burp.",
+            },
+        ],
+    },
 ]
