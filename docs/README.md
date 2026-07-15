@@ -6,7 +6,7 @@ prerrequisitos: []
 fuentes_internas:
   - 00_programa_del_curso.md
 fuentes_externas: []
-revision: 2026-07-14
+revision: 2026-07-15
 estado: borrador
 ---
 
@@ -16,14 +16,16 @@ Material teórico y práctico derivado de THM Fieldbook. Úsalo únicamente en s
 
 ## Orden recomendado
 
-1. [Programa](00_programa_del_curso.md)
-2. [Fundamentos HTTP](01_fundamentos/http_y_sesiones.md)
-3. [Redes, DNS y URL](01_fundamentos/redes_dns_y_urls.md)
-4. [Encoding y parsers](01_fundamentos/encoding_normalizacion_y_parsers.md)
-5. [Linux y shell](01_fundamentos/linux_procesos_permisos_y_shell.md)
-6. [Bases de datos y flujo de datos](01_fundamentos/bases_de_datos_y_flujo_de_datos.md)
-7. [Metodología general](02_metodologia/metodologia_de_laboratorio.md)
-8. [Construcción de payloads](02_metodologia/construccion_y_adaptacion_de_payloads.md)
+1. [Sistema personal de estudio](12_plan_de_estudio/README.md)
+2. [Semana 1: empezar ahora](12_plan_de_estudio/semana_01.md)
+3. [Programa](00_programa_del_curso.md)
+4. [Fundamentos HTTP](01_fundamentos/http_y_sesiones.md)
+5. [Redes, DNS y URL](01_fundamentos/redes_dns_y_urls.md)
+6. [Encoding y parsers](01_fundamentos/encoding_normalizacion_y_parsers.md)
+7. [Linux y shell](01_fundamentos/linux_procesos_permisos_y_shell.md)
+8. [Bases de datos y flujo de datos](01_fundamentos/bases_de_datos_y_flujo_de_datos.md)
+9. [Metodología general](02_metodologia/metodologia_de_laboratorio.md)
+10. [Construcción de payloads](02_metodologia/construccion_y_adaptacion_de_payloads.md)
 
 Los bloques de técnicas, ejercicios, exámenes, soluciones y chuletas se incorporan por lotes. El estado verificable está en [progreso](_meta/progreso.md) y la cobertura real en [mapa de fuentes](_meta/mapa_fuentes.md).
 
@@ -42,6 +44,7 @@ Los bloques de técnicas, ejercicios, exámenes, soluciones y chuletas se incorp
 | `09_examenes` | Evaluaciones y rúbricas |
 | `10_solucionarios` | Respuestas razonadas |
 | `11_chuletas` | Consulta operativa concisa |
+| `12_plan_de_estudio` | Planificación, práctica, repetición y medición de autonomía |
 
 ## Índice completo
 
@@ -66,7 +69,7 @@ Los bloques de técnicas, ejercicios, exámenes, soluciones y chuletas se incorp
 - [Controles client-side y validacion del servidor](03_seguridad_web/client_side_controls.md)
 - [Command Injection (inyeccion de comandos de SO)](03_seguridad_web/command_injection.md)
 - [Enumeracion web con respuestas comodin (wildcard)](03_seguridad_web/enum_wildcard_responses.md)
-- [Subida de ficheros a shell](03_seguridad_web/file_upload.md)
+- [Seguridad de subida de ficheros](03_seguridad_web/file_upload.md)
 - [Seguridad de GraphQL](03_seguridad_web/graphql_security.md)
 - [IDOR / Broken Object Level Authorization (BOLA)](03_seguridad_web/idor_bola.md)
 - [Seguridad de JWT](03_seguridad_web/jwt_security.md)
@@ -172,6 +175,16 @@ Los bloques de técnicas, ejercicios, exámenes, soluciones y chuletas se incorp
 - [Sql Injection](11_chuletas/sql_injection.md)
 - [Ssrf](11_chuletas/ssrf.md)
 - [Windows](11_chuletas/windows.md)
+
+### 12_plan_de_estudio
+
+- [Sistema personal de estudio](12_plan_de_estudio/README.md)
+- [Plan personal de 16 semanas](12_plan_de_estudio/plan_personal_de_estudio.md)
+- [Semana 1 — HTTP, sesiones y Burp](12_plan_de_estudio/semana_01.md)
+- [Plantilla de sesión](12_plan_de_estudio/plantilla_sesion.md)
+- [Sistema de ayuda progresiva](12_plan_de_estudio/sistema_de_pistas.md)
+- [Registro de autonomía](12_plan_de_estudio/registro_de_autonomia.md)
+- [Diario de bloqueos](12_plan_de_estudio/diario_de_bloqueos.md)
 
 ### Trazabilidad y compilación
 
