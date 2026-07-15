@@ -9,7 +9,7 @@ fuentes_internas:
   - ../../tools/guides.py#burp-suite
 fuentes_externas:
   - https://www.rfc-editor.org/rfc/rfc9110.html
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -80,6 +80,33 @@ Una diferencia entre proxy y backend puede cambiar el significado. Antes de prob
 
 En una petición de laboratorio, cambia por separado query, cookie, cuerpo y método. Registra qué cambia en estado, longitud, cabeceras y contenido. Una diferencia es un indicio; confirma que depende de tu entrada y no de tiempo, caché o sesión.
 
+## Caso guiado: ¿sesión, caché o autorización?
+
+Una petición autenticada devuelve el pedido `1042`:
+
+```http
+GET /api/orders/1042 HTTP/1.1
+Host: shop.lab
+Cookie: session=A7F1
+```
+
+Sin cookie responde `401`. Con la cookie de otra cuenta responde `200`, pero muestra el pedido `1042` de la primera cuenta.
+
+**Observación:** la cookie es necesaria, pero dos identidades leen el mismo objeto. **Qué sé realmente:** hay autenticación; todavía no sé si falta autorización por objeto o si una caché sirve una respuesta anterior. **Hipótesis:** H1, el backend autoriza solo “usuario autenticado”; H2, una caché ignora la cookie. **Experimento discriminatorio:** cada cuenta solicita dos pedidos propios distintos añadiendo `Cache-Control: no-cache` y un parámetro inocuo único. **Predicción:** si H1 es cierta, la cuenta B seguirá leyendo `1042` y podrá consultar otros identificadores; si H2 es cierta, los marcadores o la cabecera alterarán el patrón. **Resultado del escenario:** B lee `1042` y recibe `403` al pedir un pedido inexistente, con o sin marcador. **Conclusión:** el router alcanza lógica de objeto y la sesión se reconoce, pero falta comprobar pertenencia. **Siguiente paso:** documentar el par identidad-objeto-acción; no intentar “romper la cookie”.
+
+## Ejercicio de parser HTTP
+
+La aplicación acepta este cuerpo:
+
+```http
+POST /profile HTTP/1.1
+Content-Type: application/json
+
+{"name":"Ana"}
+```
+
+Al cambiar solo el cuerpo a `name=Ana` devuelve `400` con `Unexpected token 'a' at position 1`. La prueba siguiente no es buscar otro payload: es reconocer que el deserializador JSON rechazó el transporte antes de que `name` alcanzara la lógica. El control correcto es enviar JSON válido con un valor marcador y observar si cambia el perfil.
+
 ## Resumen
 
 HTTP mueve representaciones; no aporta por sí solo sesiones ni autorización. Cada ubicación de entrada tiene parser, normalización y frontera de confianza propios.
@@ -89,4 +116,4 @@ HTTP mueve representaciones; no aporta por sí solo sesiones ni autorización. C
 - [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
 - [Conceptos internos de autenticación y Burp](../../tools/concepts.py)
 
-Siguiente: [Redes, DNS y URL](redes_dns_y_urls.md). Ejercicios: `08_ejercicios/cuaderno_de_ejercicios.md` cuando esté disponible.
+Siguiente: [Redes, DNS y URL](redes_dns_y_urls.md). Ejercicios: [cuaderno de ejercicios](../08_ejercicios/cuaderno_de_ejercicios.md).

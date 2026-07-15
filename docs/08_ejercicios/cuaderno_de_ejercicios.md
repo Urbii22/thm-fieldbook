@@ -8,7 +8,7 @@ fuentes_internas:
   - ../../tools/concepts.py
   - ../../tools/guides.py
 fuentes_externas: []
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -127,6 +127,68 @@ Observas 22/SSH, 80/HTTP y 445/SMB. La web redirige a un nombre que no resuelve;
 ### E20 - Encadenamiento y falso positivo
 
 Una LFI lee un archivo de configuración con una contraseña; esa contraseña funciona en SSH para un usuario sin sudo. Un cron de root ejecuta un script legible pero no escribible en un directorio escribible. Construye la cadena de hipótesis. Identifica qué es confirmación, qué es solo indicio y qué permisos debes verificar antes de afirmar impacto.
+
+## Nivel 5: razonamiento y transferencia
+
+En E21-E27 entrega siempre esta cadena: observación → qué sabes realmente → hipótesis rivales → experimento discriminatorio → resultados esperados → resultado simulado → conclusión → siguiente paso. No puntúa un payload sin reconstrucción del parser y control negativo.
+
+### E21 - Qué probarías ahora
+
+Un conversor de imágenes recibe `source=https://img.lab/a.png`. La respuesta tarda 180 ms y contiene `converted=true`, pero tu navegador también solicita esa URL al mostrar la vista previa. Dispones de un listener con tokens únicos.
+
+Diseña exactamente las tres siguientes peticiones. Deben distinguir petición del navegador, petición del servidor, caché y validación sin conexión. Define qué observarías en navegador, listener y respuesta para cada hipótesis.
+
+### E22 - Construcción de payload por capas
+
+Una API recibe JSON:
+
+```json
+{"filter":"name = 'paper'"}
+```
+
+El valor se inserta en `SELECT id,name FROM stock WHERE <filter> AND active=1`. El laboratorio usa un motor aún desconocido. Construye una pareja verdadera/falsa que conserve la consulta válida sin extraer datos. Descompón contexto, sintaxis, entrada controlada, parser, sink, primitiva y significado de cada componente. Incluye petición original y filtro inexistente como controles.
+
+### E23 - Diagnóstico de payload fallido
+
+Una función de diagnóstico acepta `host`. `127.0.0.1; printf TOKEN` devuelve `unknown host`, con `TOKEN` incluido literalmente en el mensaje. Una demora añadida no cambia la distribución temporal. El equipo afirma que “el punto y coma está filtrado”.
+
+Propón al menos tres hipótesis rivales, entre ellas shell ausente, quoting y validación previa. Diseña una prueba inocua por hipótesis y explica por qué cambiar de separador todavía no está justificado.
+
+### E24 - Hipótesis rivales
+
+Después de subir `avatar.svg`, la aplicación responde `201` y `/media/7f31`. Al abrir la ruta, devuelve `Content-Type: application/octet-stream`, `Content-Disposition: attachment` y los bytes originales. En otra cuenta, `/media/7f31` devuelve `403`.
+
+Separa las hipótesis: subida arbitraria, almacenamiento, lectura pública, interpretación en navegador, ejecución server-side y autorización correcta. Diseña el experimento mínimo que confirma o descarta cada una sin introducir código ejecutable.
+
+### E25 - Reconocimiento del parser
+
+Compara dos implementaciones no visibles:
+
+```python
+run(["fetch", user_value])
+run(["fetch", *split(user_value)])
+```
+
+Con `user_value = "https://a.lab/x https://b.lab/y"`, el sistema registra dos callbacks pero ningún metacarácter de shell produce efecto. Diseña pruebas con comillas, espacios escapados y un operando que empieza por `-` para inferir: número de elementos de `argv`, reglas de splitting y parser de opciones. No uses ejecución de comandos como criterio único.
+
+### E26 - El importador nocturno
+
+Una aplicación permite registrar una URL de catálogo. La interfaz solo muestra “importación programada”. Horas después, tu listener recibe `GET /catalog/42` con `User-Agent: curl/8.x`; una URL que redirige a otra ruta genera un segundo callback. Un nombre que alterna entre una IP pública y una privada produce resultados inconsistentes.
+
+Sin nombrar la vulnerabilidad, reconstruye componentes y límites de confianza. Diseña experimentos para separar validación al guardar, resolución al ejecutar, seguimiento de redirecciones, caché DNS y política sobre la dirección efectiva. El objetivo no es alcanzar una red interna, sino demostrar en el laboratorio dónde debe aplicarse cada control.
+
+### E27 - Mini-room: el informe de medianoche
+
+Dispones de una aplicación de informes y una shell inicial como `reporter`. Observas:
+
+- `POST /render` acepta una plantilla y devuelve un PDF.
+- Una entrada especial causa error que muestra `argv=["wkhtmltopdf","--quiet","/tmp/job-81.html","/tmp/job-81.pdf"]`.
+- `sudo -l` permite como `archive` exactamente `/usr/local/bin/archive /srv/reports/daily`.
+- Un timer ejecuta como root `/opt/cleanup/run.sh`; el script es propiedad de root y no escribible.
+- El script llama `rotate-report` sin ruta absoluta; la traza del timer muestra `PATH=/opt/cleanup/bin:/usr/bin`.
+- `/opt/cleanup/bin` pertenece a root:reports y tiene modo `0775`; `reporter` pertenece a `reports`.
+
+Construye una ruta de investigación de máximo ocho experimentos. Incluye controles negativos, identidad efectiva, argumentos permitidos, PATH del consumidor y una prueba de impacto mínimo mediante marcador. Señala dos falsos positivos plausibles y el criterio exacto para descartarlos. No asumas que el error de `argv`, la regla sudo o el script legible equivalen por sí solos a ejecución privilegiada.
 
 ## Preguntas tipo test
 

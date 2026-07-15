@@ -10,7 +10,7 @@ fuentes_internas:
   - ../../tools/concepts.py#rules-of-engagement-scope
 fuentes_externas:
   - https://owasp.org/www-project-web-security-testing-guide/
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -99,6 +99,35 @@ Detente cuando la entrada no llega al componente, controles positivos y negativo
 3. indicar la primitiva;
 4. señalar la restricción;
 5. mostrar un fragmento, nunca la solución completa antes del intento.
+
+## Caso completo: la demora engañosa
+
+`GET /report?name=test;sleep%205` tarda 5,8 segundos una vez. La hipótesis inicial es command injection blind.
+
+1. **Observación:** una única petición fue lenta.
+2. **Qué sé realmente:** solo existe correlación temporal en una muestra.
+3. **Hipótesis:** H1, una shell ejecutó `sleep`; H2, el informe entró en una cola lenta; H3, el backend reintentó una dependencia.
+4. **Experimento discriminatorio:** alternar diez pares aleatorios de control y payload, usar demoras de 2 y 5 segundos y registrar una cabecera de correlación.
+5. **Resultado esperado:** H1 escala con el número solicitado y solo en el payload; H2/H3 produce colas o reintentos no proporcionales.
+6. **Resultado obtenido:** controles y payloads forman la misma distribución; el log muestra tres reintentos HTTP.
+7. **Conclusión:** la señal inicial era un falso positivo.
+8. **Siguiente paso:** investigar la dependencia solo si está dentro del alcance; cerrar la hipótesis de shell.
+
+## Caso completo: dos hipótesis compatibles
+
+Una URL de avatar aparece en el perfil y un listener externo recibe una petición. Puede ser el navegador del usuario o el servidor.
+
+**Experimento:** guardar una URL única, cerrar el navegador y solicitar el perfil desde un cliente que no cargue imágenes; después comparar IP origen, `User-Agent` y tiempo. Si el callback ocurre durante el guardado desde la red del servidor, apoya petición server-side. Si solo ocurre al renderizar y tiene el navegador como origen, es carga client-side. El nombre del parámetro no decide la vulnerabilidad: la entidad que inicia la conexión sí.
+
+## Registro de decisión
+
+Para cada intento añade una fila, incluso cuando falla:
+
+| Paso | Evidencia nueva | Hipótesis favorecida | Hipótesis debilitada | Próxima prueba y motivo |
+|---|---|---|---|---|
+| 1 | | | | |
+
+Esta tabla evita convertir una cronología de payloads en una falsa explicación causal.
 
 ## Referencias
 

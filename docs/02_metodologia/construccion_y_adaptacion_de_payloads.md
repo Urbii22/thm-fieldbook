@@ -13,7 +13,7 @@ fuentes_internas:
 fuentes_externas:
   - https://portswigger.net/web-security/all-materials
   - https://www.gnu.org/software/bash/manual/bash.html
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -130,6 +130,92 @@ Para pruebas blind usa controles negativos y repetición. Un retraso aislado o u
 | filtro explícito | comparación textual | comparar formas antes/después | corregir propiedad o estudiar normalización |
 | efecto parcial | sink alcanzado con restricciones | primitiva más pequeña | adaptar a permisos/capacidad |
 | comportamiento inestable | tiempo, estado o balanceo | repetir y fijar sesión | medir distribución |
+
+## Árbol de diagnóstico general
+
+```text
+INPUT DEL USUARIO
+      |
+      +-- ¿La petición exterior es válida? -- no --> reparar HTTP/JSON/form/multipart
+      |
+      +-- ¿La entrada llega a la función? -- no --> revisar nombre, ruta, estado y precondición
+      |
+      +-- ¿En qué formato viaja y cuántas veces se decodifica?
+      |
+      +-- ¿Se transforma, concatena, divide o normaliza?
+      |
+      +-- ¿Quién interpreta el resultado?
+      |       +-- parser SQL
+      |       +-- shell
+      |       +-- parser de opciones/argv
+      |       +-- URL/cliente HTTP
+      |       +-- filesystem/include
+      |       +-- máquina de estados
+      |
+      +-- ¿Qué gramática entiende y cuál es la sintaxis envolvente?
+      |
+      +-- ¿Qué capacidad mínima quiero demostrar?
+      |
+      +-- ¿Qué evidencia la distinguirá de caché, error o coincidencia?
+      |
+      +-- ¿Control positivo y negativo se separan de forma reproducible?
+              +-- no --> reducir, medir y reconsiderar la hipótesis
+              +-- sí --> documentar primitiva; adaptar una restricción cada vez
+```
+
+## Cinco casos completamente desarrollados
+
+### Caso 1: contexto SQL numérico, no textual
+
+`GET /product?id=12` produce internamente `SELECT name FROM products WHERE id = 12`.
+
+**Payload incorrecto:** `' OR '1'='1`. Introduce una comilla en un lugar numérico y puede causar solo error. **Payload correcto para la hipótesis:** `12 AND 1=1`, comparado con `12 AND 1=2`.
+
+**Contexto de entrada:** query `id`. **Sintaxis original:** `WHERE id = <entrada>`. **Entrada controlada:** expresión tras `=`. **Transformaciones conocidas:** URL decode una vez. **Parser final:** SQL del motor del laboratorio. **Sink:** ejecución de consulta. **Primitiva:** construir un oráculo booleano. **Payload mínimo:** `12 AND 1=1`. **Significado:** conserva el ID y añade una condición verdadera. **Resultado esperado:** mismo producto; la variante `1=2` no devuelve fila. **Control negativo:** `999999` y `12 AND 1=2`. **Restricción:** las comillas se rechazan. **Por qué falla la variante básica:** asume literal textual inexistente. **Hipótesis de adaptación:** contexto numérico. **Payload adaptado:** pareja verdadera/falsa sin comillas. **Por qué debería funcionar:** ambas expresiones son sintácticamente válidas y solo cambia el valor lógico. **Evidencia:** diferencia reproducible con cuerpo estable. **Cuándo no funcionaría:** conversión estricta a entero, consulta parametrizada o evaluación fuera de SQL.
+
+**Resolución:** observación, una comilla causa `500`; qué sé, solo hay un error; hipótesis, SQL textual, SQL numérico o validación; experimento, pareja numérica verdadera/falsa; resultado esperado, solo SQL concatenado conserva la diferencia; resultado obtenido, respuestas separadas; conclusión, oráculo booleano numérico; siguiente paso, identificar motor antes de usar funciones específicas.
+
+### Caso 2: `; id` no demuestra una shell
+
+La aplicación “comprueba un host”. `127.0.0.1; id` aparece dentro de `ping: unknown host`.
+
+**Payload incorrecto:** repetir separadores. **Payload correcto:** primero provocar un error de operando y obtener `argv` mediante un wrapper de laboratorio.
+
+**Contexto:** JSON `{"host":"..."}`. **Sintaxis original posible:** H1 `sh -c "ping -c 1 $host"`; H2 `execve("ping", ["ping","-c","1",host])`. **Entrada controlada:** valor `host`. **Transformaciones:** JSON decode. **Parser final:** desconocido. **Sink:** shell o `ping`. **Primitiva:** distinguir gramática de shell de argumento literal. **Payload mínimo:** `127.0.0.1; printf MARK`. **Resultado esperado:** H1 produce `MARK`; H2 entrega el texto a `ping`. **Control negativo:** `127.0.0.1` y `127.0.0.1; printf NOPE` con salida capturada. **Restricción:** `;` aparece en el error. **Por qué falla la variante básica:** no existe shell o el valor está citado. **Hipótesis de adaptación:** analizar `argv` y opciones del programa, no buscar otro separador. **Payload adaptado:** una opción inocua solo si hay evidencia de un argumento adicional. **Evidencia:** log `argv` o error inequívoco del parser de opciones. **Cuándo no funcionaría:** un único elemento `argv` sin splitting o allowlist estricta.
+
+**Resolución:** el error de `ping` prueba llegada a `ping`; el experimento muestra un único `argv[3]`; se descarta command injection y solo se mantiene como hipótesis una alteración de operandos si el wrapper divide la entrada.
+
+### Caso 3: filtro de ruta antes de la segunda decodificación
+
+`/download?name=..%2Fsecret.txt` se bloquea; `%252e%252e%252fsecret.txt` intenta abrir un fichero fuera de la base.
+
+**Contexto:** query `name`. **Sintaxis original:** `open(base + "/" + name)`. **Entrada controlada:** nombre. **Transformaciones:** URL decode del framework, filtro, decode del router interno, normalización de ruta. **Parser final:** filesystem. **Sink:** `open()`. **Primitiva:** seleccionar un fichero fuera de `base`. **Payload mínimo:** un nivel `../` hacia un fichero marcador del laboratorio. **Significado:** `..` selecciona padre; `/` separa segmento. **Resultado esperado:** contenido del marcador. **Control negativo:** fichero inexistente al mismo nivel. **Restricción:** filtro ve `../` tras la primera decodificación. **Por qué falla la variante básica:** la forma peligrosa existe durante la validación. **Hipótesis de adaptación:** una segunda capa decodifica después. **Payload adaptado:** percent-encoding de los signos `%`, solo para probar esa hipótesis. **Por qué debería funcionar:** la primera decodificación aún no produce separadores completos; la segunda sí. **Evidencia:** log de ambas formas y contenido inequívoco. **Cuándo no funcionaría:** validación sobre ruta canónica final, una sola decodificación o identificadores indirectos.
+
+**Conclusión inicial equivocada:** “el WAF bloquea traversal”. El log muestra que el bloqueo pertenece a la aplicación y que el router interno vuelve a decodificar; atribuirlo al WAF habría dirigido la adaptación a la capa equivocada.
+
+### Caso 4: callback que no era SSRF
+
+Un campo `avatar_url` provoca una petición al listener, pero solo cuando se abre el perfil en Chrome.
+
+**Contexto:** JSON de perfil. **Sintaxis original:** `<img src="avatar_url">`. **Entrada controlada:** atributo URL. **Transformaciones:** JSON decode, escape HTML, parser HTML del navegador. **Parser final:** navegador, no cliente HTTP del servidor. **Sink:** carga de subrecurso client-side. **Primitiva buscada:** demostrar quién inicia la conexión. **Payload mínimo:** URL única al listener. **Resultado esperado por SSRF:** callback al guardar, desde infraestructura del servidor. **Control negativo:** guardar sin abrir el perfil y consultar mediante cliente sin render. **Restricción:** callback depende de renderizado. **Por qué falla la hipótesis básica:** se atribuyó al servidor una petición del navegador. **Hipótesis de adaptación:** no procede; se descarta SSRF. **Evidencia:** IP, `User-Agent` y correlación temporal con Chrome. **Cuándo cambiaría la conclusión:** callback durante el guardado o desde el backend aun sin navegador.
+
+### Caso 5: PowerShell -> JSON -> shell remota
+
+Se prueba un laboratorio que recibe JSON y, en una versión vulnerable, concatena `query` en `sh -c "grep -n \"$query\" data.txt"`.
+
+**Payload incorrecto:** enviar comillas de shell sin conservar JSON, lo que causa `400` antes del sink. **Payload correcto:** construir primero el fragmento interno, después serializarlo como cadena JSON y finalmente protegerlo para PowerShell.
+
+**Contexto de entrada:** cuerpo JSON enviado desde PowerShell. **Sintaxis original:** `grep -n "<entrada>" data.txt`. **Entrada controlada:** interior de comillas dobles de shell. **Transformaciones:** quoting local, bytes HTTP, JSON decode, concatenación, parsing Bash. **Parser final:** Bash. **Sink:** ejecución de comando. **Primitiva:** cerrar el argumento, ejecutar `printf MARK` y neutralizar el sufijo dentro del laboratorio. **Payload mínimo interno:** `"; printf MARK; #`. **Significado:** `"` cierra el argumento; `;` separa; `printf` produce marcador; `#` comenta el sufijo. **Resultado esperado:** `MARK` una vez. **Control negativo:** JSON válido con `MARK` literal y una variante con separador dentro de comillas. **Restricción:** el primer intento recibe `400 invalid JSON`. **Por qué falla:** el parser exterior nunca entrega el valor. **Hipótesis de adaptación:** serializar desde dentro hacia fuera. **Payload adaptado:** generar el objeto con `ConvertTo-Json` en vez de escapar manualmente. **Por qué debería funcionar:** PowerShell produce JSON válido que decodifica al fragmento previsto. **Evidencia:** captura de bytes, log del valor decodificado y marcador. **Cuándo no funcionaría:** ejecución directa sin shell, quoting seguro, allowlist o salida no capturada.
+
+## Comparación: payload correcto e incorrecto
+
+| Situación | Incorrecto | Problema | Correcto como experimento |
+|---|---|---|---|
+| SQL numérico | `' OR '1'='1` | inventa un literal textual | pareja `12 AND 1=1` / `12 AND 1=2` |
+| `argv` directo | `; id`, luego `&& id` | cambia caracteres sin cambiar hipótesis | observar `argv` o error de opción inocua |
+| JSON exterior | fragmento shell pegado a mano | puede morir en JSON | serializar objeto y verificar bytes |
+| SSRF dudosa | apuntar a localhost | no demuestra quién solicita | listener único y control sin navegador |
+| Ruta codificada | probar encodings al azar | no localiza la decodificación | variar una capa y registrar forma final |
 
 ## Reconocer la herramienta
 

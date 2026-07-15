@@ -11,7 +11,7 @@ fuentes_internas:
 fuentes_externas:
   - https://www.rfc-editor.org/rfc/rfc3986.html
   - https://www.rfc-editor.org/rfc/rfc1034.html
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -63,6 +63,16 @@ Un puerto es un número de extremo de transporte. Un servicio puede escuchar en 
 ## Parsing diferencial
 
 Una validación puede extraer `host` con una expresión regular y el cliente HTTP con una biblioteca de URL. Si discrepan sobre `@`, barras, codificación, IPv6 o redirecciones, la validación no protege el destino real. El diagnóstico compara el valor original, el valor normalizado y la conexión observada.
+
+## Caso guiado: nombre, conexión y virtual host
+
+`api.lab` y `admin.lab` resuelven a `10.10.20.15`. `curl http://10.10.20.15/` devuelve una página genérica; `curl http://api.lab/` devuelve JSON.
+
+**Observación:** misma IP, contenido distinto. **Qué sé realmente:** DNS selecciona la dirección, pero no la aplicación final. **Hipótesis:** H1, el servidor elige un virtual host mediante `Host`; H2, la diferencia procede de una ruta o cookie. **Experimento:** enviar a la IP la cabecera `Host: api.lab` sin cookies y repetir con `Host: admin.lab`. **Predicción:** H1 produce respuestas distintas al cambiar solo `Host`; H2 no. **Resultado:** la IP con `Host: api.lab` devuelve el mismo JSON. **Conclusión:** la selección ocurre después de conectar, en el servidor HTTP. **Transferencia:** al enumerar un puerto, una respuesta por IP no descarta otros sitios en el mismo socket.
+
+## Caso de descarte: un puerto no demuestra protocolo
+
+TCP/8080 acepta conexión, pero al enviar `GET / HTTP/1.1` cierra el socket. Esto no confirma “HTTP protegido”. Compara un saludo vacío, captura los primeros bytes del servidor y prueba una petición HTTP completa con `Host`. Si todas cierran igual y un cliente específico negocia un protocolo binario, se descarta HTTP. El número de puerto solo generó una hipótesis.
 
 ## Resumen
 

@@ -1,181 +1,179 @@
 ---
-titulo: "Tareas cron escribibles"
+titulo: "Tareas programadas y fronteras de confianza"
 categoria: 04_linux
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - enum_privesc_linux.md
 fuentes_internas:
   - ../../tools/concepts.py#cron-abuse
 fuentes_externas:
-  - https://man7.org/linux/man-pages/
-revision: 2026-07-14
-estado: borrador
+  - https://man7.org/linux/man-pages/man5/crontab.5.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Tareas cron escribibles
+# Tareas programadas y fronteras de confianza
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Reconstruir identidad, calendario, shell, entorno y working directory de una tarea; demostrar consumo de un recurso escribible con marcador inocuo.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+Procesos, permisos, shell, PATH, cron y observación temporal.
 
 ## Fundamentos técnicos
 
-cron ejecuta tareas programadas, a menudo como root. Si una de esas tareas llama a un script, binario o ruta que tu usuario puede escribir (o si usa comodines o rutas relativas manipulables), puedes inyectar tu propio comando y esperar a que cron lo ejecute con privilegios. Es el `privesc-modelo` aplicado al tiempo.
-
-Los admins programan mantenimiento (backups, limpiezas) como root y a veces dejan el script en una ruta escribible por otros, o usan comodines (tar *) que un atacante puede secuestrar creando ficheros con nombres especiales. cron lo ejecuta tal cual, sin validar quien toco el script.
+Cron ejecuta según un entorno propio. En crontabs habituales, `SHELL` suele ser `/bin/sh`; `HOME` y `LOGNAME` derivan del propietario, y PATH puede ser limitado o explícito. Un script escribible solo es vector si la tarea privilegiada lo ejecuta realmente.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+schedule -> propietario -> entorno/cwd/shell -> comando -> recurso controlable
+         -> ejecución -> efecto observable
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-Cuando sudo (`sudo-abuse`) y SUID (`suid`) no dieron nada. cron es mas lento porque hay que esperar a que la tarea corra, pero es un vector muy comun en rooms.
+Crontabs de sistema/usuario, `/etc/cron.*`, scripts, configs, wildcards, rutas relativas y servicios/timers equivalentes.
 
 ## Cómo identificarla
 
-- Un script referenciado en cron es escribible por tu usuario o su grupo.
-- La tarea usa una ruta relativa o un comodin (*) en un directorio donde puedes crear ficheros.
-- Aparecen procesos que arrancan cada pocos minutos (pspy lo revela) corriendo como root.
+- `pspy` correlaciona tiempo, UID y comando.
+- Permisos efectivos permiten modificar el recurso consumido.
+- Un marcador aparece tras el ciclo con propietario esperado.
+- Restaurar el recurso elimina el efecto.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Qué usuario ejecuta?
+2. ¿Cuándo y con qué shell?
+3. ¿Qué PATH, HOME y cwd usa?
+4. ¿Qué archivo/directorio controlo?
+5. ¿Cómo pruebo consumo sin shell persistente?
 
 ## Prueba mínima
 
-Comprueba con ls -l si el script que ejecuta root es escribible por tu usuario o grupo.
-
-Evidencia esperada: Permiso de escritura (w) para ti en el script; tras inyectar tu payload y esperar el ciclo de cron, una shell/binario root.
+Agregar en un laboratorio un marcador reversible que escriba fecha y `id` a `/tmp`, conservar copia y hash del original, observar un ciclo y restaurar.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-cat /etc/crontab; ls -la /etc/cron.*
-```
-
-**Objetivo y contexto:** Muestra las tareas programadas del sistema y con que frecuencia corren. Es el primer sitio donde mirar que ejecuta root de forma automatica.
-
-**Resultado esperado:** Lineas con horario, usuario (root) y el comando/script. Anota los scripts que corren como root: el siguiente paso es ver si puedes escribirlos.
-
-### Capa 2: prueba documentada
-
-```text
-ls -l /ruta/al/script_de_cron.sh
-```
-
-**Objetivo y contexto:** Comprueba si el script que ejecuta root es escribible por ti. Ese permiso de escritura es justo la frontera de confianza rota que necesitas.
-
-**Resultado esperado:** Los permisos y el dueno. Si tu usuario o un grupo tuyo tiene w, puedes inyectar comandos. Si no, busca comodines o rutas relativas manipulables.
+1. Observar dos ciclos.
+2. Capturar UID/comando.
+3. Verificar permisos del recurso y directorios.
+4. Reproducir con entorno mínimo.
+5. Añadir marcador.
+6. Confirmar y limpiar.
 
 ## Anatomía de los payloads
 
-La primera prueba es `cat /etc/crontab; ls -la /etc/cron.*`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** root ejecuta `/opt/jobs/report.sh` cada minuto.
+- **Sintaxis original:** script POSIX `sh`.
+- **Entrada controlada:** contenido escribible por grupo.
+- **Transformaciones conocidas:** cron aplica su entorno y entrega el script a `/bin/sh`.
+- **Parser final:** `/bin/sh` de cron.
+- **Sink:** creación de fichero.
+- **Primitiva:** escribir marcador root en `/tmp/cron-proof`.
+- **Payload mínimo:** una línea de `id` redirigida al marcador.
+- **Significado de cada componente:** `id` revela la identidad efectiva y la redirección conserva evidencia en un destino inocuo.
+- **Resultado esperado:** marcador creado como root en el siguiente ciclo.
+- **Control negativo:** hash original y ciclo sin cambio.
+- **Restricción observada:** PATH mínimo.
+- **Por qué falla la variante básica:** comando auxiliar sin ruta no se encuentra.
+- **Hipótesis de adaptación:** usar ruta absoluta o definir entorno explícito.
+- **Payload adaptado:** ruta absoluta de la utilidad permitida.
+- **Por qué debería funcionar:** elimina la búsqueda dependiente del PATH de cron.
+- **Evidencia:** archivo root tras el ciclo.
+- **Cuándo no funcionaría:** tarea no activa, otro usuario, script no consumido o MAC.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+Cron de usuario, `/etc/crontab` y directorios periódicos expresan usuario de forma distinta. Systemd timers no heredan necesariamente las mismas variables ni usan shell.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Un fallo por PATH no se arregla cambiando payload sin medir entorno. Reproduce `env -i` con variables observadas y rutas absolutas.
 
 ## Evidencias de confirmación
 
-Permiso de escritura (w) para ti en el script; tras inyectar tu payload y esperar el ciclo de cron, una shell/binario root.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Marcador consumido por la tarea y creado con identidad superior. Permiso `w` aislado no basta.
 
 ## Escalado de impacto
 
-- Lee las tareas programadas del sistema y de otros usuarios.
-- Comprueba permisos de los scripts/binarios que invocan (ls -l): busca los escribibles.
-- Inyecta tu payload (una reverse shell o el bit SUID a bash) en el punto controlable.
-- Espera a que cron ejecute y recoge tu shell/binario root.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Evaluar capacidad de escritura/ejecución y restaurar siempre. Evitar reverse shells cuando un fichero marcador demuestra la relación.
 
 ## Errores frecuentes
 
-- Ninguna tarea root referencia un script o ruta que puedas escribir.
-- Los scripts invocados usan rutas absolutas y permisos correctos (root:root, 700) sin comodines.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Asumir entorno interactivo.
+- Esperar un ciclo sin confirmar calendario.
+- Modificar sin backup.
+- Confundir proceso periódico de otro usuario con root.
+- Mezclar wildcard, PATH y script escribible.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| manual funciona, cron no | entorno/cwd/shell | capturar `env`, usar rutas absolutas |
+| nunca aparece proceso | tarea inactiva/calendario | observar varios ciclos y logs |
+| marcador es del alumno | ejecución manual propia | timestamp y PID/UID de pspy |
+| script cambia pero efecto no | copia distinta o caché | ruta de `/proc/PID/cmdline`, inode/hash |
+| `command not found` | PATH mínimo | ruta absoluta y PATH registrado |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Scripts root:root no escribibles, directorios seguros, rutas absolutas, entorno explícito, privilegio mínimo, locking/logging y revisión de tareas obsoletas.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa reconstrucción del contexto de ejecución y limpieza.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: script escribible consumido
+
+`pspy` confirma UID 0 y el script de grupo. Un marcador reversible aparece como root tras un ciclo. **Conclusión:** ejecución privilegiada confirmada.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Funciona en terminal, falla en cron
+
+El script llama `custom-tool` sin ruta. **Experimento:** capturar PATH de cron. **Resultado:** no contiene `/opt/tools`. **Adaptación:** ruta absoluta. **Conclusión:** el fallo era entorno, no permisos.
+
+## Caso C — Transferencia: timer de mantenimiento
+
+Un timer systemd ejecuta un binario que lee config escribible. El alumno usa marcador de ruta y observa UID. Misma relación, distinto scheduler y sin asumir `/bin/sh`.
+
+## Caso D — Falso positivo: copia abandonada
+
+`/opt/jobs/report.sh.bak` es escribible, pero la tarea ejecuta `report.sh` con inode distinto. **Conclusión:** archivo interesante no consumido.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Reconstruye entorno mínimo de una línea crontab.
+2. Diseña una prueba de consumo reversible.
+3. Distingue cron de systemd timer.
+4. Explica por qué un backup escribible puede ser falso positivo.
 
 ## Resumen
 
-Si root ejecuta periodicamente un script o binario que tu puedes modificar, tu codigo correra como root. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+Cron aporta tiempo e identidad; el vector aparece cuando consume una superficie controlada bajo ese contexto.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Dos ciclos.
+2. UID y comando.
+3. Shell/PATH/HOME/cwd.
+4. Permisos e inode.
+5. Marcador.
+6. Restauración.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`cron-abuse`)
-- [Referencia técnica externa](https://man7.org/linux/man-pages/)
+- [crontab(5)](https://man7.org/linux/man-pages/man5/crontab.5.html)
+- [Concepto interno](../../tools/concepts.py) (`cron-abuse`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [SUID](suid.md). Siguiente: [PATH hijacking](path_hijacking.md). Índice: [curso](../README.md).

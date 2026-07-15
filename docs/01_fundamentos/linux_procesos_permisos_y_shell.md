@@ -9,7 +9,7 @@ fuentes_internas:
   - ../../tools/concepts.py#tty-stabilization
 fuentes_externas:
   - https://www.gnu.org/software/bash/manual/bash.html
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -64,6 +64,24 @@ La shell produce una lista de argumentos. Después, el programa decide si un arg
 ## Evidencia
 
 Para comprender un fallo en laboratorio, registra usuario real/efectivo, proceso padre, comando o `argv`, entorno, directorio y permisos de los archivos implicados. “Tengo una shell” no implica TTY completa, permisos elevados ni canal estable.
+
+## Experimento: distinguir shell de `argv`
+
+Una aplicación ejecuta una comprobación de host. Con `host=127.0.0.1; id` la respuesta muestra literalmente `ping: 127.0.0.1; id: Name or service not known`.
+
+**Observación:** `;` llegó a `ping`, pero no separó comandos. **Qué sé realmente:** el carácter no fue interpretado como operador por una shell antes de llegar al programa. **Hipótesis:** H1, ejecución directa `execve("ping", ["ping", "-c", "1", entrada])`; H2, shell con el valor correctamente citado. **Experimento:** usar una entrada que provoque un error propio de opciones, como `-h`, y observar `argv` en un wrapper de laboratorio; después comparar con una variante que contenga expansión `$(printf X)`. **Predicción:** H1 conserva cada cadena como un único argumento; H2 puede expandir solo si el quoting lo permite. **Resultado:** el log muestra `argv[3]="127.0.0.1; id"`. **Conclusión:** no hay command injection demostrada; todavía podría existir option injection según cómo se construya `argv`.
+
+## Construcción por capas
+
+Para `POST {"host":"127.0.0.1; printf MARK"}`, separa siempre:
+
+1. comillas y escapes que hacen JSON válido;
+2. el valor resultante entregado por el deserializador;
+3. quoting añadido por la aplicación, si existe;
+4. gramática de shell o lista `argv` final;
+5. canal donde debería aparecer `MARK`.
+
+Un `400` JSON refuta la llegada al shell; un error de `ping` confirma llegada a `ping`, no ejecución de un segundo comando.
 
 ## Referencias
 

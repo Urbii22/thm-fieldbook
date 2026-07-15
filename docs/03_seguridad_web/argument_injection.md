@@ -1,171 +1,214 @@
 ---
-titulo: "Inyeccion de argumentos (no es command injection)"
+titulo: "Inyección de argumentos y opciones"
 categoria: 03_seguridad_web
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
+  - ../01_fundamentos/linux_procesos_permisos_y_shell.md
   - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
 fuentes_internas:
   - ../../tools/concepts.py#argument-injection
 fuentes_externas:
-  - https://portswigger.net/web-security/all-materials
-revision: 2026-07-14
-estado: borrador
+  - https://docs.python.org/3/library/subprocess.html
+  - https://curl.se/docs/manpage.html
+  - https://www.gnu.org/software/bash/manual/bash.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Inyeccion de argumentos (no es command injection)
+# Inyección de argumentos y opciones
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Determinar cuándo una entrada crea uno o varios elementos de `argv`, diferenciar opción de operando y explotar o descartar capacidades del programa sin atribuirlas a una shell inexistente.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+Procesos, `argv`, shell splitting, parsers de opciones, `--` y documentación de herramientas.
 
 ## Fundamentos técnicos
 
-Ocurre cuando la app pasa tu entrada como ARGUMENTO a un binario que ya ejecuta (curl una URL, tar un fichero, ImageMagick una imagen), sin escaparla. No hay un shell que interprete ';': lo que abusas son las CAPACIDADES de esa herramienta. Con curl, por ejemplo, puedes colar una segunda URL o el esquema file:// para leer ficheros locales; con tar, flags como --checkpoint-action para ejecutar codigo.
+Un espacio no crea por sí mismo otro argumento. El componente que construye `argv` decide:
 
-El programador valida superficialmente 'la URL' o 'el fichero' pero construye la invocacion concatenando tu texto en la linea de argumentos. La herramienta hace exactamente lo que le pides: curl acepta varias URLs y el esquema local file://, asi que una entrada como 'http://ok file:///etc/passwd' se convierte en dos descargas.
+```python
+subprocess.run(["curl", user_input])              # un solo argumento
+subprocess.run(["curl", *shlex.split(user_input)]) # varios argumentos
+subprocess.run("curl " + user_input, shell=True)    # shell: splitting y operadores
+```
+
+El primer caso puede permitir controlar un operando completo, pero el espacio sigue dentro de él. El segundo habilita argumentos u opciones adicionales sin gramática de shell. El tercero puede convertirse además en command injection.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+entrada -> ¿split explícito? -> argv[] -> parser de opciones -> operación
+        -> ¿shell? ----------> palabras/operadores -> proceso(s)
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-Cuando la salida delata que el backend envuelve una herramienta (aparece un medidor de progreso de curl, cabeceras, mensajes de wget/tar) y un ';id' NO ejecuta un segundo comando. Es la diferencia clave: si ';whoami' no corre pero un file:// o un flag si cambian el resultado, es argument injection, no `command-injection`.
+Wrappers de `curl`, `wget`, compresores, convertidores, multimedia, compiladores y cualquier función que exponga opciones de una CLI.
 
 ## Cómo identificarla
 
-- La salida incluye trazas de una herramienta concreta (barra de progreso de curl, 'Resolving host...' de wget).
-- Los separadores de shell no ejecutan comandos, pero cambiar la URL/fichero si altera el resultado.
-- La funcion es de tipo 'importar/descargar/convertir desde una URL o fichero'.
+- Error `unknown option` o cambio inocuo de comportamiento propio de la herramienta.
+- `; id` es literal, pero una opción adicional reconocida cambia la salida.
+- Logs muestran más elementos de `argv` que el previsto.
+- Un operando adicional provoca una segunda operación sin segundo proceso.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Quién divide el texto y con qué reglas?
+2. ¿Control un elemento, varios o una posición fija?
+3. ¿El programa acepta opciones después de operandos?
+4. ¿Implementa `--` como fin de opciones?
+5. ¿Qué capacidad inocua confirma llegada al parser de opciones?
 
 ## Prueba mínima
 
-Anade un segundo destino o un esquema local a la entrada (p.ej. una URL seguida de file:///etc/passwd) y observa si aparece contenido que la herramienta no deberia traer.
-
-Evidencia esperada: El contenido de un fichero local (raiz de /etc/passwd) o el efecto de un flag inyectado aparece en la respuesta, sin que exista un shell de por medio.
+Usar una opción no destructiva documentada para la versión detectada y verificar el `argv` resultante. Un error de opción confirma parser de opciones, no ejecución de código.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-http://127.7 file:///etc/passwd
-```
-
-**Objetivo y contexto:** curl acepta varias URLs en una invocacion; el espacio separa un segundo argumento y file:// es un esquema local. La primera URL supera la validacion superficial y la segunda lee el fichero.
-
-**Resultado esperado:** El contenido de /etc/passwd en la respuesta. Confirma inyeccion de argumentos/URL en curl (no command injection): la lectura ocurre por el esquema file://, no por un shell.
+1. Entrada válida y salida normal.
+2. Un valor con espacio y log `argv`.
+3. Opción inocua, por ejemplo cambiar verbosidad o cabeceras, solo si se crea un elemento adicional.
+4. Operando adicional hacia un listener propio.
+5. Comparar con `--` y con un único argumento literal.
 
 ## Anatomía de los payloads
 
-La primera prueba es `http://127.7 file:///etc/passwd`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** campo `resources` de un importador.
+- **Sintaxis original:** `subprocess.run(["curl", *shlex.split(resources)])`.
+- **Entrada controlada:** lista textual dividida por `shlex.split`.
+- **Transformaciones conocidas:** JSON decode y splitting POSIX.
+- **Parser final:** parser de opciones de curl.
+- **Sink:** una o varias transferencias de curl.
+- **Primitiva:** añadir un segundo operando HTTP controlado.
+- **Payload mínimo:** `https://allowed.lab/a http://listener.lab/token`.
+- **Significado de cada componente:** primer operando satisface la función; segundo solicita el listener.
+- **Resultado esperado:** dos solicitudes dentro del mismo proceso.
+- **Control negativo:** el mismo texto pasado como un único `argv[1]`.
+- **Restricción observada:** esquemas locales están bloqueados.
+- **Por qué falla la variante básica:** `; id` no es opción ni operando válido para una shell ausente.
+- **Hipótesis de adaptación:** abusar de operandos soportados por curl.
+- **Payload adaptado:** segundo URL HTTP del laboratorio.
+- **Por qué debería funcionar:** el wrapper lo convierte en otro elemento y curl admite múltiples URL.
+- **Evidencia:** `argv`, dos callbacks y un solo PID de curl.
+- **Cuándo no funcionaría:** un solo elemento, allowlist por cada URL o wrapper que inserta `--` y limita operandos.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+| Construcción | Espacio | `;` | Riesgo principal |
+|---|---|---|---|
+| `[programa, entrada]` | parte del mismo argumento | literal | operando controlado |
+| `[programa, *split(entrada)]` | crea argumentos | literal | option/argument injection |
+| `shell=True` con cadena | shell splitting | operador | command injection y argumentos |
+| glob de shell `*` | nombres se vuelven argumentos | depende del nombre | option injection por filenames |
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Bloquear `;` no corrige inyección de opciones. La defensa debe controlar la construcción de `argv`, validar cada operando, insertar `--` cuando la herramienta lo soporte y evitar parsers de texto intermedios.
 
 ## Evidencias de confirmación
 
-El contenido de un fichero local (raiz de /etc/passwd) o el efecto de un flag inyectado aparece en la respuesta, sin que exista un shell de por medio.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+`argv` adicional o efecto documentado de una opción/operando en el mismo proceso. Una firma de salida parecida a curl solo identifica una hipótesis de herramienta.
 
 ## Escalado de impacto
 
-- Identifica la herramienta por su salida (curl, wget, tar, convert, ffmpeg...).
-- Descarta command injection: prueba ';id' o '&& id'; si no ejecuta, no es un shell.
-- Abusa de las capacidades del binario: con curl, una segunda URL y el esquema file:// para leer ficheros; con tar/zip, flags que ejecutan hooks.
-- Encadenalo con `ssrf` si primero hay que superar un filtro de URL para llegar a la invocacion.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Estudiar únicamente capacidades documentadas de la versión, comenzar con opciones de diagnóstico y demostrar el impacto mínimo. No asumir que todas las herramientas o compilaciones soportan los mismos protocolos/hooks.
 
 ## Errores frecuentes
 
-- La app usa una libreria nativa (libcurl con parametros separados, no la CLI) y no concatena una linea de argumentos.
-- Un separador de shell (;, &&, |) SI ejecuta un segundo comando: entonces es command injection clasica, no inyeccion de argumentos.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Afirmar que un espacio siempre divide.
+- Confundir segundo URL de curl con segundo comando.
+- Usar opciones de otra versión.
+- Suponer que `--` es universal o que el wrapper lo coloca correctamente.
+- Saltar de error de opción a ejecución arbitraria.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| espacio aparece escapado en un error | un único argumento | log `argv` y longitud |
+| `; id` literal, opción cambia salida | parser de opciones sin shell | comparar PID y `argv` |
+| opción desconocida | versión/herramienta distinta | obtener versión y manual oficial |
+| `--` detiene la opción | parser implementa fin de opciones | comparar antes/después de `--` |
+| segundo URL no se solicita | un solo argumento o política por URL | log `argv` y listener por operando |
+| aparecen dos procesos | shell/wrapper adicional | árbol de procesos y comando final |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Construir `argv` explícito, un elemento por valor, evitar `split` de entrada, usar `--` cuando esté documentado, allowlist de opciones y operandos, API nativa y privilegio mínimo.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa la capacidad de dibujar `argv` y atribuir el efecto al parser correcto.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: dos recursos en un importador
+
+El log muestra `argv=["curl","https://allowed/a","http://listener/t1"]`; llegan dos peticiones y existe un solo PID.
+
+**Observación:** la entrada creó dos operandos. **Qué sé:** el wrapper divide y curl procesa ambas URL. **Hipótesis:** argument injection o shell. **Experimento:** incluir `;` como token y revisar árbol de procesos. **Resultado:** `;` es un operando inválido y no nace otro proceso. **Conclusión:** inyección de argumentos, no de comandos. **Siguiente paso:** revisar capacidades documentadas y política por operando.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — El espacio permanece dentro del argumento
+
+El mismo payload en otra versión produce `argv=["curl","https://allowed/a http://listener/t1"]` y `URL rejected: Malformed input`.
+
+**Observación:** no hay segundo elemento. **Qué sé:** un espacio no fue dividido. **Hipótesis:** lista directa o quoting del wrapper. **Experimento:** log de longitud y opción inocua. **Resultado:** siempre dos elementos totales: programa y valor. **Conclusión:** la variante básica falla porque no existe splitting; no hay adaptación legítima con otro separador sin nueva evidencia. **Siguiente paso:** descartar esta vía.
+
+## Caso C — Transferencia: perfil de conversión
+
+Un conversor recibe `profile="-loglevel debug"`; el log muestra que el wrapper aplica `shlex.split(profile)` y la herramienta cambia verbosidad. No se revela la técnica en el título.
+
+**Resolución:** texto -> split -> opciones de la herramienta. El control pasa el mismo texto como un elemento y recibe “unrecognized option”. La primitiva transferida es controlar opciones, no ejecutar una shell.
+
+## Caso D — Falso positivo: medidor de progreso
+
+La respuesta contiene `% Total` y `% Received`, pero ninguna opción inocua altera el comportamiento y el backend usa una biblioteca que copia ese formato.
+
+**Observación:** firma compatible con curl. **Hipótesis:** CLI curl o biblioteca. **Experimento:** árbol de procesos, error de opción y versión. **Resultado:** no hay proceso curl ni parser de opciones. **Conclusión:** la firma no confirma argument injection.
+
+## Comparación: Command Injection vs Argument Injection
+
+| Experimento | Shell vulnerable | `argv` con splitting | `argv` único |
+|---|---|---|---|
+| `; printf MARK` | ejecuta `MARK` | `;`/`printf` son argumentos | texto literal único |
+| opción inocua documentada | puede llegar tras splitting | cambia herramienta | queda dentro del operando |
+| árbol de procesos | puede mostrar shell y segundo proceso | un proceso objetivo | un proceso objetivo |
+| log `argv` | resultado tras expansión | varios elementos controlados | un elemento controlado |
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Dibuja `argv` para las tres llamadas Python de Fundamentos.
+2. Explica por qué dos callbacks de curl no implican dos comandos.
+3. Diseña un control con `--` sin asumir que la herramienta lo soporta.
+4. Distingue option injection de un operando adicional.
 
 ## Resumen
 
-El backend ejecuta una herramienta (curl, wget, tar, convert) con tu entrada como argumento; no metes un comando nuevo, sino flags o una segunda URL/fichero que cambian lo que hace. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+La inyección de argumentos depende de quién crea `argv`. Un espacio solo divide cuando una capa lo interpreta; el efecto pertenece al parser de opciones del programa, no a una shell por defecto.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Código o log de construcción.
+2. Número y contenido de `argv`.
+3. Shell sí/no.
+4. Opción inocua y versión.
+5. `--` documentado.
+6. PID y efecto mínimo.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`argument-injection`)
-- [Referencia técnica externa](https://portswigger.net/web-security/all-materials)
+- [Python subprocess](https://docs.python.org/3/library/subprocess.html)
+- [curl manual](https://curl.se/docs/manpage.html)
+- [GNU Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
+- [Concepto interno](../../tools/concepts.py) (`argument-injection`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Command injection](command_injection.md). Índice: [curso](../README.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).

@@ -1,171 +1,193 @@
 ---
-titulo: "Command Injection (inyeccion de comandos de SO)"
+titulo: "Inyección de comandos de sistema operativo"
 categoria: 03_seguridad_web
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
+  - ../01_fundamentos/linux_procesos_permisos_y_shell.md
   - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
 fuentes_internas:
   - ../../tools/concepts.py#command-injection
 fuentes_externas:
-  - https://portswigger.net/web-security/all-materials
-revision: 2026-07-14
-estado: borrador
+  - https://portswigger.net/web-security/os-command-injection
+  - https://www.gnu.org/software/bash/manual/bash.html
+  - https://docs.python.org/3/library/subprocess.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Command Injection (inyeccion de comandos de SO)
+# Inyección de comandos de sistema operativo
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Distinguir shell de ejecución directa, predecir el significado de metacaracteres, construir pruebas in-band y blind con controles y adaptar quoting o canal sin probar separadores al azar.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+Procesos, `argv`, Bash, quoting, JSON, redirecciones y medición temporal.
 
 ## Fundamentos técnicos
 
-Ocurre cuando la app construye un comando del sistema operativo concatenando tu entrada (por ejemplo, para hacer ping a una IP que tu escribes) y lo ejecuta con system()/exec()/popen(). Como el shell no distingue 'el argumento que espera la app' de 'un comando nuevo', separadores como ; && | permiten anadir tu propio comando a continuacion.
+Command injection requiere que entrada controlada altere una orden interpretada por una shell u otro intérprete de comandos. En ejecución directa, el kernel recibe un ejecutable y una lista de argumentos: `;`, `&&` o `|` no tienen gramática propia y pueden llegar como texto al programa.
 
-El programador confia en que el campo (host, IP, nombre de fichero) solo contendra ese dato, sin validar ni escapar los caracteres especiales de shell. Misma causa raiz que `sqli` y `ssti`: mezclar dato de usuario con una instruccion que el sistema interpreta.
+```text
+sh -c "ping -c 1 <entrada>"       -> la shell analiza operadores
+execve("ping", ["ping","-c","1",entrada]) -> ping recibe un argumento
+```
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+HTTP/JSON -> valor -> concatenación/quoting -> ¿shell? -> expansiones/redirecciones
+                                      \----> ¿argv?  -> parser de opciones
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-En funciones que 'suenan a' llamar herramientas del sistema: ping, traceroute, nslookup, convertir un fichero, hacer backup, comprobar disponibilidad de un host. Parametros tipicos: host, ip, domain, filename, target.
+Diagnósticos de red, conversión de ficheros, backups, búsquedas, integraciones y tareas que invocan utilidades. La presencia de un proceso externo no implica shell.
 
 ## Cómo identificarla
 
-- Un parametro que hace de host/IP/dominio para una operacion de red (ping, traceroute, whois).
-- Un campo de nombre de fichero usado para convertir, comprimir o procesar con una herramienta externa.
-- La respuesta tarda mas de lo esperado al anadir '&& sleep 5' (senal de ejecucion incluso sin salida visible).
+- Un marcador de segundo comando aparece fuera de la salida normal.
+- Una demora proporcional se reproduce frente a controles intercalados.
+- Un callback OOB contiene token único generado por la orden.
+- Los errores cambian según quoting u operador de una shell identificada.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Existe shell o ejecución directa?
+2. ¿Dentro de qué comillas se inserta el valor?
+3. ¿Qué operadores entiende esa shell?
+4. ¿Se captura stdout, stderr o ningún canal?
+5. ¿Qué identidad, entorno y directorio tiene el proceso?
 
 ## Prueba mínima
 
-Anade un comando inocuo tras un separador de shell: 127.0.0.1; id (o && id, | id segun el shell) en el campo sospechoso.
-
-Evidencia esperada: La salida de id (uid=... gid=...) aparece mezclada con la respuesta normal de la app. Eso confirma ejecucion real, no solo un error.
+Con salida visible, producir un marcador fijo mediante una orden inocua. Sin salida, usar una demora corta y dos duraciones con varias muestras, o un callback al listener autorizado. Siempre mantener petición original y una cadena literal como controles.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-curl -sS -X POST "$URL/api/ping" -H 'Content-Type: application/json' -d '{"host":"127.0.0.1; id"}'
-```
-
-**Objetivo y contexto:** Prueba de confirmacion inocua: si 'host' llega a un ping del sistema, el ; encadena tu comando id sin romper el ping original.
-
-**Resultado esperado:** La salida de id (uid=www-data...) mezclada en la respuesta confirma ejecucion. El usuario que veas es con el que tendras shell tras escalar.
+Para `sh -c "ping -c 1 $host"`: conservar un host válido, determinar quoting, añadir un separador, emitir `MARK` y predecir dónde aparece. Para `execve`, esa misma cadena no es un payload de command injection: es un único operando de `ping`.
 
 ## Anatomía de los payloads
 
-La primera prueba es `curl -sS -X POST "$URL/api/ping" -H 'Content-Type: application/json' -d '{"host":"127.0.0.1; id"}'`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** JSON `host`.
+- **Sintaxis original:** `sh -c "ping -c 1 <host>"`.
+- **Entrada controlada:** final de la orden, sin quoting adicional.
+- **Transformaciones conocidas:** JSON decode y concatenación.
+- **Parser final:** `/bin/sh` confirmado.
+- **Sink:** ejecución de orden.
+- **Primitiva:** segundo comando que emite marcador.
+- **Payload mínimo:** `127.0.0.1; printf CI_OK`.
+- **Significado de cada componente:** host válido; `;` termina la primera orden; `printf` emite marcador.
+- **Resultado esperado:** salida de ping seguida de `CI_OK`.
+- **Control negativo:** `127.0.0.1; printf CI_NO` enviado a una ruta que usa `execve`.
+- **Restricción observada:** stdout no se devuelve en producción del laboratorio.
+- **Por qué falla la variante básica:** la orden se ejecuta, pero el canal no es visible.
+- **Hipótesis de adaptación:** usar efecto temporal proporcional.
+- **Payload adaptado:** separador más una demora corta permitida en el laboratorio.
+- **Por qué debería funcionar:** la shell espera al segundo proceso.
+- **Evidencia:** distribución separada y proporcional para 2 s y 4 s.
+- **Cuándo no funcionaría:** ejecución asíncrona, timeout, shell ausente o utilidad de demora bloqueada.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+`; id` puede: ejecutarse si una shell lo analiza sin quoting protector; aparecer literalmente si es un argumento; causar error si el programa valida el host completo; o no producir señal si la entrada se ignora o la salida no se captura.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Un carácter bloqueado no justifica probar todos los demás. Determina si el rechazo ocurre en JSON, validación, shell o programa. Una adaptación cambia quoting, operador o canal solo para probar una hipótesis concreta.
 
 ## Evidencias de confirmación
 
-La salida de id (uid=... gid=...) aparece mezclada con la respuesta normal de la app. Eso confirma ejecucion real, no solo un error.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Marcador, demora proporcional o callback atribuible a una segunda orden. Un error distinto al incluir `;` solo prueba que el carácter afectó alguna capa.
 
 ## Escalado de impacto
 
-- Identifica el campo que sospechas que llega a una llamada de sistema.
-- Confirma con un comando inocuo primero (id/whoami/hostname); si no ves output, usa sleep/ping hacia tu maquina para confirmar a ciegas.
-- Si hay una blacklist parcial, revisa `filtros-incompletos` y como normaliza la entrada antes de ejecutar.
-- Si la salida ya es visible, prioriza una lectura acotada de configuracion o una credencial reutilizable; solo pasa a `reverse-vs-bind` si una shell aporta algo.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Confirmar identidad y entorno con una capacidad mínima, evaluar lectura/escritura estrictamente necesaria y evitar saltar a una reverse shell si el canal existente basta para demostrar impacto.
 
 ## Errores frecuentes
 
-- La app usa una llamada de sistema PARAMETRIZADA (pasa argumentos como lista, no como string concatenado) o una libreria nativa en vez de invocar el binario del SO.
-- El campo se valida contra un formato estricto (solo digitos para un ID, regex de IP valida) antes de usarse.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Agrupar APIs con y sin shell como equivalentes.
+- Confundir error de `ping` con error de shell.
+- Usar una sola medida temporal.
+- Escapar para la shell local, no para la remota.
+- Interpretar fallo de reverse shell como refutación de ejecución.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| `; id` aparece en error de host | `argv` directo o quoting | observar `argv`; comparar expansión shell |
+| `; id` cambia error, sin salida | shell parcial o validación | marcador temporal/OOB y stderr separado |
+| demora consistente y proporcional | ejecución blind | alternar controles y dos duraciones |
+| `id` funciona, conexión saliente no | egress/DNS/entorno | callback DNS/HTTP controlado y variables de red |
+| `;` bloqueado antes del proceso | filtro textual | localizar fase; no enumerar separadores |
+| JSON devuelve `400` | transporte inválido | serializar objeto y verificar bytes |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Usar APIs nativas o ejecución directa con lista fija de argumentos, validar valores semánticamente, eliminar shell, fijar entorno y privilegios, y registrar la invocación sin datos sensibles.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+La destreza evaluada es demostrar la gramática que procesa la entrada y elegir un canal robusto.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: diagnóstico de host
+
+La respuesta a `127.0.0.1; printf MARK` contiene salida de ping y `MARK`.
+
+**Observación:** aparece un marcador de una segunda orden. **Qué sé:** alguna capa interpretó `;`. **Hipótesis:** shell en backend o interpretación inesperada anterior. **Experimento:** control literal, captura de comando del laboratorio y operador condicionado. **Resultado:** log `sh -c` y marcador solo con separador. **Conclusión:** command injection in-band. **Siguiente paso:** registrar UID y limitar impacto.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Sin salida visible
+
+El mismo endpoint devuelve siempre `202 job queued`.
+
+**Observación:** no hay canal in-band. **Hipótesis:** orden asíncrona, entrada no alcanzada o salida descartada. **Experimento:** demoras 2/4 s no sirven si la respuesta es asíncrona; se usa callback con token desde el worker del laboratorio y un control sin segundo comando. **Resultado:** el callback llega desde el worker solo con payload. **Conclusión:** ejecución blind confirmada; la ausencia de demora no la refutaba. **Siguiente paso:** documentar cola e identidad.
+
+## Caso C — Transferencia: nombre del archivo de backup
+
+Una tarea web crea `tar` con un nombre de archivo proporcionado. El alumno observa que un nombre con `; printf MARK` genera un fichero adicional `MARK` en el directorio de pruebas.
+
+**Resolución:** nombre -> cadena de shell -> `tar` -> segundo comando. Se confirma con un nombre literal escapado como control y con el comando construido. La función no se llamaba “ejecutar comando”, pero la primitiva es idéntica.
+
+## Caso D — Falso positivo: `ping` recibe todo
+
+`127.0.0.1; id` devuelve `ping: 127.0.0.1; id: Name or service not known`.
+
+**Observación:** el texto llegó a `ping`. **Hipótesis:** shell protegida o `execve`. **Experimento:** traza `argv` y expansión `$(printf X)`. **Resultado:** un único argumento literal. **Conclusión:** command injection descartada; revisar argument/option injection solo si puede crearse otro argumento.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Predice el resultado de la misma entrada bajo `sh -c` y `execve`.
+2. Diseña una medición temporal resistente a ruido.
+3. Explica por qué una reverse shell fallida no refuta `printf MARK` exitoso.
+4. Serializa por capas una cadena JSON que contenga comillas de shell.
 
 ## Resumen
 
-Un parametro llega sin filtrar a una llamada al sistema operativo (ping, convert, backup); anades un separador de shell y ejecutas lo tuyo. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+Los operadores solo son operadores para una shell. Primero se identifica parser y quoting; después se construye una primitiva y un canal causal.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Cadena final o `argv`.
+2. Shell y quoting.
+3. Marcador mínimo.
+4. Stdout, stderr, tiempo u OOB.
+5. Control literal y repetición.
+6. UID, entorno y directorio.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`command-injection`)
-- [Referencia técnica externa](https://portswigger.net/web-security/all-materials)
+- [PortSwigger: OS command injection](https://portswigger.net/web-security/os-command-injection)
+- [GNU Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
+- [Python subprocess](https://docs.python.org/3/library/subprocess.html)
+- [Concepto interno](../../tools/concepts.py) (`command-injection`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).

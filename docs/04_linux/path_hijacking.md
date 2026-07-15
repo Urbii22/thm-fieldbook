@@ -3,179 +3,180 @@ titulo: "Secuestro de PATH"
 categoria: 04_linux
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - enum_privesc_linux.md
+  - cron_abuse.md
 fuentes_internas:
   - ../../tools/concepts.py#path-hijacking
 fuentes_externas:
-  - https://man7.org/linux/man-pages/
-revision: 2026-07-14
-estado: borrador
+  - https://man7.org/linux/man-pages/man7/environ.7.html
+  - https://man7.org/linux/man-pages/man5/sudoers.5.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
 # Secuestro de PATH
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Demostrar resolución por PATH, entorno heredado y directorio escribible antes de introducir un ejecutable marcador; distinguir cadenas presentes de llamadas alcanzables.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+PATH, `execvp`, shell, permisos de directorio, cron/sudo/SUID y credenciales efectivas.
 
 ## Fundamentos técnicos
 
-Cuando un programa privilegiado invoca otro comando por su nombre (por ejemplo 'cat' en vez de '/bin/cat'), el sistema lo busca por el PATH. Si puedes modificar el PATH o escribir en un directorio que aparezca antes, colocas ahi un binario malicioso con ese nombre y el proceso root ejecuta el tuyo. Otro caso del `privesc-modelo`.
-
-El programador uso una ruta relativa por comodidad, confiando en que el PATH apunta a los binarios legitimos. Pero si controlas el PATH (o hay un directorio escribible en el), rompes esa confianza: tu binario se ejecuta con los privilegios del proceso.
+El vector requiere: consumidor privilegiado invoca un nombre sin ruta; usa búsqueda PATH; el PATH efectivo contiene antes un directorio escribible; y la rama se ejecuta. `strings` solo descubre texto. Exportar PATH en una shell no afecta a un proceso que fija su entorno. En SUID, shells e intérpretes pueden bajar privilegios.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+proceso privilegiado -> nombre relativo -> PATH efectivo -> primer ejecutable
+                    -> permisos/identidad -> efecto
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-Cuando un SUID (`suid`) o un script de `cron-abuse` que corre como root llama a comandos sin ruta absoluta. strings sobre el binario o leer el script lo revela.
+Scripts root, tareas, wrappers, binarios que usan `execvp`/`system`, reglas sudo con entorno y servicios que llaman utilidades auxiliares.
 
 ## Cómo identificarla
 
-- strings de un SUID muestra un comando llamado sin ruta (system("service ...")).
-- Un script root usa comandos sin path absoluto.
-- Tienes un directorio escribible que puedes anteponer al PATH.
+- Traza muestra búsqueda o ejecución de nombre relativo.
+- PATH del proceso privilegiado se conoce.
+- Un directorio anterior es escribible y atravesable.
+- Un marcador se ejecuta con identidad esperada.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿La llamada usa ruta absoluta?
+2. ¿Qué PATH ve el consumidor?
+3. ¿Cuál es el primer candidato ejecutable?
+4. ¿Puedo escribir y atravesar ese directorio?
+5. ¿El intérprete conserva privilegios?
 
 ## Prueba mínima
 
-strings sobre el SUID y busca llamadas a comandos sin '/' delante.
-
-Evidencia esperada: Un nombre de comando sin ruta absoluta en las strings; tras crear tu binario falso y anteponerlo al PATH, ejecucion como el proceso privilegiado.
+Crear un ejecutable marcador con el nombre esperado que escriba `id` a `/tmp`, en un directorio de laboratorio ya incluido en el PATH privilegiado. No sustituir binarios reales ni lanzar shell.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-strings /ruta/al/suid
-```
-
-**Objetivo y contexto:** Revela cadenas del binario, incluidos comandos que llama. Un comando sin '/' es candidato a PATH hijacking; con ruta absoluta, no.
-
-**Resultado esperado:** Nombres de comandos invocados. Si ves 'service', 'cat', 'ps' sin ruta, ese es tu punto: crea un binario con ese nombre en un dir que controles.
-
-### Capa 2: prueba documentada
-
-```text
-cd /tmp && echo '/bin/bash' > cat && chmod +x cat && export PATH=/tmp:$PATH
-```
-
-**Objetivo y contexto:** Crea un 'cat' falso que lanza bash, y lo pone primero en el PATH. Cuando el proceso root llame a 'cat', ejecutara el tuyo con privilegios de root.
-
-**Resultado esperado:** Al ejecutar despues el binario/script privilegiado, obtienes shell root. Restaura el PATH luego para no romper tu propia sesion.
+1. Confirmar llamada alcanzable.
+2. Capturar PATH efectivo.
+3. Ordenar candidatos.
+4. Verificar permisos de directorio.
+5. Introducir marcador.
+6. Ejecutar/esperar consumidor, confirmar y limpiar.
 
 ## Anatomía de los payloads
 
-La primera prueba es `strings /ruta/al/suid`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** cron root ejecuta wrapper que llama `backup-helper`.
+- **Sintaxis original:** búsqueda por PATH.
+- **Entrada controlada:** archivo `/opt/team/bin/backup-helper`.
+- **Transformaciones conocidas:** resolución PATH izquierda a derecha.
+- **Parser final:** kernel al ejecutar el candidato.
+- **Sink:** proceso auxiliar como root.
+- **Primitiva:** ejecutar marcador root.
+- **Payload mínimo:** script que guarda `id` en `/tmp/path-proof`.
+- **Significado de cada componente:** el nombre coincide con el auxiliar; el marcador registra la identidad sin persistencia.
+- **Resultado esperado:** cron selecciona el candidato anterior al binario legítimo y crea la prueba.
+- **Control negativo:** retirar marcador y observar helper legítimo.
+- **Restricción observada:** exportar PATH del alumno no afecta cron.
+- **Por qué falla la variante básica:** se modificó el entorno equivocado.
+- **Hipótesis de adaptación:** usar un directorio ya presente en PATH de cron.
+- **Payload adaptado:** marcador en `/opt/team/bin`, si es escribible y precede al legítimo.
+- **Por qué debería funcionar:** modifica un componente que sí pertenece al entorno heredado por el consumidor privilegiado.
+- **Evidencia:** archivo root y traza de la ruta ejecutada.
+- **Cuándo no funcionaría:** PATH fijo sin directorio escribible, ruta absoluta, hash/cache o drop.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+Shell, `execvp` y bibliotecas buscan PATH; `execve` con ruta absoluta no. Sudo puede aplicar `secure_path`; systemd suele definir entorno explícito; un SUID puede sanearlo o perder EUID al invocar shell.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Si el PATH privilegiado no es controlable, no existe adaptación mediante `export` local. Buscar otro consumidor o cerrar la hipótesis.
 
 ## Evidencias de confirmación
 
-Un nombre de comando sin ruta absoluta en las strings; tras crear tu binario falso y anteponerlo al PATH, ejecucion como el proceso privilegiado.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Traza de ruta ejecutada y marcador con identidad privilegiada. Una cadena `cat` en el binario no confirma llamada.
 
 ## Escalado de impacto
 
-- Detecta el comando invocado sin ruta absoluta (strings o leyendo el script).
-- Crea un binario/script con ese nombre que lance una shell (o ponga SUID a bash).
-- Antepon tu directorio al PATH (export PATH=/tmp:$PATH) y dale permiso de ejecucion.
-- Ejecuta el binario/script privilegiado; correra tu version. Confirma uid=0.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Demostrar ejecución mínima, restaurar y documentar consumidor/entorno. No reemplazar utilidades del sistema.
 
 ## Errores frecuentes
 
-- El binario/script usa siempre rutas absolutas (/bin/cat, /usr/bin/service).
-- El proceso privilegiado fija su propio PATH explicitamente antes de ejecutar (no hereda el tuyo).
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Concluir desde `strings`.
+- Exportar PATH solo en la sesión del alumno.
+- Ignorar `secure_path`.
+- Crear `/bin/bash` como payload y perder EUID.
+- No comprobar orden ni permisos `x` del directorio.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| marcador no se ejecuta | PATH distinto o rama no alcanzada | entorno/traza del consumidor |
+| ejecuta helper legítimo | directorio posterior/cache | orden PATH y `type -a`/traza |
+| ejecuta marcador como alumno | consumidor no privilegiado | UID/PID correlacionado |
+| sudo ignora PATH | `secure_path` | sudoers/entorno dentro |
+| shell pierde EUID | modo no privilegiado | marcador directo sin shell y manual Bash |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Rutas absolutas, PATH mínimo no escribible, entorno fijado, permisos de directorio, evitar shell, drop temprano y revisión de consumidores privilegiados.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa la demostración de resolución y entorno, no la creación de un binario llamado `cat`.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: helper de backup
+
+Cron root tiene PATH `/opt/team/bin:/usr/bin`; el primer directorio es escribible y el wrapper llama `backup-helper`. Marcador produce archivo root. **Conclusión:** PATH hijacking confirmado.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — PATH exportado no se hereda
+
+Anteponer `/tmp` en la sesión no cambia el cron. **Experimento:** capturar PATH del proceso. **Resultado:** cron lo fija. **Conclusión:** la variante falla por entorno; si ningún directorio de ese PATH es escribible, se descarta.
+
+## Caso C — Transferencia: servicio y `execvp`
+
+Un servicio root llama `compressor` mediante `execvp` y define PATH con un directorio de plugins escribible. El alumno usa marcador, confirma ruta y limpia. Misma primitiva, consumidor distinto.
+
+## Caso D — Falso positivo: cadena no alcanzable
+
+`strings` muestra `service`, pero la traza del flujo probado nunca ejecuta ese nombre; pertenece a una función de depuración deshabilitada. **Conclusión:** no hay sink alcanzado.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Ordena candidatos de tres PATH distintos.
+2. Diseña un marcador sin shell persistente.
+3. Distingue entorno interactivo, sudo y cron.
+4. Explica por qué `strings` es solo una pista.
 
 ## Resumen
 
-Si un script o SUID que corre como root llama a un binario sin ruta absoluta, colocas tu propio binario antes en el PATH. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+PATH hijacking exige nombre relativo, búsqueda efectiva, directorio escribible anterior y consumidor privilegiado alcanzable.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Consumidor/UID.
+2. Llamada relativa.
+3. PATH efectivo.
+4. Orden y permisos.
+5. Marcador/control.
+6. Drop/limpieza.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`path-hijacking`)
-- [Referencia técnica externa](https://man7.org/linux/man-pages/)
+- [environ(7)](https://man7.org/linux/man-pages/man7/environ.7.html)
+- [sudoers(5)](https://man7.org/linux/man-pages/man5/sudoers.5.html)
+- [Concepto interno](../../tools/concepts.py) (`path-hijacking`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Cron](cron_abuse.md). Índice: [curso](../README.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).

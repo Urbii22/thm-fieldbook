@@ -1,171 +1,188 @@
 ---
-titulo: "Bypass de OTP/MFA por manipulacion de parametros"
+titulo: "Análisis de MFA y OTP"
 categoria: 03_seguridad_web
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - ../01_fundamentos/http_y_sesiones.md
+  - auth_session_security.md
 fuentes_internas:
   - ../../tools/concepts.py#mfa-otp-bypass
 fuentes_externas:
-  - https://portswigger.net/web-security/all-materials
-revision: 2026-07-14
-estado: borrador
+  - https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html
+  - https://pages.nist.gov/800-63-4/sp800-63b.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Bypass de OTP/MFA por manipulacion de parametros
+# Análisis de MFA y OTP
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Modelar el estado pre-MFA y autenticado, comprobar binding de usuario/sesión/desafío, detectar replay y manipulación de estado, y descartar bypasses aparentes.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+Sesiones, autenticación, autorización, HTTP multipart/JSON y controles de repetición.
 
 ## Fundamentos técnicos
 
-El segundo factor (OTP, codigo por email/SMS) debe verificarlo y recordarlo EL SERVIDOR. El bypass aparece cuando el backend acepta del cliente una senal de 'ya verificado' (un campo is_verified, verified, mfa_passed, un paso de estado) y la respeta aunque el OTP sea incorrecto. Es parameter tampering aplicado a un control de seguridad: ver `client-side-controls`.
-
-El desarrollador reutiliza un formulario o un JSON donde el estado de verificacion viaja junto a los datos y confia en el. Como el cliente controla todo lo que envia, puede poner is_verified=true. La causa raiz es mantener el estado de seguridad en el cliente en vez de derivarlo en el servidor tras comprobar el OTP.
+El servidor debe verificar el factor y realizar la transición de estado. Un OTP debe tener vigencia limitada, límites de intentos y uso único. El estado no debe depender de una bandera enviada por el cliente. Además, desafío, usuario y sesión deben estar ligados para impedir que un código válido se aplique a otro flujo.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+credencial primaria -> sesión pre-MFA + desafío(user, session, TTL)
+                   -> verificación OTP -> consumir desafío -> rotar/elevar sesión
+                   -> autorización del recurso
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-En cualquier paso de 2FA/OTP tras un login valido: una pantalla de 'introduce el codigo', un endpoint verify_otp, un formulario con campos ocultos de estado. Intercepta la peticion y mira que campos viajan ademas del propio codigo.
+Login, recuperación, cambio de factor, “remember device”, reautenticación de acciones sensibles, resend y endpoints API equivalentes al paso visual.
 
 ## Cómo identificarla
 
-- La peticion de OTP incluye, ademas del codigo, un campo como is_verified, verified, status o step.
-- Campos ocultos de estado de verificacion en el HTML del formulario.
-- No hay rate limiting ni invalidacion del codigo tras varios intentos.
+- Acceso directo al recurso con sesión pre-MFA.
+- Bandera cliente cambia la transición sin OTP válido.
+- Código de A funciona en sesión B.
+- OTP aceptado más de una vez o después de resend/expiración.
+- Intentos ilimitados o contadores no ligados a cuenta/desafío.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Qué estado tiene la sesión antes y después?
+2. ¿A qué usuario, sesión y desafío está ligado el OTP?
+3. ¿Se consume al usarlo y al reenviar?
+4. ¿Qué recurso prueba realmente la transición?
+5. ¿Hay fallback o recuperación más débil?
 
 ## Prueba mínima
 
-Envia el OTP (aunque sea incorrecto) anadiendo un campo de estado tipo is_verified=true en el cuerpo y comprueba si te deja pasar.
-
-Evidencia esperada: Accedes al recurso protegido (dashboard) sin un OTP valido, porque el servidor acepto tu flag de verificacion.
+Con cuentas de laboratorio, comparar OTP inválido, válido, reutilizado, expirado y de otra sesión. Verificar el recurso protegido, no solo la redirección.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-curl -s -b cookies.txt -F 'otp=000000' -F 'is_verified=true' "$URL/verify_otp.php"
-```
-
-**Objetivo y contexto:** Envia el OTP (incorrecto a proposito) anadiendo el campo de estado como seccion multipart (-F). Si el servidor confia en is_verified, pasa el 2FA sin el codigo real.
-
-**Resultado esperado:** Una redireccion o acceso al dashboard pese al OTP invalido = bypass confirmado. Si exige el codigo correcto pese al campo, el estado se valida server-side.
+La secuencia mínima conserva cookie pre-MFA, envía código inválido con y sin campos adicionales y consulta el recurso protegido. Después usa un código válido una vez y repite exactamente la solicitud para probar replay.
 
 ## Anatomía de los payloads
 
-La primera prueba es `curl -s -b cookies.txt -F 'otp=000000' -F 'is_verified=true' "$URL/verify_otp.php"`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** JSON `/mfa/verify` con cookie pre-MFA.
+- **Sintaxis original:** `{"otp":"000000","verified":false}`.
+- **Entrada controlada:** OTP y bandera cliente.
+- **Transformaciones conocidas:** JSON decode y lookup de desafío.
+- **Parser final:** máquina de estados de autenticación.
+- **Sink:** elevación de sesión.
+- **Primitiva:** elevar con OTP inválido cambiando solo `verified`.
+- **Payload mínimo:** `{"otp":"000000","verified":true}`.
+- **Significado de cada componente:** código deliberadamente inválido; bandera reclama un estado.
+- **Resultado esperado:** rechazo y sesión pre-MFA sin cambios en una implementación segura.
+- **Control negativo:** mismo OTP con `false` y acceso directo al recurso.
+- **Restricción observada:** endpoint ignora el código cuando `verified=true`.
+- **Por qué falla la variante básica:** enviar solo OTP inválido no alcanza la rama defectuosa.
+- **Hipótesis de adaptación:** mass assignment/estado cliente confiado.
+- **Payload adaptado:** añadir solo la propiedad observada en el esquema.
+- **Por qué debería funcionar:** el backend vulnerable la enlaza al objeto de estado.
+- **Evidencia:** nueva sesión accede al recurso pese a OTP inválido.
+- **Cuándo no funcionaría:** DTO cerrado y estado derivado exclusivamente del verificador.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+TOTP, código por correo, push y WebAuthn tienen propiedades distintas. El análisis común es binding, frescura, consumo, intentos y transición. “Recordar dispositivo” crea otro autenticador persistente que debe evaluarse por separado.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Cambiar nombres de bandera al azar no es metodología. Deriva campos del tráfico o esquema, modifica uno y comprueba estado server-side. Rate limiting, replay y bypass de transición son hallazgos distintos.
 
 ## Evidencias de confirmación
 
-Accedes al recurso protegido (dashboard) sin un OTP valido, porque el servidor acepto tu flag de verificacion.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Acceso al recurso o sesión elevada sin factor válido; aceptación cruzada entre usuarios/sesiones; reutilización del mismo OTP cuando debería ser de un solo uso. Ver la pantalla de OTP o saltarla visualmente no basta.
 
 ## Escalado de impacto
 
-- Llega al paso de OTP con una sesion valida y captura la peticion de verificacion.
-- Localiza campos de estado ademas del codigo; si el cuerpo es multipart/form-data, cada campo va como una seccion propia (un parametro anadido como cabecera HTTP NO aparece en $_POST).
-- Reenvia el OTP con is_verified=true (o el nombre que veas) y observa si concede acceso.
-- Si funciona, documenta que el estado de verificacion se confiaba al cliente; guarda la cookie de sesion para el siguiente paso.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Probar solo cuentas y desafíos propios, medir límites sin agotamiento abusivo y evaluar recuperación/cambio de factor con datos de laboratorio.
 
 ## Errores frecuentes
 
-- El servidor recalcula la verificacion en cada peticion contra su propio estado y no lee ninguna flag de verificacion del cliente.
-- El OTP se valida server-side, es de un solo uso, caduca y esta atado a usuario+sesion, sin ningun parametro de estado manipulable.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Concluir bypass por recibir `302`.
+- No conservar la cookie pre-MFA correcta.
+- Confundir ausencia de rate limit con bypass inmediato.
+- Reutilizar un OTP dentro de una ventana sin conocer política de consumo.
+- Probar código de otro usuario sin controlar el binding de sesión.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| `verified=true` ignorado | DTO cerrado o nombre incorrecto | esquema/traza y propiedad desconocida como control |
+| dashboard carga, API privada da `401` | solo salto visual | consultar recurso protegido crudo |
+| OTP válido de A falla en B | binding correcto o TTL | misma sesión A como control |
+| OTP se acepta dos veces | replay o dos desafíos | comparar challenge ID y evento de consumo |
+| resend deja ambos códigos válidos | invalidación incompleta | usar viejo/nuevo en orden controlado |
+| intentos se reinician con cookie | contador ligado a sesión | misma cuenta con sesión nueva, sin exceder límites |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Estado server-side, DTO cerrado, binding a usuario/sesión/desafío, TTL corto, uso único, límites por cuenta y desafío, rotación de sesión tras MFA, recuperación equivalente y registros sin OTP.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+La competencia es demostrar una transición inválida y su efecto de autorización, no adivinar códigos.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: estado cliente confiado
+
+Con OTP inválido, `verified=false` rechaza y `verified=true` entrega una cookie nueva que accede a `/account`.
+
+**Observación:** una propiedad cambia estado. **Qué sé:** el código sigue inválido. **Hipótesis:** backend confía en bandera o existe caché. **Experimento:** cookies separadas, token de desafío único y acceso directo. **Resultado:** solo la bandera eleva la sesión. **Conclusión:** bypass de MFA por manipulación de estado. **Siguiente paso:** documentar binding y rotación.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — La bandera no funciona, pero el código se reutiliza
+
+El DTO rechaza propiedades extra. Un OTP válido se acepta dos veces en dos sesiones del mismo usuario.
+
+**Observación:** mass assignment descartado; posible replay. **Hipótesis:** mismo desafío compartido o consumo ausente. **Experimento:** registrar challenge ID, usar código una vez y repetir antes de expirar. **Resultado:** mismo challenge aceptado dos veces. **Conclusión:** fallo de uso único, no manipulación de parámetro. **Siguiente paso:** probar invalidación tras resend.
+
+## Caso C — Transferencia: cambio de teléfono
+
+El cambio de factor crea un desafío, pero una sesión pre-MFA de login puede enviarlo y modificar el número. El título no revela la técnica.
+
+**Resolución:** sesión pre-MFA -> endpoint de gestión -> autorización insuficiente. La primitiva transferida es una transición sensible accesible en estado incorrecto, no un OTP adivinado.
+
+## Caso D — Falso positivo: ruta `/dashboard`
+
+Tras OTP inválido, el servidor redirige a `/dashboard`, cuyo HTML carga, pero todas las API privadas responden `401` y la página muestra “sesión incompleta”.
+
+**Experimento:** recurso protegido y estado `/me`. **Resultado:** sesión sigue pre-MFA. **Conclusión:** navegación no equivale a bypass.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Diseña una matriz OTP inválido/válido/replay/expirado y sesión A/B.
+2. Distingue rate limiting débil de bypass de transición.
+3. Explica cómo probar binding sin usar cuentas ajenas.
+4. Modela resend y consumo del desafío.
 
 ## Resumen
 
-El servidor confia en un dato que envia el cliente (is_verified=true) para dar por superado el 2FA; tu decides el estado de una comprobacion que deberia calcular solo el servidor. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+MFA es una máquina de estados ligada a un desafío. La evidencia es el estado autorizado obtenido, no la pantalla ni la redirección.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Sesión pre-MFA.
+2. Challenge ID, usuario y TTL.
+3. OTP inválido/válido/replay.
+4. Propiedades extra derivadas del esquema.
+5. Recurso protegido.
+6. Rotación, consumo y límites.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`mfa-otp-bypass`)
-- [Referencia técnica externa](https://portswigger.net/web-security/all-materials)
+- [OWASP MFA Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html)
+- [NIST SP 800-63B](https://pages.nist.gov/800-63-4/sp800-63b.html)
+- [Concepto interno](../../tools/concepts.py) (`mfa-otp-bypass`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [File upload](file_upload.md). Siguiente: [Autenticación y sesiones](auth_session_security.md). Índice: [curso](../README.md).

@@ -1,180 +1,190 @@
 ---
-titulo: "Autenticacion y sesiones en APIs"
+titulo: "Autenticación, autorización y sesiones en APIs"
 categoria: 03_seguridad_web
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - ../01_fundamentos/http_y_sesiones.md
+  - ../02_metodologia/metodologia_de_laboratorio.md
 fuentes_internas:
   - ../../tools/concepts.py#auth-session-security
 fuentes_externas:
-  - https://portswigger.net/web-security/all-materials
-revision: 2026-07-14
-estado: borrador
+  - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+  - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+  - https://portswigger.net/web-security/access-control
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Autenticacion y sesiones en APIs
+# Autenticación, autorización y sesiones en APIs
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Modelar estados de identidad, distinguir autenticación de autorización, verificar rotación, expiración y revocación, y diseñar controles cruzados entre sesiones, objetos y acciones.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+HTTP, cookies, bearer tokens, estados, controles negativos y MFA.
 
 ## Fundamentos técnicos
 
-La autenticacion demuestra quien eres; la sesion conserva ese contexto entre peticiones.
-
-Errores de expiracion, cookies o validacion de tokens pueden convertir una cuenta limitada en acceso persistente.
+Autenticar establece una identidad; la sesión relaciona solicitudes con ese estado; autorizar decide si esa identidad puede realizar una acción sobre un objeto. Un token válido puede estar correctamente autenticado y aun así acceder a recursos indebidos por un fallo de autorización.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+anónimo -> credencial primaria -> preautenticado -> MFA -> autenticado
+        -> elevación/acción sensible -> logout/expiración/revocación
+                             |
+                             +-> autorización por identidad + acción + objeto
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-Cuando ves endpoints de login, refresh, logout, cookies de sesion o cabeceras Bearer.
+Login, refresh, logout, recuperación, cambio de contraseña, “recordar dispositivo”, endpoints de objetos y cambios de rol.
 
 ## Cómo identificarla
 
-- Set-Cookie
-- Authorization: Bearer
-- refresh_token
-- 401/403
+- La sesión rota o no rota tras cambiar privilegio.
+- Token viejo sigue o deja de funcionar tras refresh/logout.
+- Mismo objeto responde distinto para dueño, otro usuario y anónimo.
+- Timeouts se aplican en servidor, no solo en interfaz.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Qué material autentica cada petición?
+2. ¿Qué estado representa y dónde se conserva?
+3. ¿Cuándo se rota o revoca?
+4. ¿Qué autorización se aplica por objeto y acción?
+5. ¿Hay caché o gateway que explique la respuesta?
 
 ## Prueba mínima
 
-Obtienes una peticion autenticada y compruebas que el mismo recurso cambia sin ese contexto.
-
-Evidencia esperada: Sabes que material autentica la sesion, cuanto dura y como se invalida.
+Construir una matriz con sesión A, sesión B y anónimo sobre recurso A y B, usando lectura y una acción no destructiva. Después probar token anterior/nuevo en refresh y logout.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-curl -sS "$URL/api/me" -H "Authorization: Bearer $TOKEN"
-```
-
-**Objetivo y contexto:** Verifica el contexto de identidad actual.
-
-**Resultado esperado:** Perfil o respuesta autenticada.
-
-### Capa 2: prueba documentada
-
-```text
-curl -sS -i "$URL/api/me"
-```
-
-**Objetivo y contexto:** Compara el endpoint sin credenciales.
-
-**Resultado esperado:** 401/403 o respuesta publica.
+En esta técnica el “payload” suele ser una secuencia: obtener sesión, capturar identificador, cambiar una sola precondición, repetir exactamente el recurso y comparar estado server-side. No se manipula un token opaco al azar.
 
 ## Anatomía de los payloads
 
-La primera prueba es `curl -sS "$URL/api/me" -H "Authorization: Bearer $TOKEN"`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** `Authorization: Bearer <token>` y path `/orders/1042`.
+- **Sintaxis original:** token identifica sesión; path identifica objeto.
+- **Entrada controlada:** token y objeto solicitado.
+- **Transformaciones conocidas:** gateway valida firma; API resuelve sesión.
+- **Parser final:** middleware de autenticación y política de autorización.
+- **Sink:** lectura de pedido.
+- **Primitiva:** acceder con sesión B a objeto A.
+- **Payload mínimo:** petición válida de B cambiando solo `1043` por `1042`.
+- **Significado de cada componente:** el token conserva la identidad B; el path selecciona el objeto atribuido a A.
+- **Resultado esperado:** `403` o respuesta indistinguible sin datos en una implementación segura.
+- **Control negativo:** B->B, A->A y anónimo->A.
+- **Restricción observada:** ambos usuarios reciben `200` para `1042`.
+- **Por qué falla la variante básica:** quitar token solo prueba autenticación.
+- **Hipótesis de adaptación:** mantener identidad válida y cambiar objeto.
+- **Payload adaptado:** matriz identidad-objeto.
+- **Por qué debería funcionar:** separa autenticación de pertenencia.
+- **Evidencia:** B recibe datos exclusivos de A reproduciblemente.
+- **Cuándo no funcionaría:** autorización correcta o recurso público compartido.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+Sesión server-side, token autosuficiente y refresh token tienen ciclos distintos. Expiración idle, absoluta y de credencial no son equivalentes. Logout efectivo requiere invalidación server-side cuando el mecanismo lo permite; borrar una cookie local no basta para demostrar revocación.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+No trates `401`/`403` como oráculos perfectos: gateways y aplicaciones los usan de forma inconsistente. Mantén cuerpo, método, objeto y sesión controlados; registra redirecciones y caché.
 
 ## Evidencias de confirmación
 
-Sabes que material autentica la sesion, cuanto dura y como se invalida.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Acceso indebido a objeto/acción, aceptación de una sesión que debería estar revocada o ausencia de rotación con impacto demostrable. Una cookie sin `HttpOnly` es una debilidad distinta, no bypass por sí sola.
 
 ## Escalado de impacto
 
-- Captura el flujo de login.
-- Repite con y sin token.
-- Comprueba expiracion y logout.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Ampliar de lectura a acciones solo si es necesario y seguro; probar cambio de contraseña, elevación o revocación con cuentas del laboratorio. Evitar tocar datos de otros usuarios reales.
 
 ## Errores frecuentes
 
-- No lo priorices si el objetivo no tiene estado ni ningun mecanismo de identidad.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Probar sin token y concluir autorización segura.
+- Confundir endpoint público con bypass.
+- No fijar caché o sesión.
+- Asumir que expiración del JWT revoca refresh tokens.
+- Tratar ocultación del botón como control server-side.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| sin token y con token responden igual | recurso público o token ignorado | `/me` y recurso privado conocido |
+| logout borra cookie, token aún funciona | revocación solo cliente | reutilizar token desde cliente separado |
+| token viejo y nuevo funcionan | ventana de rotación o fallo | medir duración y evento de revocación |
+| B lee objeto A | autorización por objeto ausente | matriz B->B/A y acción distinta |
+| `200` con cuerpo vacío | autorización en lógica o caché | comparar datos, cabeceras y backend |
+| sesión cambia tras login | rotación esperada | comprobar que la anterior se invalida |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Estado server-side coherente, rotación tras cambios de privilegio, expiración idle/absoluta, revocación, cookies seguras, autorización por petición y objeto, y pruebas automatizadas de matrices de acceso.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa el modelo de estado y la matriz de controles, no la cantidad de tokens manipulados.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: pertenencia de pedidos
+
+Cuenta B cambia `/orders/1043` por `/orders/1042` y recibe los datos de A.
+
+**Observación:** B está autenticada y lee A. **Qué sé:** autenticación funciona; pertenencia no. **Hipótesis:** autorización ausente o caché. **Experimento:** marcadores anti-caché, varios objetos y acción de lectura. **Resultado:** patrón sigue el ID, no la caché. **Conclusión:** bypass de autorización por objeto. **Siguiente paso:** demostrar alcance mínimo.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Logout aparente
+
+La UI vuelve al login tras logout, pero una copia del bearer token sigue accediendo a `/api/me`.
+
+**Observación:** interfaz cerrada, token válido. **Hipótesis:** token no revocable hasta expirar o endpoint de logout incompleto. **Experimento:** cliente separado, token de acceso y refresh por separado, tiempos. **Resultado:** access token sigue 15 min y refresh queda revocado. **Conclusión:** comportamiento documentado del diseño, no necesariamente bypass; el riesgo depende del requisito de revocación inmediata. **Siguiente paso:** comparar con especificación del sistema.
+
+## Caso C — Transferencia: cambio de correo
+
+Una acción sensible acepta la sesión autenticada hace horas sin reautenticación. No se nombra el fallo en el título.
+
+**Resolución:** sesión válida -> acción de alto riesgo -> ausencia de verificación reciente. El experimento compara sesión recién autenticada y antigua, no manipula el correo. Se documenta como política de reautenticación débil si el requisito la exige.
+
+## Caso D — Falso positivo: endpoint de catálogo
+
+`/api/plans` responde igual sin token y con token. El alumno sospecha token ignorado.
+
+**Experimento:** `/api/me` y `/api/billing` con las mismas condiciones. **Resultado:** catálogo es público; privados devuelven `401`. **Conclusión:** la igualdad no demuestra bypass.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Construye una matriz de dos usuarios, dos objetos y dos acciones.
+2. Distingue expiración de access token y revocación de refresh token.
+3. Diseña un control para caché en una prueba de autorización.
+4. Explica cuándo `401` frente a `403` no cambia la conclusión.
 
 ## Resumen
 
-Entender login, cookies, tokens, expiracion y cambios de contexto durante una prueba. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+Autenticación, sesión y autorización son capas distintas. Las pruebas útiles cambian una identidad, objeto, acción o estado cada vez y verifican el ciclo completo.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Estado e identidad.
+2. Token/cookie y ciclo.
+3. Matriz identidad-objeto-acción.
+4. Rotación y token anterior.
+5. Idle/absoluta/revocación.
+6. Caché y controles.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`auth-session-security`)
-- [Referencia técnica externa](https://portswigger.net/web-security/all-materials)
+- [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
+- [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
+- [PortSwigger: access control](https://portswigger.net/web-security/access-control)
+- [Concepto interno](../../tools/concepts.py) (`auth-session-security`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [MFA/OTP](mfa_otp_bypass.md). Índice: [curso](../README.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).

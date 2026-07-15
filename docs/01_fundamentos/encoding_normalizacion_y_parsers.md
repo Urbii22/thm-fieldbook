@@ -9,7 +9,7 @@ fuentes_internas:
   - ../../tools/concepts.py#filtros-incompletos
 fuentes_externas:
   - https://www.rfc-editor.org/rfc/rfc3986.html
-revision: 2026-07-14
+revision: 2026-07-15
 estado: revisado
 ---
 
@@ -69,6 +69,16 @@ La vulnerabilidad aparece cuando datos controlados alteran estructura o selecci�
 ## Error frecuente
 
 Una variante codificada que funciona no demuestra por sí sola que “el filtro se saltó”. Puede haber cambiado el transporte, el router o la selección de recurso. La conclusión debe señalar qué componente comparó qué forma.
+
+## Laboratorio: localizar la decodificación
+
+Un endpoint recibe `file=notes%2Ftoday.txt` y abre `notes/today.txt`. Con `file=..%252Fsecret.txt` responde `blocked token: ..%2F`; con `file=%252e%252e%252fsecret.txt` intenta abrir `../secret.txt`.
+
+**Observación:** dos entradas doblemente codificadas alcanzan fases distintas. **Qué sé realmente:** hay al menos dos representaciones y el mensaje de bloqueo muestra una de ellas. **Hipótesis:** H1, el filtro se ejecuta tras una primera decodificación y antes de una segunda; H2, dos componentes decodifican rutas distintas. **Experimento:** enviar marcadores donde solo uno de `%25`, `%2e` y `%2f` cambie, y comparar el valor registrado justo antes del `open()` si el laboratorio lo expone. **Predicción:** H1 mostrará una transformación consistente en todas las variantes; H2 producirá rutas o errores de componentes diferentes. **Resultado del escenario:** el log muestra `raw -> urldecode -> filtro -> router urldecode -> open`. **Conclusión:** no “funcionó el encoding”; la propiedad se validó antes de obtener la forma consumida.
+
+## Ejercicio de hipótesis rivales
+
+`%2Fadmin` devuelve `404`, mientras `/admin` devuelve `403`. Diseña una prueba para separar: (a) el proxy no decodifica `%2F`; (b) el router lo trata como parte de un segmento; (c) existe una regla de autorización solo para la ruta canónica. No concluyas bypass hasta identificar qué ruta vio cada capa.
 
 ## Referencias
 

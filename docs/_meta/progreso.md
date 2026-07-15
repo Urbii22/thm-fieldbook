@@ -8,7 +8,7 @@ fuentes_internas:
   - mapa_fuentes.md
   - ../00_programa_del_curso.md
 fuentes_externas: []
-revision: 2026-07-14
+revision: 2026-07-15
 estado: borrador
 ---
 
@@ -31,6 +31,7 @@ estado: borrador
 | 13 Chuletas | Completo | `../11_chuletas/*.md` | 14 chuletas generadas desde conceptos reales | Mantener sincronizadas |
 | 14 PDF | Completo | `../BUILD.md`, `../../scripts/build_docs.py`, `../pdf/*.pdf` | 113 PDF; 685 páginas; render visual revisado | Manual completo opcional |
 | 15 Control de calidad | Completo | `../../scripts/validate_docs.py`, `matriz_de_trazabilidad.md`, `informe_final.md` | Metadatos, enlaces, estructura, payloads, PDF y pruebas de aplicación OK | Revisión editorial experta recomendada |
+| 16 Revisión pedagógica profunda | Completo | Fundamentos, metodología, 13 módulos técnicos prioritarios, cuaderno, solucionario e `informe_revision_pedagogica_fase2.md` | Casos A-D, anatomía, enlaces, bloques, exactitud técnica, ejercicios, pistas y PDF verificados | Sin pendientes en el alcance; ampliar otros módulos en una fase futura |
 
 ## Registro de decisiones
 

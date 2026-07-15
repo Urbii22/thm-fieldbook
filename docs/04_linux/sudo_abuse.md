@@ -1,181 +1,180 @@
 ---
-titulo: "Abuso de sudo"
+titulo: "Análisis y abuso de reglas sudo"
 categoria: 04_linux
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - enum_privesc_linux.md
 fuentes_internas:
   - ../../tools/concepts.py#sudo-abuse
 fuentes_externas:
-  - https://man7.org/linux/man-pages/
-revision: 2026-07-14
-estado: borrador
+  - https://man7.org/linux/man-pages/man5/sudoers.5.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Abuso de sudo
+# Análisis y abuso de reglas sudo
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Leer usuario destino, comando, argumentos, tags y entorno de una regla sudo; derivar la capacidad real y validar dependencias de versión sin asumir shell root.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+UID, `argv`, entorno, rutas, permisos y documentación de sudoers.
 
 ## Fundamentos técnicos
 
-sudo permite a un usuario ejecutar comandos concretos como otro (normalmente root). Si tu usuario tiene permitido ejecutar un binario que ademas puede lanzar una shell, leer/escribir ficheros o ejecutar codigo, ese permiso puntual se convierte en root total. Otra cara del `privesc-modelo`.
-
-El admin concede sudo sobre un binario pensando que solo hace su funcion, pero muchos binarios tienen funciones secundarias (un editor puede abrir una shell, less puede ejecutar comandos). GTFOBins lista para cada uno como escapar. Ademas fallos como env_keep o rutas relativas amplian el abuso.
+Una regla expresa quién, dónde, como quién y qué puede ejecutar. `NOPASSWD` elimina una autenticación, no las restricciones de comando. Argumentos fijos, `NOEXEC`, `SETENV`, `secure_path`, versión y capacidades del binario cambian el resultado.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+regla -> runas + ruta + argumentos + tags + entorno
+      -> comportamiento documentado del binario -> capacidad mínima
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-Es lo PRIMERO que se mira en privesc Linux por su alta rentabilidad. En cuanto tengas una shell estable (`tty-stabilization`), lanza sudo -l.
+`sudo -l`, includes de sudoers, reglas de grupo, sudoedit y entornos preservados. Se analiza la salida completa.
 
 ## Cómo identificarla
 
-- sudo -l muestra entradas '(root) NOPASSWD: /ruta/bin' (ni siquiera piden password).
-- El binario permitido aparece en GTFOBins bajo 'sudo'.
-- Ves env_keep+=LD_PRELOAD o rutas relativas: vectores extra de abuso.
+- La invocación exacta coincide con la regla.
+- El binario ofrece una función de lectura, escritura o ejecución alcanzable con argumentos permitidos.
+- La versión instalada conserva esa función.
+- Un marcador confirma la identidad destino.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Runas es root u otro usuario?
+2. ¿Argumentos son libres, fijos o comodines?
+3. ¿Qué tags y Defaults aplican?
+4. ¿Qué entorno llega al proceso?
+5. ¿Qué capacidad mínima aporta el binario?
 
 ## Prueba mínima
 
-Ejecuta sudo -l y busca cada binario listado en GTFOBins bajo 'sudo'.
-
-Evidencia esperada: Lineas '(root) NOPASSWD: /ruta/binario'. Tras aplicar la receta de GTFOBins, un prompt # con uid=0.
+Ejecutar la invocación permitida de forma no destructiva y confirmar EUID o acceso al recurso previsto. Consultar manual local y versión antes de recetas externas.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-sudo -l
-```
-
-**Objetivo y contexto:** Enumera exactamente que comandos puedes correr como otro usuario. Es el vector mas rapido y comun; muchas rooms se resuelven aqui sin buscar mas.
-
-**Resultado esperado:** Entradas '(root) NOPASSWD: ...'. Cada binario permitido -> GTFOBins. Si pide password y no la tienes, este vector queda en pausa.
-
-### Capa 2: prueba documentada
-
-```text
-sudo /usr/bin/find . -exec /bin/sh \; -quit
-```
-
-**Objetivo y contexto:** Ejemplo tipico de GTFOBins: si puedes sudo find, su flag -exec lanza una shell heredando el privilegio root de sudo.
-
-**Resultado esperado:** Prompt # y id con uid=0. Cambia find por el binario concreto que te permita tu sudo -l; la idea (forzar una shell) es la misma.
+1. Copiar regla exacta.
+2. Separar host, runas, tags, ruta y argumentos.
+3. Reproducir operación legítima.
+4. Identificar función secundaria alcanzable.
+5. Usar marcador `id` o fichero temporal.
+6. Comparar con argumento que no coincide.
 
 ## Anatomía de los payloads
 
-La primera prueba es `sudo -l`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** `(backup) NOPASSWD: /usr/bin/cat /srv/app/report.txt`.
+- **Sintaxis original:** ruta y argumento exactos.
+- **Entrada controlada:** ninguna; solo ejecución autorizada.
+- **Transformaciones conocidas:** sudo compara ruta, RunAs y argumentos antes de ejecutar.
+- **Parser final:** sudoers y luego `cat`.
+- **Sink:** lectura como `backup`.
+- **Primitiva:** leer ese fichero con identidad destino.
+- **Payload mínimo:** invocación exacta.
+- **Significado de cada componente:** `sudo -u backup` selecciona RunAs; ruta y operando reproducen la regla exacta.
+- **Resultado esperado:** lectura del reporte como `backup` y rechazo de cualquier operando distinto.
+- **Control negativo:** sustituir ruta por otro fichero.
+- **Restricción observada:** argumento fijo.
+- **Por qué falla la variante básica:** pedir `/etc/shadow` no coincide.
+- **Hipótesis de adaptación:** estudiar si el fichero permitido es enlace/escribible; no inventar argumento.
+- **Payload adaptado:** solo si otra precondición real lo permite.
+- **Por qué debería funcionar:** la adaptación debe actuar sobre un componente controlable que la regla realmente consuma.
+- **Evidencia:** lectura del reporte y rechazo del control.
+- **Cuándo no funcionaría:** regla distinta, contraseña requerida o política adicional.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+`NOEXEC` intenta impedir que ciertos ejecutables lancen otros procesos, con dependencias de plataforma/compilación. `SETENV` permite mayor control ambiental; `secure_path` sustituye PATH salvo excepciones documentadas. Debe comprobarse la versión local.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Una regla con argumentos exactos no se “salta” añadiendo texto al azar. Los comodines de sudoers y del programa son capas distintas. Analiza qué cadena compara sudo y qué parser consume después.
 
 ## Evidencias de confirmación
 
-Lineas '(root) NOPASSWD: /ruta/binario'. Tras aplicar la receta de GTFOBins, un prompt # con uid=0.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Capacidad ejecutada como runas y atribuida a una función permitida. Ver `NOPASSWD` no confirma escape.
 
 ## Escalado de impacto
 
-- Ejecuta sudo -l para ver que tienes permitido y si es sin password.
-- Busca el binario permitido en GTFOBins, seccion 'sudo'.
-- Aplica la linea de escape (suele forzar una shell o ejecutar un comando como root).
-- Confirma con id; si eres root, recoge la flag y anota el vector.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+De lectura a escritura o ejecución solo si la regla y el binario lo permiten. GTFOBins sirve como índice, no como sustituto del manual y la versión.
 
 ## Errores frecuentes
 
-- sudo -l pide password y no la tienes.
-- El binario permitido no aparece en GTFOBins y no tiene funcion de escape conocida (editor sin !shell, etc).
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Leer solo `NOPASSWD`.
+- Ignorar runas no root.
+- Cambiar ruta/argumentos y esperar coincidencia.
+- Suponer que variables peligrosas sobreviven.
+- Ignorar `NOEXEC` y versión.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| “not allowed to execute” | ruta/argumentos no coinciden | copiar regla y usar `sudo -l` |
+| función de escape no abre proceso | `NOEXEC`, versión o build | tags, `sudo -V`, manual local |
+| PATH manipulado no cambia binario | `secure_path` o ruta absoluta | `sudo -V`, entorno dentro del comando |
+| variable desaparece | `env_reset`/linker | `sudo -V` y variable inocua |
+| EUID es otro usuario no root | runas específico | `id` como ese usuario |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Comandos mínimos con rutas y argumentos exactos, evitar binarios multipropósito, `NOEXEC`/intercept como defensa adicional, entorno saneado, `secure_path`, logging y revisión periódica.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa lectura precisa de la política y capacidad, no buscar cada nombre en GTFOBins.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: lector como usuario backup
+
+La regla permite `cat` de un reporte como `backup`. **Experimento:** invocación exacta y otro fichero como control. **Resultado:** solo el reporte. **Conclusión:** capacidad limitada de lectura, no root.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Editor con `NOEXEC`
+
+Una receta conocida intenta lanzar un proceso y falla. **Hipótesis:** `NOEXEC`, versión o comando sin función. **Experimento:** revisar tag, build y una operación interna no ejecutora. **Resultado:** `NOEXEC` activo. **Conclusión:** la receta básica no aplica; se evalúan solo capacidades internas del editor.
+
+## Caso C — Transferencia: variable preservada
+
+Una regla permite un script de diagnóstico y conserva una variable de configuración. El alumno demuestra con valor marcador que el script lee esa ruta como usuario destino; después comprueba permisos del archivo. La primitiva es controlar configuración consumida, no “sudo shell”.
+
+## Caso D — Falso positivo: regla sin contraseña
+
+`(root) NOPASSWD: /usr/bin/systemctl status app.service` muestra estado, pero argumentos adicionales no coinciden y el pager está deshabilitado. **Conclusión:** no hay escape demostrado.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Descompón una regla con runas, tags y argumentos.
+2. Diseña un control para `secure_path`.
+3. Explica diferencia entre `SETENV` y `env_keep`.
+4. Evalúa una receta dependiente de versión.
 
 ## Resumen
 
-sudo -l te dice que puedes ejecutar como root; muchos binarios permiten saltar de ahi a una shell root. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+Sudo concede una invocación descrita por política. El análisis parte de esa gramática y deriva una capacidad exacta.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Runas.
+2. Ruta.
+3. Argumentos.
+4. Tags.
+5. Defaults/entorno.
+6. Versión y función.
+7. Marcador/control.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`sudo-abuse`)
-- [Referencia técnica externa](https://man7.org/linux/man-pages/)
+- [sudoers(5)](https://man7.org/linux/man-pages/man5/sudoers.5.html)
+- [Concepto interno](../../tools/concepts.py) (`sudo-abuse`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Enumeración](enum_privesc_linux.md). Siguiente: [SUID](suid.md). Índice: [curso](../README.md).

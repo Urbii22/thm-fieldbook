@@ -26,6 +26,16 @@ REQUIRED_MODULE = {
     "## Caso de adaptación", "## Ejercicios", "## Resumen",
     "## Chuleta operativa", "## Referencias",
 }
+REQUIRED_DEEP_CASES = ("Caso A", "Caso B", "Caso C", "Caso D")
+REQUIRED_PAYLOAD_ANATOMY = (
+    "Contexto de entrada", "Sintaxis original", "Entrada controlada",
+    "Transformaciones conocidas", "Parser final", "Sink", "Primitiva",
+    "Payload mínimo", "Significado de cada componente", "Resultado esperado",
+    "Control negativo", "Restricción observada",
+    "Por qué falla la variante básica", "Hipótesis de adaptación",
+    "Payload adaptado", "Por qué debería funcionar", "Evidencia",
+    "Cuándo no funcionaría",
+)
 
 
 def validate() -> list[str]:
@@ -69,10 +79,22 @@ def validate() -> list[str]:
             missing = REQUIRED_MODULE - {line.strip() for line in text.splitlines()}
             if missing:
                 errors.append(f"{path}: secciones ausentes {sorted(missing)}")
-            for entry in BY_ID[identifier].get("commands", []):
-                command = entry.get("cmd", "")
-                if command and command not in text:
-                    errors.append(f"{path}: payload alterado {command!r}")
+            raw = text.split("---", 2)[1]
+            deep_review = bool(re.search(
+                r"^payloads_heredados_revisados:\s*true\s*$", raw, re.MULTILINE
+            ))
+            if deep_review:
+                for case in REQUIRED_DEEP_CASES:
+                    if not re.search(rf"^##+\s+{re.escape(case)}\b", text, re.MULTILINE):
+                        errors.append(f"{path}: falta {case} de revisión profunda")
+                for field in REQUIRED_PAYLOAD_ANATOMY:
+                    if not re.search(rf"\*\*{re.escape(field)}:\*\*", text):
+                        errors.append(f"{path}: anatomía incompleta; falta {field!r}")
+            else:
+                for entry in BY_ID[identifier].get("commands", []):
+                    command = entry.get("cmd", "")
+                    if command and command not in text:
+                        errors.append(f"{path}: payload alterado {command!r}")
     pdfs = list((DOCS / "pdf").glob("*.pdf"))
     markdown_count = len([p for p in files if p.name != "BUILD.md" and "pdf" not in p.parts])
     if len(pdfs) < markdown_count:

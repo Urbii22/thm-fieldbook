@@ -1,171 +1,182 @@
 ---
-titulo: "Binarios SUID"
+titulo: "Binarios SUID y credenciales efectivas"
 categoria: 04_linux
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - enum_privesc_linux.md
 fuentes_internas:
   - ../../tools/concepts.py#suid
 fuentes_externas:
-  - https://man7.org/linux/man-pages/
-revision: 2026-07-14
-estado: borrador
+  - https://man7.org/linux/man-pages/man2/execve.2.html
+  - https://www.gnu.org/software/bash/manual/bash.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Binarios SUID
+# Binarios SUID y credenciales efectivas
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Modelar UID real, efectivo y guardado; verificar cuándo SUID se aplica o se ignora; reconocer pérdida de privilegios y derivar capacidades del binario.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+Credenciales de proceso, permisos, mounts, `execve` e intérpretes.
 
 ## Fundamentos técnicos
 
-El bit SUID hace que un ejecutable corra siempre como su propietario, sin importar quien lo lance. Si el dueno es root y el binario permite ejecutar comandos, leer/escribir ficheros o lanzar otra shell, puedes abusar de el para actuar como root. Es una aplicacion directa del `privesc-modelo`.
-
-SUID existe para casos legitimos (passwd necesita tocar /etc/shadow). El problema es cuando un binario con SUID tiene una funcion que permite salir a una shell o leer ficheros arbitrarios: entonces esa capacidad se ejecuta como root. GTFOBins cataloga exactamente que binarios son abusables y como.
+Al ejecutar un binario SUID, `execve` puede establecer el UID efectivo al propietario. No cambia automáticamente el UID real. El efecto se ignora con `no_new_privs`, mount `nosuid` o tracing, y Linux ignora SUID en scripts. El programa o un intérprete puede bajar privilegios; Bash sin modo privilegiado restablece EUID cuando difiere del real.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+archivo SUID + propietario -> execve -> RUID/EUID/SUID guardado
+-> lógica del binario -> posible drop -> operación sensible
 ```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
 
 ## Superficie de ataque
 
-En la fase de privesc Linux, justo despues de mirar `sudo-abuse`. Busca binarios SUID que NO sean del sistema base o cuya version sea conocida por ser abusable.
+Binarios no estándar, helpers propios, versiones concretas y funciones que leen, escriben o ejecutan con EUID superior.
 
 ## Cómo identificarla
 
-- find de SUID devuelve binarios raros (nmap, find, cp, python, vim, tar) fuera de los tipicos.
-- Un binario a medida del reto con el bit SUID puesto.
-- El binario aparece en GTFOBins con la etiqueta SUID.
+- Propietario y bit con `find`/`stat`.
+- Mount y `no_new_privs` permiten el efecto.
+- `id -ru` e `id -u` difieren dentro del proceso.
+- Una función alcanzable usa el EUID antes de bajarlo.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Quién es propietario?
+2. ¿Binario ELF o script?
+3. ¿Mount `nosuid` o `no_new_privs`?
+4. ¿El programa baja privilegios?
+5. ¿Qué operación concreta ejecuta con EUID elevado?
 
 ## Prueba mínima
 
-Busca el binario candidato en GTFOBins (seccion SUID) y ejecuta su linea de abuso exacta.
-
-Evidencia esperada: Un prompt nuevo con # en vez de $, y euid=0 en id.
+Enumerar y, en un helper del laboratorio, imprimir RUID/EUID y realizar una operación marcador permitida. No asumir que un prompt `#` refleja identidad.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-find / -perm -4000 -type f 2>/dev/null
-```
-
-**Objetivo y contexto:** Lista todos los binarios con bit SUID. -perm -4000 filtra justo ese bit; 2>/dev/null oculta el ruido de permiso denegado.
-
-**Resultado esperado:** Rutas de binarios SUID. Ignora los tipicos del sistema; cualquier cosa rara o a medida -> GTFOBins. Anota tambien la version si es un binario conocido.
+1. `stat` del candidato.
+2. Tipo de fichero y mount.
+3. RUID/EUID observados.
+4. Flujo de función alcanzable.
+5. Marcador de lectura/escritura.
+6. Control con `no_new_privs` o copia sin bit.
 
 ## Anatomía de los payloads
 
-La primera prueba es `find / -perm -4000 -type f 2>/dev/null`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** helper SUID root `/opt/lab/report-reader`.
+- **Sintaxis original:** acepta un ID de reporte, no una ruta.
+- **Entrada controlada:** ID numérico.
+- **Transformaciones conocidas:** conversión decimal y consulta de allowlist.
+- **Parser final:** lógica del helper.
+- **Sink:** lectura de reporte como EUID 0.
+- **Primitiva:** leer solo reporte permitido.
+- **Payload mínimo:** ID de marcador `7`.
+- **Significado de cada componente:** `7` selecciona un reporte permitido sin introducir ruta ni metacarácter.
+- **Resultado esperado:** lectura del marcador con EUID 0 conservada en la traza.
+- **Control negativo:** ID inexistente y ruta textual rechazada.
+- **Restricción observada:** allowlist interna.
+- **Por qué falla la variante básica:** pasar `/etc/shadow` no es ID.
+- **Hipótesis de adaptación:** ninguna sin otra debilidad.
+- **Payload adaptado:** no procede mientras la allowlist y la conversión sean correctas.
+- **Por qué debería funcionar:** no se afirma una adaptación sin una nueva precondición observable.
+- **Evidencia:** EUID 0 y contenido del marcador.
+- **Cuándo no funcionaría:** `nosuid`, `no_new_privs`, propietario no root o drop previo.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+Una función de lectura puede dar impacto sin shell. Una shell hija puede perder EUID. Capabilities y sudo no son equivalentes a SUID y tienen reglas distintas.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+No se “bypassea” `nosuid` con una receta de otro binario. Si el kernel ignora el bit, la precondición falta. La adaptación debe buscar otra capacidad real, no caracteres.
 
 ## Evidencias de confirmación
 
-Un prompt nuevo con # en vez de $, y euid=0 en id.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+EUID superior dentro de una operación sensible y efecto controlado. Listar un bit solo es hallazgo.
 
 ## Escalado de impacto
 
-- Lista los binarios SUID del sistema.
-- Descarta los normales (passwd, sudo, mount, ping) y quedate con lo inusual.
-- Busca cada candidato en GTFOBins filtrando por 'SUID': te da la linea exacta.
-- Ejecuta el abuso y confirma con id que tienes euid=0.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Analizar funciones y versión, demostrar capacidad mínima y evitar invocar shells que alteren credenciales sin comprender su modo privilegiado.
 
 ## Errores frecuentes
 
-- Todos los SUID listados son binarios estandar del sistema sin funcion de escape conocida en GTFOBins.
-- El binario SUID es de tu propio usuario (dueno = tu uid, no root): no gana privilegio.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Decir que SUID “siempre” ejecuta como propietario.
+- Tratar scripts SUID como binarios.
+- Confundir RUID y EUID.
+- Usar `/bin/bash` sin considerar pérdida de privilegios.
+- Ignorar mounts y `no_new_privs`.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| bit existe, EUID no cambia | `nosuid`/`no_new_privs`/tracing | mount y `/proc/self/status` |
+| shell vuelve al usuario | intérprete baja EUID | comparar helper interno y Bash `-p` documentado |
+| script SUID no eleva | kernel ignora bit en scripts | `file` y `execve(2)` |
+| EUID cambia, lectura falla | permisos/MAC/drop previo | momento exacto y logs |
+| propietario no root | identidad distinta | `stat` e `id` |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Eliminar bits innecesarios, reducir superficie, drop temprano e irreversible, rutas/IDs cerrados, mounts `nosuid`, `no_new_privs`, revisión de binarios y actualizaciones.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa el modelo de credenciales y la función alcanzable, no ejecutar una línea de catálogo.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: lector limitado
+
+Un helper SUID root imprime RUID 1001/EUID 0 y lee un reporte por ID. **Conclusión:** SUID activo y capacidad de lectura limitada; no implica shell.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Copia en `/mnt/share`
+
+El mismo binario copiado conserva el bit, pero EUID no cambia. **Experimento:** `findmnt -no OPTIONS /mnt/share`. **Resultado:** `nosuid`. **Conclusión:** el payload no falla por versión; falta la precondición del mount.
+
+## Caso C — Transferencia: helper de impresión
+
+Un binario SUID de otro usuario escribe colas en su directorio. El alumno demuestra escritura con marcador y evalúa si esa identidad aporta acceso útil. La primitiva es cambio de identidad efectiva, no necesariamente root.
+
+## Caso D — Falso positivo: script con bit SUID
+
+`deploy.sh` muestra `-rwsr-xr-x`, pero se ejecuta con EUID del alumno. **Experimento:** `file`, `id` dentro y manual `execve`. **Conclusión:** Linux ignora el bit en scripts.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Interpreta RUID/EUID/SUID guardado en tres procesos.
+2. Distingue `nosuid` de drop de privilegios.
+3. Explica por qué una shell hija puede perder EUID.
+4. Evalúa un SUID propiedad de usuario `backup`.
 
 ## Resumen
 
-Un binario SUID se ejecuta con los privilegios de su dueno (a menudo root), no con los tuyos. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+SUID modifica credenciales bajo condiciones concretas. La explotación depende de una función sensible ejecutada antes de perder privilegios.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Propietario y tipo.
+2. Mount.
+3. `no_new_privs`.
+4. RUID/EUID.
+5. Drop.
+6. Función sensible.
+7. Marcador/control.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`suid`)
-- [Referencia técnica externa](https://man7.org/linux/man-pages/)
+- [execve(2)](https://man7.org/linux/man-pages/man2/execve.2.html)
+- [GNU Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
+- [Concepto interno](../../tools/concepts.py) (`suid`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Sudo](sudo_abuse.md). Siguiente: [Cron](cron_abuse.md). Índice: [curso](../README.md).

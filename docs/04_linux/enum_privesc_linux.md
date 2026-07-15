@@ -1,180 +1,184 @@
 ---
-titulo: "Enumeracion para privesc en Linux"
+titulo: "Enumeración razonada para escalada Linux"
 categoria: 04_linux
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
-  - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
+  - ../01_fundamentos/linux_procesos_permisos_y_shell.md
+  - ../02_metodologia/metodologia_de_laboratorio.md
 fuentes_internas:
   - ../../tools/concepts.py#enum-privesc-linux
 fuentes_externas:
-  - https://man7.org/linux/man-pages/
-revision: 2026-07-14
-estado: borrador
+  - https://man7.org/linux/man-pages/man7/credentials.7.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
-# Enumeracion para privesc en Linux
+# Enumeración razonada para escalada Linux
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Convertir salidas de enumeración en relaciones verificables de permisos, priorizar por precondiciones y descartar falsos positivos antes de ejecutar una técnica.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+UID real/efectivo, grupos, permisos, procesos, filesystem, entorno y alcance de laboratorio.
 
 ## Fundamentos técnicos
 
-Enumerar para privesc es recorrer de forma sistematica todos los vectores posibles en un orden que va de lo mas rentable a lo mas laborioso. Herramientas como linpeas lo automatizan y colorean los hallazgos, pero entender que representa cada resultado es lo que convierte 'output' en 'vector'. Es el paso previo obligado del `privesc-modelo`.
+Un hallazgo no es un vector hasta completar esta cadena:
 
-Adivinar pierde tiempo. Un recorrido fijo (sudo, SUID, capabilities, cron, servicios, credenciales, kernel) garantiza que no te saltas nada. linpeas resalta en rojo/amarillo lo probable, pero da falsos positivos: hay que validar cada pista contra el modelo mental.
+```text
+objeto/proceso privilegiado -> operación que realiza -> dato que controlo
+-> momento/condición de consumo -> identidad efectiva -> capacidad obtenida
+```
+
+El color de una herramienta indica prioridad heurística, no explotación ni impacto.
 
 ## Modelo mental
 
-```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
-```
-
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
+Para cada pista anota consumidor privilegiado, superficie controlable, frontera rota, precondiciones, prueba inocua y control negativo.
 
 ## Superficie de ataque
 
-Justo tras conseguir shell y estabilizarla (`tty-stabilization`). Corre primero los checks rapidos manuales (sudo -l, id) y luego lanza linpeas para lo exhaustivo.
+Reglas sudo, ejecutables SUID/capabilities, tareas, servicios, grupos, credenciales, ficheros sensibles, rutas/bibliotecas y kernel. El orden depende de evidencia y coste, no de una lista rígida.
 
 ## Cómo identificarla
 
-- linpeas marca en rojo/amarillo (99% PE vectors) un binario, servicio o fichero.
-- pspy muestra procesos o cron que arrancan como root de forma periodica.
-- Un hallazgo que encaja con el modelo: algo root que puedes leer/escribir/influir.
+- Un proceso de UID superior consume un archivo, nombre, ruta u opción controlable.
+- La precondición se demuestra con permisos efectivos, no solo `ls` aislado.
+- Un marcador inocuo aparece con identidad esperada.
+- El control sin influencia no produce el efecto.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Qué identidad obtendría realmente?
+2. ¿Qué controlo: contenido, nombre, directorio, argumento o entorno?
+3. ¿Quién lo consume y cuándo?
+4. ¿Qué defensa anula la relación?
+5. ¿Cuál es la capacidad mínima demostrable?
 
 ## Prueba mínima
 
-Corre sudo -l e id primero (gratis); despues linpeas para el resto.
-
-Evidencia esperada: Al menos un hallazgo resaltado en rojo/amarillo en linpeas, o una entrada NOPASSWD en sudo -l.
+`id`, grupos, `sudo -l`, montajes y procesos aportan contexto. Para una pista concreta, usa un marcador reversible que pruebe consumo e identidad sin crear shell ni modificar datos sensibles.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-./linpeas.sh -a 2>/dev/null | tee linpeas.txt
-```
-
-**Objetivo y contexto:** Automatiza cientos de checks de privesc en un pase. -a es el modo agresivo; guardar la salida (tee) te deja releerla sin volver a correrlo.
-
-**Resultado esperado:** Fijate en lo marcado en rojo/amarillo, sobre todo 'sudo', 'SUID', 'Capabilities', 'Cron', 'Interesting files'. Valida cada uno; hay falsos positivos.
-
-### Capa 2: prueba documentada
-
-```text
-./pspy64 -pf -i 1000
-```
-
-**Objetivo y contexto:** Muestra procesos y comandos que arrancan sin necesitar root, ideal para ver cron y tareas que ps puntual no capta. Revela que ejecuta root de forma periodica.
-
-**Resultado esperado:** Comandos que aparecen cada X segundos con uid=0. Si alguno llama a un script o binario que puedes escribir, tienes un vector tipo `cron-abuse`.
+1. Registrar identidad actual.
+2. Formular relación concreta.
+3. Verificar cada precondición por separado.
+4. Observar consumidor privilegiado.
+5. Introducir marcador inocuo.
+6. Confirmar identidad y limpiar.
 
 ## Anatomía de los payloads
 
-La primera prueba es `./linpeas.sh -a 2>/dev/null | tee linpeas.txt`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** `pspy` muestra `/usr/local/bin/backup` con UID 0.
+- **Sintaxis original:** el script lee `/opt/team/job.conf`.
+- **Entrada controlada:** fichero de configuración escribible por grupo.
+- **Transformaciones conocidas:** parser key/value.
+- **Parser final:** script de backup.
+- **Sink:** creación de archivo como root.
+- **Primitiva:** cambiar solo la ruta de salida a un marcador permitido.
+- **Payload mínimo:** valor `/tmp/backup-proof`.
+- **Significado de cada componente:** `/tmp` satisface la raíz permitida; `backup-proof` identifica la prueba.
+- **Resultado esperado:** el consumidor privilegiado crea el marcador con UID 0.
+- **Control negativo:** configuración sin cambio.
+- **Restricción observada:** solo rutas bajo `/tmp` aceptadas.
+- **Por qué falla la variante básica:** una ruta fuera de `/tmp` es rechazada por el parser.
+- **Hipótesis de adaptación:** medir la capacidad mínima dentro de la raíz admitida.
+- **Payload adaptado:** `/tmp/backup-proof` con token único.
+- **Por qué debería funcionar:** conserva la gramática aceptada y cambia solo el destino observable.
+- **Evidencia:** archivo UID 0 con contenido esperado.
+- **Cuándo no funcionaría:** config releída por otro usuario, firma, permisos o ruta fija.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+Automatización encuentra amplitud; comprobaciones manuales explican causalidad. Versiones, mounts, contenedores, MAC y `no_new_privs` pueden cambiar la validez de una pista.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+No existe “bypass” general. Si falla una precondición, descarta o busca otra relación. No fuerces una receta porque un nombre aparezca en una base de datos.
 
 ## Evidencias de confirmación
 
-Al menos un hallazgo resaltado en rojo/amarillo en linpeas, o una entrada NOPASSWD en sudo -l.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Consumo controlado por una identidad superior con efecto mínimo atribuible. `NOPASSWD`, un bit SUID o un directorio escribible son hallazgos, no confirmación de escalada.
 
 ## Escalado de impacto
 
-- Checks rapidos manuales: id, sudo -l, SUID (`suid`), capabilities (`capabilities`).
-- Lanza linpeas y lee de arriba a abajo, priorizando lo resaltado.
-- Usa pspy para cazar tareas periodicas y procesos que no ves con ps puntual.
-- Cada pista -> validala contra un vector concreto (cron, PATH, servicio) antes de explotar.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Después del marcador, evaluar la capacidad exacta: lectura, escritura, ejecución o cambio de identidad. Ampliar solo si el objetivo del laboratorio lo exige.
 
 ## Errores frecuentes
 
-- Ya recorriste todos los vectores manualmente y linpeas no aporta nada nuevo.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Priorizar colores sin consumidor.
+- Ejecutar herramientas agresivas antes de contexto básico.
+- Confundir propietario con UID efectivo del consumidor.
+- Ignorar mount, entorno y versión.
+- Saltar al payload final.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| fichero escribible, nunca leído | falso positivo | observar accesos/mtime/proceso |
+| proceso periódico no es root | impacto lateral, no root | UID real del proceso |
+| SUID no cambia EUID | `nosuid`, `no_new_privs` o binario baja privilegio | mount, `/proc`, `id -ru/-u` |
+| sudo regla no coincide | argumentos/ruta/host | leer salida completa de `sudo -l` |
+| herramienta marca kernel | versión parcheada/backport | paquete y advisory del proveedor |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Privilegio mínimo, permisos y propietarios correctos, rutas absolutas, entornos controlados, revisión de tareas/reglas y monitorización de cambios.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+Se evalúa priorización y prueba causal, no cantidad de comandos ejecutados.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: configuración consumida por root
+
+`pspy` muestra un backup root cada minuto; su config es escribible por el grupo del alumno. **Observación:** consumidor y control coinciden. **Experimento:** cambiar ruta de salida a marcador y esperar un ciclo. **Resultado:** archivo root. **Conclusión:** primitiva de escritura privilegiada confirmada. **Siguiente paso:** evaluar impacto mínimo.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Hallazgo rojo sin consumidor
+
+`linpeas` marca `/opt/team` escribible, pero ninguna tarea, servicio ni binario lo referencia. **Experimento:** búsqueda de referencias y observación de procesos. **Resultado:** cero consumo. **Conclusión:** no es vector actual; no se inventa payload.
+
+## Caso C — Transferencia: socket de mantenimiento
+
+Un grupo puede hablar con un socket de daemon root. El alumno debe identificar operaciones permitidas y usar una acción `status` antes de cualquier cambio. La primitiva es controlar una operación privilegiada, no escribir un fichero.
+
+## Caso D — Falso positivo: SUID del propio usuario
+
+Un binario tiene SUID, pero propietario y EUID son el mismo usuario actual. **Experimento:** comparar UID real/efectivo. **Conclusión:** no hay ganancia de identidad.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Prioriza cinco hallazgos por consumidor, control y capacidad.
+2. Diseña un marcador para una tarea periódica.
+3. Explica qué evidencia descarta un directorio escribible.
+4. Separa hallazgo, primitiva e impacto en una regla sudo.
 
 ## Resumen
 
-Antes de explotar hay que enumerar en orden fijo; un script automatiza, pero saber que mira cada check es lo que te hace resolver. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+Enumerar es construir relaciones verificables. La herramienta propone pistas; el alumno demuestra precondiciones, identidad y capacidad.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Identidad.
+2. Consumidor privilegiado.
+3. Superficie controlada.
+4. Momento de consumo.
+5. Marcador y control.
+6. Capacidad exacta.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`enum-privesc-linux`)
-- [Referencia técnica externa](https://man7.org/linux/man-pages/)
+- [Linux credentials(7)](https://man7.org/linux/man-pages/man7/credentials.7.html)
+- [Concepto interno](../../tools/concepts.py) (`enum-privesc-linux`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Índice: [curso](../README.md). Siguiente: [Abuso de sudo](sudo_abuse.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).

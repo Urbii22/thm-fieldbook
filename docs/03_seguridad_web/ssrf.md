@@ -3,191 +3,195 @@ titulo: "Server-Side Request Forgery (SSRF)"
 categoria: 03_seguridad_web
 dificultad: Intermedia
 prerrequisitos:
-  - ../01_fundamentos/encoding_normalizacion_y_parsers.md
+  - ../01_fundamentos/redes_dns_y_urls.md
   - ../02_metodologia/construccion_y_adaptacion_de_payloads.md
 fuentes_internas:
   - ../../tools/concepts.py#ssrf
 fuentes_externas:
-  - https://portswigger.net/web-security/all-materials
-revision: 2026-07-14
-estado: borrador
+  - https://portswigger.net/web-security/ssrf
+  - https://www.rfc-editor.org/rfc/rfc3986.html
+  - https://curl.se/docs/manpage.html
+revision: 2026-07-15
+estado: revisado
+payloads_heredados_revisados: true
 ---
 
 # Server-Side Request Forgery (SSRF)
 
 ## Objetivos de aprendizaje
 
-Identificar la superficie, explicar la causa, diseñar una confirmación mínima, interpretar evidencia y proponer una mitigación causal.
+Demostrar quién realiza una petición, separar validación de resolución y conexión, diagnosticar filtros de destino y reconocer cuándo la salida revela el cliente HTTP subyacente.
 
 ## Prerrequisitos
 
-Flujo source-transformación-validación-sink, parsers, permisos y metodología de hipótesis. Revisa los prerrequisitos declarados en los metadatos.
+URL, DNS, loopback, redirects, parsers, callbacks controlados y método de hipótesis.
 
 ## Fundamentos técnicos
 
-Un SSRF ocurre cuando la app acepta una URL (para descargar un avatar, verificar un webhook, importar un fichero remoto...) y el SERVIDOR la solicita el mismo. Si controlas esa URL, el servidor se convierte en tu proxy: puedes hacerle pedir localhost, la red interna, o metadatos de la nube, cosas a las que tu no llegas directamente.
-
-El programador confia en que la URL apuntara a un recurso externo legitimo (una imagen, un webhook real) y no valida ni restringe el destino. El servidor, al estar dentro de la red interna, ve cosas que tu Kali no ve desde fuera.
+SSRF permite que una aplicación server-side solicite una ubicación no prevista. Una URL reflejada, un redirect o una carga del navegador no bastan. La primitiva mínima es una conexión atribuible al servidor hacia un destino controlado.
 
 ## Modelo mental
 
 ```text
-Entrada controlada -> transformaciones -> validación -> componente final
-                  -> sink -> efecto observable -> decisión
+URL original -> parser de validación -> DNS/IP/política -> cliente HTTP
+             -> redirect -> nueva resolución/política -> conexión -> canal de respuesta
 ```
 
-El paso crítico es demostrar qué componente consume el valor y con qué identidad o privilegios.
+Validar solo la representación original no garantiza el destino efectivo. La política debe considerar esquema, host normalizado, IP resuelta, puerto y redirects.
 
 ## Superficie de ataque
 
-Cuando un parametro pide una URL, un dominio, o algo que 'importa' o 'verifica' un recurso remoto: url, webhook, avatar, import, callback, feed. Muy comun tambien en generadores de PDF que renderizan una URL.
+Importadores, webhooks, avatares remotos, previews, renderizadores PDF, validadores de enlaces, feeds, analítica y formatos que referencian recursos externos.
 
 ## Cómo identificarla
 
-- Un parametro llamado url, webhook, avatar, import, feed o callback.
-- La app describe una funcion de 'importar desde URL' o 'verificar disponibilidad'.
-- Tu listener recibe la peticion cuando apuntas el parametro a tu IP.
+- Callback único recibido al ejecutar la función, aun sin navegador.
+- IP origen y `User-Agent` compatibles con infraestructura server-side.
+- Diferencias reproducibles entre destino que responde, cerrado e inexistente.
+- Contenido o errores del destino aparecen en la respuesta.
 
 ## Preguntas que debo hacerme
 
-- ¿Qué dato controlo exactamente y en qué formato viaja?
-- ¿Qué transformaciones y normalizaciones ocurren antes del sink?
-- ¿Qué identidad ejecuta la operación y qué permisos tiene?
-- ¿Qué otra explicación produciría la misma señal?
-- ¿Cuál es la prueba de menor riesgo que separa ambas explicaciones?
+1. ¿Quién inicia realmente la conexión?
+2. ¿Qué forma valida la aplicación y qué forma consume el cliente?
+3. ¿Cuándo resuelve DNS y qué IP conecta?
+4. ¿Sigue redirects y revalida cada salto?
+5. ¿Qué protocolos soporta realmente el cliente detectado?
 
 ## Prueba mínima
 
-Apunta el parametro a tu propio listener (python3 -m http.server 8000) antes de probar localhost o la red interna.
-
-Evidencia esperada: Una peticion entrante en tu listener HTTP. Eso confirma que el servidor SI solicita URLs que tu controlas.
+Usa un listener HTTP propio del laboratorio con token único. Guarda la URL sin abrir vistas que carguen recursos y correlaciona tiempo, IP, cabeceras y endpoint. Un control apunta a un puerto cerrado del mismo host.
 
 ## Construcción progresiva del payload
 
-1. Reproduce una entrada válida.
-2. Aísla un único valor controlable.
-3. Define la primitiva mínima indicada por la fuente.
-4. Predice resultado y control negativo.
-5. Aplica una sola adaptación cuando haya evidencia de restricción.
-6. Confirma de forma reproducible antes de ampliar impacto.
-
-### Capa 1: prueba documentada
-
-```text
-python3 -m http.server 8000
-```
-
-**Objetivo y contexto:** Levanta un listener propio para confirmar el SSRF sin ambiguedad: si te llega la peticion, sabes con certeza que el servidor sigue URLs que tu controlas.
-
-**Resultado esperado:** El listener queda a la escucha. Combinalo con el siguiente comando para disparar la peticion desde el servidor.
-
-### Capa 2: prueba documentada
-
-```text
-curl -sS "$URL/fetch?url=http://ATTACKER_IP:8000/"
-```
-
-**Objetivo y contexto:** Dispara el SSRF apuntando al tu propio listener. Es la prueba minima y segura antes de tocar localhost o redes internas.
-
-**Resultado esperado:** Una peticion GET registrada en tu `python3 -m http.server`. Confirmado esto, repite el mismo parametro apuntando a 127.0.0.1 o al rango interno.
-
-### Capa 3: prueba documentada
-
-```text
-http://127.1/
-```
-
-**Objetivo y contexto:** Bypass de filtros que bloquean la cadena '127.0.0.1' pero no normalizan la IP: 127.1 se expande al mismo loopback 127.0.0.1. Variantes: 127.0.1, 2130706433 (decimal), 0x7f000001 (hex), [::1] (IPv6).
-
-**Resultado esperado:** Si con 127.1 pasa lo que con 127.0.0.1 estaba bloqueado, el filtro era por cadena; ya tienes acceso al loopback interno.
+1. Confirmar callback externo.
+2. Distinguir visible de blind.
+3. Comparar loopback permitido, bloqueado y destino inexistente solo dentro del laboratorio.
+4. Identificar si el filtro actúa sobre texto, host parseado o IP efectiva.
+5. Probar redirect controlado y observar si existe segunda resolución.
+6. Solo tras reconocer cliente y configuración, estudiar capacidades adicionales.
 
 ## Anatomía de los payloads
 
-La primera prueba es `python3 -m http.server 8000`. Separa sus delimitadores, operadores, opciones, operandos y variables; algunos elementos no estarán presentes según el contexto. Las comillas, barras y separadores pertenecen a una capa concreta. Usa la explicación de cada capa para determinar qué símbolo altera sintaxis y cuál transporta datos.
+- **Contexto de entrada:** formulario `POST /import`, campo `url`.
+- **Sintaxis original:** cliente solicita la URL completa.
+- **Entrada controlada:** esquema, autoridad, puerto y path.
+- **Transformaciones conocidas:** form decode, parser URL, resolución DNS.
+- **Parser final:** cliente HTTP server-side.
+- **Sink:** conexión de red.
+- **Primitiva:** callback HTTP a listener propio.
+- **Payload mínimo:** `http://listener.lab/ssrf-7f31`.
+- **Significado de cada componente:** `http` selecciona protocolo; host resuelve al listener; token correlaciona la prueba.
+- **Resultado esperado:** una petición server-side al token.
+- **Control negativo:** puerto cerrado y token distinto no enviado.
+- **Restricción observada:** destinos loopback escritos como `127.0.0.1` se bloquean.
+- **Por qué falla la variante básica:** la validación rechaza esa representación antes del cliente.
+- **Hipótesis de adaptación:** validación textual distinta de la normalización del cliente.
+- **Payload adaptado:** representación alternativa solo después de comprobar cómo la interpreta ese cliente.
+- **Por qué debería funcionar:** ambas formas podrían resolverse a loopback, pero el filtro compara solo una.
+- **Evidencia:** respuesta local y traza de conexión a la IP efectiva.
+- **Cuándo no funcionaría:** política sobre IP canónica, cliente que no acepta la forma o revalidación correcta.
 
 ## Variaciones según el contexto
 
-No traslades una prueba entre sistemas operativos, motores, frameworks o versiones sin revisar sintaxis y comportamiento. Conserva la primitiva y vuelve a serializarla para el parser real.
+SSRF visible devuelve contenido; blind exige callback o señal temporal robusta. Un redirect solo cambia el destino si el cliente lo sigue. Un protocolo alternativo solo existe si el cliente lo implementa y la política lo permite; conocer su nombre no demuestra soporte.
 
 ## Filtros y bypasses
 
-No existe un bypass universal. Registra la forma enviada, la forma decodificada, la comparación, la normalización y la forma consumida. Una adaptación es válida solo si demuestra una discrepancia concreta; si la validación ocurre sobre la forma canónica y expresa la propiedad correcta, la variante no debe funcionar.
+Clasifica antes de adaptar: esquema no permitido, host no permitido, IP privada, puerto, DNS, redirect o salida. Prueba una variable cada vez. Las representaciones alternativas de IP dependen del parser; nunca se presentan como universales.
 
 ## Evidencias de confirmación
 
-Una peticion entrante en tu listener HTTP. Eso confirma que el servidor SI solicita URLs que tu controlas.
-
-Usa además una entrada inocua y un control negativo. No confundas reflexión, error genérico o demora aislada con confirmación.
+Callback atribuible al backend o contenido inequívoco obtenido por él. La presencia de `url=`, un error DNS genérico o una demora aislada son indicios.
 
 ## Escalado de impacto
 
-- Confirma SIEMPRE contra tu propio listener primero, nunca contra localhost/metadata directamente.
-- Una vez confirmado, prueba destinos internos: 127.0.0.1 con distintos puertos, rangos internos tipicos, o el endpoint de metadatos de la nube (169.254.169.254) si el contexto es cloud.
-- Si bloquea '127.0.0.1' o 'localhost' literalmente, es un filtro por cadena, no por rango: prueba representaciones equivalentes del loopback (127.1, 127.0.1, decimal 2130706433, 0x7f000001, [::1]). El fallo es validar el texto en vez de normalizar la IP y comprobar el rango.
-- Si la salida muestra la respuesta cruda de una herramienta (un medidor de curl, cabeceras), el backend envuelve curl/wget: mira si puedes colar un esquema local (file://) o una segunda URL -> ver `argument-injection`.
-- Si la respuesta refleja el contenido obtenido (SSRF 'visible'), lees directamente lo que hay en el destino interno.
-- Si no refleja nada (SSRF 'ciega'), solo sabes que respondio o no; usa temporizacion o un servicio out-of-band para confirmar.
-
-Amplía únicamente dentro del laboratorio y cuando cada salto aporte una capacidad nueva demostrable.
+Determinar alcance de destinos y puertos con pruebas mínimas, observar identidad o cabeceras añadidas, y documentar si el backend accede a recursos no alcanzables externamente. No explorar terceros ni metadatos cloud fuera de un laboratorio preparado.
 
 ## Errores frecuentes
 
-- La app valida el destino contra una lista blanca de dominios permitidos, sin excepciones.
-- La 'URL' en realidad solo se usa para mostrar un enlace en el cliente, nunca la solicita el servidor.
-
-- Ejecutar la prueba sin adaptar variables ni versión.
-- Cambiar varias capas a la vez.
-- Omitir el control negativo o no guardar evidencia.
+- Confundir carga de `<img>` con SSRF.
+- Asumir que un redirect siempre se sigue.
+- Probar muchas representaciones sin conocer parser.
+- Inferir `curl` solo por una barra parecida.
+- Confundir SSRF con inyección de argumentos en un cliente CLI.
 
 ## Diagnóstico de payloads fallidos
 
-| Síntoma | Posible causa | Prueba de diagnóstico | Adaptación |
-|---|---|---|---|
-| Rechazo inmediato | Formato o precondición | Repetir entrada válida | Corregir transporte |
-| Sin diferencia | Entrada ignorada o canal ciego | Marcador y control negativo | Buscar evidencia adecuada |
-| Error del componente | Contexto o versión | Reducir a prueba mínima | Consultar manual detectado |
-| Resultado parcial | Permisos/restricción | Comprobar identidad y alcance | Reducir primitiva |
+| Síntoma | Hipótesis | Prueba |
+|---|---|---|
+| listener recibe callback, localhost no | SSRF confirmada con política interna | comparar IP cerrada y bloqueo explícito |
+| `127.0.0.1` bloqueado, forma equivalente funciona | validación textual o normalización diferencial | registrar host parseado e IP conectada |
+| callback solo al abrir navegador | carga client-side | guardar sin render y comparar origen |
+| primer host permitido, redirect interno bloqueado | revalidación tras redirect | redirect externo a externo como control |
+| redirect interno funciona | validación solo del primer salto | capturar ambos requests y DNS |
+| aparece salida de `curl` | posible CLI o wrapper | opción inocua y firma/versionado, sin asumir splitting |
+| `file://` bloqueado | política de esquema o cliente sin soporte | comparar error de parser con esquema inventado |
 
 ## Mitigaciones
 
-Eliminar el dato controlable del sink cuando sea posible; usar APIs estructuradas, allowlists sobre valores canónicos, privilegio mínimo, autorización en servidor y registros que permitan detectar abuso. La defensa concreta debe impedir la causa explicada en Fundamentos técnicos.
+Allowlist de destinos necesarios, parser único, resolución y comprobación de IP efectiva, bloqueo de redes no permitidas, revalidación tras cada redirect, límites de protocolo/puerto y egress controlado.
 
 ## Relación con pentesting y certificaciones
 
-Se espera reconocer la señal, justificar la prueba elegida, adaptar variables, interpretar salida y documentar impacto y mitigación. La puntuación debe premiar razonamiento y evidencia, no memoria literal.
+La competencia clave es atribuir la conexión y explicar la discrepancia entre validación y destino, no memorizar escrituras de loopback.
 
 ## Caso guiado
 
-Parte de una señal de la lista anterior. Escribe observación e hipótesis, ejecuta la prueba mínima, compara con el control y clasifica el resultado como no confirmado, indicio o confirmación. Solo entonces sigue los pasos de escalado relevantes.
+### Caso A — Básico: importador de feed
+
+`POST /feeds/import` acepta `url`. Un token único llega al listener durante el POST con `User-Agent: FeedWorker/2.1`, aunque nadie abre la vista.
+
+**Observación:** callback correlacionado con el importador. **Qué sé:** un componente server-side solicita la URL. **Hipótesis:** worker directo o cola asíncrona. **Experimento:** dos tokens con tiempos y un destino cerrado. **Predicción:** la cola puede retrasar, pero mantiene origen y token; el navegador no participa. **Resultado:** callbacks desde la red del servidor y error diferente para puerto cerrado. **Conclusión:** SSRF básica confirmada. **Siguiente paso:** estudiar política de destinos con marcadores inocuos.
 
 ## Caso de adaptación
 
-Si la prueba básica falla, no cambies caracteres al azar. Comprueba primero transporte, parser, versión, permisos y canal de evidencia. Diseña una segunda prueba que discrimine entre las dos causas más probables.
+### Caso B — Representación, parser y herramienta
+
+`http://127.0.0.1/` devuelve `Private network access blocked`. Una forma abreviada de loopback aceptada por el cliente devuelve HTML local. La respuesta incluye `% Total`, `% Received` y `% Xferd`.
+
+**Observación:** dos textos acaban potencialmente en el mismo destino y aparece una firma compatible con `curl`. **Qué sé:** el filtro no trató ambas formas igual; todavía no sé si la salida procede de `curl` real ni si existe splitting. **Hipótesis:** H1, regex textual + CLI curl; H2, biblioteca que reproduce el formato; H3, destinos realmente distintos. **Experimento:** registrar IP conectada, comparar `User-Agent`, provocar un error de opción inocuo solo si existe evidencia de argumentos separados y consultar la versión expuesta por el laboratorio. **Predicción:** H1 muestra misma IP y errores propios de curl; H2 no acepta opciones; H3 conecta distinto. **Resultado:** misma IP y error oficial de curl al recibir una opción separada por el wrapper. **Conclusión:** SSRF con validación textual y un segundo riesgo potencial de argumentos. **Siguiente paso:** estudiar documentación de esa versión; no saltar a un protocolo o fichero final.
+
+## Caso C — Transferencia: documento mensual
+
+Una función genera PDF desde una plantilla que contiene un logo remoto. El título no nombra la técnica. Al usar un token de imagen, el callback ocurre durante `POST /reports/render`, desde el renderer.
+
+**Resolución:** entrada en HTML -> parser del renderer -> cliente de recursos -> conexión. La primitiva es la misma aunque no exista parámetro `url`. El siguiente experimento compara recurso externo, relativo y bloqueado, sin apuntar a servicios sensibles.
+
+## Caso D — Falso positivo: avatar remoto
+
+Guardar `avatar_url` no produce tráfico; abrir el perfil en Firefox sí, con IP y `User-Agent` del alumno.
+
+**Observación:** hay callback. **Hipótesis:** backend o navegador. **Experimento:** guardar sin renderizar, solicitar JSON crudo y comparar origen. **Resultado:** solo el navegador conecta. **Conclusión:** petición client-side; SSRF descartada. **Siguiente paso:** evaluar controles de contenido del navegador solo si entra en alcance.
 
 ## Ejercicios
 
-1. Señala source, transformaciones y sink en el caso guiado.
-2. Explica qué evidencia refutaría la hipótesis.
-3. Descompón la primera prueba documentada por opciones y argumentos.
-4. Propón un control negativo y una mitigación causal.
+1. Diseña un control para separar DNS server-side de HTTP server-side.
+2. Una URL permitida redirige dos veces: indica qué registrar en cada salto.
+3. Explica qué evidencia necesitas antes de probar una opción de `curl`.
+4. Distingue SSRF, open redirect y carga client-side en tres trazas dadas.
 
 ## Resumen
 
-Consigues que el SERVIDOR haga una peticion HTTP a la URL que tu eliges, alcanzando redes internas que tu no ves directamente. La técnica queda confirmada solo cuando una prueba mínima produce la evidencia prevista y descarta explicaciones alternativas.
+SSRF se confirma atribuyendo una conexión al servidor. Los bypasses se explican mediante parser, resolución y política; las capacidades del cliente se estudian después de identificarlo.
 
 ## Chuleta operativa
 
-1. Confirmar alcance y precondiciones.
-2. Identificar entrada, componente y permisos.
-3. Ejecutar prueba mínima y control.
-4. Interpretar señal antes de escalar.
-5. Guardar evidencia y mitigación.
+1. Token único y listener.
+2. Origen, tiempo y `User-Agent`.
+3. URL original y parseada.
+4. DNS e IP efectiva.
+5. Redirect y segunda validación.
+6. Cliente/versionado con evidencia.
+7. Control cerrado e inexistente.
 
 ## Referencias
 
-- [Concepto fuente de THM Fieldbook](../../tools/concepts.py) (`ssrf`)
-- [Referencia técnica externa](https://portswigger.net/web-security/all-materials)
+- [PortSwigger: SSRF](https://portswigger.net/web-security/ssrf)
+- [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986.html)
+- [curl manual](https://curl.se/docs/manpage.html)
+- [Concepto interno](../../tools/concepts.py) (`ssrf`)
 
 ## Navegación
 
-Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Ejercicios y chuleta se enlazarán desde la matriz de trazabilidad.
+Anterior: [Construcción de payloads](../02_metodologia/construccion_y_adaptacion_de_payloads.md). Índice: [curso](../README.md). Práctica: [cuaderno](../08_ejercicios/cuaderno_de_ejercicios.md).
