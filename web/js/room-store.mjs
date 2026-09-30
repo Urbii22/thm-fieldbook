@@ -59,19 +59,19 @@ export function parseRooms(raw) {
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   if (Array.isArray(parsed)) return parsed.map(normalizeRoom);
   if (parsed && Array.isArray(parsed.rooms)) return parsed.rooms.map(normalizeRoom);
-  throw new Error("Formato de rooms invalido");
+  throw new Error("Formato de rooms inválido");
 }
 
 export function validateImport(value, { maxBytes = 1024 * 1024 } = {}) {
   const text = typeof value === "string" ? value : JSON.stringify(value);
   if (text.length > maxBytes) throw new Error("Import demasiado grande");
   let parsed;
-  try { parsed = typeof value === "string" ? JSON.parse(value) : value; } catch { throw new Error("JSON de import invalido"); }
-  if (parsed?.version != null && parsed.version !== SCHEMA_VERSION) throw new Error("Version de import no soportada");
+  try { parsed = typeof value === "string" ? JSON.parse(value) : value; } catch { throw new Error("JSON de import inválido"); }
+  if (parsed?.version != null && parsed.version !== SCHEMA_VERSION) throw new Error("Versión de import no soportada");
   const rooms = parseRooms(parsed);
   const ids = new Set();
   for (const room of rooms) {
-    if (room.version !== SCHEMA_VERSION) throw new Error("Version de room no soportada");
+    if (room.version !== SCHEMA_VERSION) throw new Error("Versión de room no soportada");
     if (ids.has(room.id)) throw new Error("IDs de room duplicados");
     ids.add(room.id);
   }
@@ -97,7 +97,7 @@ export function createRoomStore({ storage, sessionStorage, legacyKey = LEGACY_KE
     const rooms = read();
     const existingIds = new Set(rooms.map((room) => room.id));
     const incoming = validated.map((room) => existingIds.has(room.id) ? normalizeRoom({ ...room, id: undefined, name: `${room.name} (importada)` }) : room);
-    if (!write([...rooms, ...incoming])) throw new Error("No se pudo guardar la importacion");
+    if (!write([...rooms, ...incoming])) throw new Error("No se pudo guardar la importación");
     if (activate && incoming[0]) setActive(incoming[0].id);
     return incoming;
   };

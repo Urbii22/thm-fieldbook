@@ -1,7 +1,7 @@
 {
   "name": "THM Fieldbook",
   "short_name": "Fieldbook",
-  "description": "Base de consulta rapida para playbooks de TryHackMe y CTF.",
+  "description": "Base de consulta rápida para playbooks de TryHackMe y CTF.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

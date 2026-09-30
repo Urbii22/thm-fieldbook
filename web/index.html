@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>THM Fieldbook</title>
-    <meta name="description" content="Base de consulta rapida para playbooks de TryHackMe y CTF." />
+    <meta name="description" content="Base de consulta rápida para playbooks de TryHackMe y CTF." />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0a0e14" />
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -47,7 +47,7 @@
             <span>room</span>
             <b class="room-count" data-room-count hidden></b>
           </button>
-          <button type="button" class="usage-toggle" data-usage-guide aria-haspopup="dialog" title="Como usar Fieldbook">guia</button>
+          <button type="button" class="usage-toggle" data-usage-guide aria-haspopup="dialog" title="Cómo usar Fieldbook">guía</button>
         </div>
       </div>
 
@@ -64,7 +64,7 @@
               <button type="button" class="room-action" data-room-new>Nueva</button>
               <button type="button" class="room-action" data-room-rename>Renombrar</button>
               <details class="room-actions-more">
-                <summary>Mas</summary>
+                <summary>Más</summary>
                 <div class="room-actions-secondary">
                   <button type="button" class="room-action" data-room-duplicate>Duplicar</button>
                   <button type="button" class="room-action" data-room-export>Exportar</button>
@@ -99,7 +99,7 @@
               <div class="rev-out" data-rev-listener></div>
               <details class="rev-stabilize-wrap">
                 <summary>Estabilizar TTY (tras recibir la shell)</summary>
-                <p class="rev-stab-hint">Lanza el PTY en la victima, luego <b>Ctrl+Z</b>, ejecuta el <b>stty</b> en tu maquina y <b>fg</b> para volver.</p>
+                <p class="rev-stab-hint">Lanza el PTY en la víctima, luego <b>Ctrl+Z</b>, ejecuta el <b>stty</b> en tu máquina y <b>fg</b> para volver.</p>
                 <div class="rev-stabilize" data-rev-stabilize></div>
               </details>
             </div>
@@ -116,19 +116,19 @@
     <main class="shell" id="top">
       <div class="viewbar">
         <div class="view-tabs" data-view-tabs role="tablist" aria-label="Modo de la app">
-          <button type="button" class="active" data-view-val="practica" role="tab" aria-selected="true" aria-controls="practica-panel" id="tab-practica">Practica</button>
+          <button type="button" class="active" data-view-val="practica" role="tab" aria-selected="true" aria-controls="practica-panel" id="tab-practica">Práctica</button>
           <button type="button" data-view-val="aprender" role="tab" aria-selected="false" aria-controls="aprender-panel" id="tab-aprender">Aprender</button>
         </div>
         <div class="roomtrack" data-roomtrack aria-label="Progreso de la room"></div>
       </div>
 
-      <section class="quickbar" id="practica-panel" role="tabpanel" aria-labelledby="tab-practica" aria-label="Accesos rapidos por situacion">
+      <section class="quickbar" id="practica-panel" role="tabpanel" aria-labelledby="tab-practica" aria-label="Accesos rápidos por situación">
         <div class="stats" aria-label="Resumen de contenido">
           <span class="stat"><b data-total>0</b><small>temas</small></span>
           <span class="stat"><b data-command-total>0</b><small>comandos</small></span>
           <span class="stat"><b data-count>0</b><small>en vista</small></span>
         </div>
-        <div class="shortcuts" data-shortcuts aria-label="Atajos por situacion"></div>
+        <div class="shortcuts" data-shortcuts aria-label="Atajos por situación"></div>
       </section>
 
       <section class="workbench">
@@ -164,11 +164,11 @@
 
       <section class="learn" id="aprender-panel" role="tabpanel" aria-labelledby="tab-aprender" data-learn aria-label="Aprender" hidden>
         <div class="learn-tabs" data-learn-tabs role="tablist" aria-label="Tipo de contenido">
-          <button type="button" class="active" data-learn-val="guides" role="tab" aria-selected="true">Guias paso a paso</button>
+          <button type="button" class="active" data-learn-val="guides" role="tab" aria-selected="true">Guías paso a paso</button>
           <button type="button" data-learn-val="concepts" role="tab" aria-selected="false">Conceptos</button>
           <button type="button" data-learn-val="study" role="tab" aria-selected="false">Estudiar (opcional)</button>
         </div>
-        <aside class="learn-list" data-guide-list aria-label="Indice"></aside>
+        <aside class="learn-list" data-guide-list aria-label="Índice"></aside>
         <article class="learn-detail" data-guide-detail aria-live="polite"></article>
       </section>
     </main>
@@ -182,7 +182,7 @@
     <aside class="notes-drawer" id="notesdrawer" data-notes-drawer aria-label="Bloc de notas de la room" hidden>
       <div class="notes-drawer-head">
         <h2>Notas / loot</h2>
-        <span class="notes-meta" data-notes-meta>0 lineas</span>
+        <span class="notes-meta" data-notes-meta>0 líneas</span>
         <div class="notes-drawer-actions">
           <button type="button" class="notes-btn" data-notes-copy title="Copiar todas las notas">copiar</button>
           <button type="button" class="notes-btn" data-notes-download title="Descargar como .txt">.txt</button>

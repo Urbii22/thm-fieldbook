@@ -7,8 +7,8 @@ assert.match(insertNoteTemplate("", "comando", { comando: "id", resultado: "uid=
 const finding = insertNoteTemplate("", "hallazgo", { host: "10.10.10.10:443", resultado: "403 esperado, 200 observado", timestamp: false });
 assert.match(finding, /\[F-01\]/);
 assert.match(finding, /Impacto/);
-assert.match(finding, /Mitigacion/);
-assert.match(finding, /Causa raiz/);
+assert.match(finding, /Mitigación/);
+assert.match(finding, /Causa raíz/);
 assert.match(finding, /Retest/);
 assert.equal(redactNoteSecrets("- Valor: supersecret\nAuthorization: Bearer abc.def"), "- Valor: [REDACTED]\nAuthorization: Bearer [REDACTED]");
 const report = createMarkdownReport({

@@ -134,7 +134,7 @@ SHORTCUTS = [
         "target": "pivoting",
     },
     {
-        "label": "Tengo una version/CVE",
+        "label": "Tengo una versión/CVE",
         "query": "cve exploit poc version verificar payload",
         "target": "cve-y-exploits",
     },

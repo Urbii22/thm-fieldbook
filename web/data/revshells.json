@@ -16,7 +16,7 @@
     { "label": "PTY con python3", "parts": ["python3 -c 'import pty;pty.spawn(\"/bin/", "bash\")'"] },
     { "label": "PTY con script", "parts": ["script -qc /bin/", "bash /dev/null"] },
     { "label": "Fijar TERM", "parts": ["export TERM=xterm-256color"] },
-    { "label": "Reconectar (en TU maquina, tras Ctrl+Z)", "parts": ["stty raw -echo; fg"] },
-    { "label": "Ajustar tamano (mira stty size en tu maquina)", "parts": ["stty rows 50 cols 200"] }
+    { "label": "Reconectar (en TU máquina, tras Ctrl+Z)", "parts": ["stty raw -echo; fg"] },
+    { "label": "Ajustar tamaño (mira stty size en tu máquina)", "parts": ["stty rows 50 cols 200"] }
   ]
 }

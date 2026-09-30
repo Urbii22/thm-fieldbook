@@ -1,4 +1,4 @@
-const CACHE = "thm-fieldbook-v69";
+const CACHE = "thm-fieldbook-v70";
 const VERSION = "20260713-format-strings";
 const ASSETS = [
   "./",

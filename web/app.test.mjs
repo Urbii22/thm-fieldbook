@@ -49,6 +49,7 @@ const sections = [
 
 assert.equal(normalizeQuery("  Web   APIs  "), "web apis");
 assert.equal(normalizeQuery("víctima máquina acción"), "victima maquina accion");
+assert.equal(normalizeQuery("contraseña"), "contrasena");
 
 assert.deepEqual(
   filterSections(sections, { query: "jwt", tag: "all", phase: "all" }).map((section) => section.title),
@@ -164,6 +165,20 @@ const js = readFileSync(new URL("./app.mjs", import.meta.url), "utf8");
 const sw = readFileSync(new URL("./sw.js", import.meta.url), "utf8");
 const content = JSON.parse(readFileSync(new URL("./data/content.json", import.meta.url), "utf8"));
 const contentCommandIndex = content.sections.flatMap((section) => section.commands.map((command) => ({ command, section })));
+for (const [plain, accented] of [
+  ["tuneles", "Túneles"],
+  ["maquina", "máquina"],
+  ["tecnologia", "tecnología"],
+  ["enumeracion", "enumeración"],
+]) {
+  const matches = (query) => filterSections(content.sections, { query, tag: "all", phase: "all" }).map((section) => section.slug);
+  assert.ok(matches(plain).length > 0, `sin resultados para ${plain}`);
+  assert.deepEqual(matches(accented), matches(plain), `la tilde cambia los resultados de ${plain}`);
+}
+assert.deepEqual(
+  filterSections(content.sections, { query: "Túneles", tag: "pivoting", phase: "pivot" }).map((section) => section.slug),
+  ["pivoting"],
+);
 assert.match(html, /data-filters-toggle aria-expanded="false"/);
 assert.match(html, /data-filters-panel hidden/);
 assert.match(html, /data-learn-val="study"[^>]*>Estudiar \(opcional\)/);
@@ -215,16 +230,16 @@ assert.ok(
 
 const nxcParts = describeCommand(smb.cmds[0]).parts;
 assert.equal(nxcParts.find((part) => part.token === "-u")?.desc, "usuario o fichero de usuarios");
-assert.equal(nxcParts.find((part) => part.token === "-p")?.desc, "contrasena o fichero de contrasenas");
+assert.equal(nxcParts.find((part) => part.token === "-p")?.desc, "contraseña o fichero de contraseñas");
 assert.equal(nxcParts.find((part) => part.token === "--shares")?.desc, "lista recursos compartidos y permisos");
 const emptyNxcValues = nxcParts.filter((part) => part.token === "''").map((part) => part.desc);
 assert.deepEqual(emptyNxcValues, [
-  "usuario, cuenta vacia o fichero de usuarios",
-  "contrasena vacia, valor o fichero de contrasenas",
+  "usuario, cuenta vacía o fichero de usuarios",
+  "contraseña vacía, valor o fichero de contraseñas",
 ]);
 const curatedSmbExplanation = commandExplanationFor(smb.cmds[0], content);
 assert.equal(curatedSmbExplanation.curated, true, "el SMB prioritario debe anunciar una ficha curada");
-assert.equal(curatedSmbExplanation.metadata?.objective, "Enumerar shares con sesion nula (NetExec)");
+assert.equal(curatedSmbExplanation.metadata?.objective, "Enumerar shares con sesión nula (NetExec)");
 const fallbackExplanation = commandExplanationFor("nmap -p $PORT --script ssh2-enum-algos $IP", content);
 assert.equal(fallbackExplanation.curated, false, "una variante sin ficha no debe presentarse como curada");
 assert.equal(fallbackExplanation.metadata, null);
@@ -379,7 +394,7 @@ assert.deepEqual(
 
 const releaseVersion = "20260713-format-strings";
 for (const asset of [html, js, sw]) assert.ok(asset.includes(releaseVersion), `falta version PWA ${releaseVersion}`);
-assert.match(sw, /thm-fieldbook-v69/);
+assert.match(sw, /thm-fieldbook-v70/);
 
 assert.match(js, /registration\.update\(\)/);
 assert.match(js, /controllerchange/);

@@ -104,7 +104,7 @@ const shortcutHints = {
   "Tengo credenciales": "Cracking, loot y reuse",
   "Tengo shell": "Estabiliza y escala",
   "Veo una web": "Discovery, auth y APIs",
-  "Necesito pivotar": "Tuneles y alcance interno",
+  "Necesito pivotar": "Túneles y alcance interno",
   "Tengo una version/CVE": "Valida antes de explotar",
 };
 
@@ -142,6 +142,7 @@ const ALIASES = {
   privesc: ["sudo", "suid", "winpeas", "linpeas", "gtfobins", "escalada"],
   pivot: ["chisel", "ligolo", "proxychains", "tunnel", "tunel", "socks"],
   tunnel: ["chisel", "ligolo", "proxychains", "socks", "tunel"],
+  tuneles: ["chisel", "ligolo", "proxychains", "socks", "tunel"],
   nmap: ["escaneo", "puertos", "recon", "servicios"],
   scan: ["nmap", "escaneo", "puertos"],
   jwt: ["token", "jku", "hs256", "none"],
@@ -203,67 +204,67 @@ const ALIASES = {
 // estandar sale de /etc/services (tabla estatica), NO es deteccion real -> hay
 // que hacer fingerprint de version + banner-grab.
 export const PORT_DB = {
-  "21": { svc: "FTP", note: "Transferencia de ficheros. Prueba login anonimo antes que nada; si entra, lista y descarga todo.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ftp-anon,ftp-syst $IP", "ftp $IP $PORT"] },
-  "22": { svc: "SSH", note: "Shell remota. Rara vez explotable directo: apunta banner/version y guarda para reutilizar credenciales que encuentres.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ssh2-enum-algos $IP", "ssh USER@$IP -p $PORT"] },
+  "21": { svc: "FTP", note: "Transferencia de ficheros. Prueba login anónimo antes que nada; si entra, lista y descarga todo.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ftp-anon,ftp-syst $IP", "ftp $IP $PORT"] },
+  "22": { svc: "SSH", note: "Shell remota. Rara vez explotable directo: apunta banner/versión y guarda para reutilizar credenciales que encuentres.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ssh2-enum-algos $IP", "ssh USER@$IP -p $PORT"] },
   "23": { svc: "Telnet", note: "Shell en claro. Conecta y lee el banner; a veces da acceso sin credenciales o revela el sistema.", slug: "recon-y-servicios", cmds: ["telnet $IP $PORT", "nc $IP $PORT"] },
-  "25": { svc: "SMTP", note: "Correo. Enumera usuarios validos con VRFY/EXPN/RCPT y apunta el nombre de host interno del banner.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-commands,smtp-enum-users $IP"] },
-  "53": { svc: "DNS", note: "Resolucion de nombres. Intenta transferencia de zona (AXFR) para volcar todos los registros del dominio.", slug: "recon-y-servicios", cmds: ["dig axfr @$IP DOMINIO", "nmap -p $PORT --script dns-nsid $IP"] },
-  "69": { svc: "TFTP", note: "Transferencia sin auth sobre UDP. Sin listado: adivina nombres tipicos (config, backup) para leer/escribir.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script tftp-enum $IP", "tftp $IP"] },
+  "25": { svc: "SMTP", note: "Correo. Enumera usuarios válidos con VRFY/EXPN/RCPT y apunta el nombre de host interno del banner.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-commands,smtp-enum-users $IP"] },
+  "53": { svc: "DNS", note: "Resolución de nombres. Intenta transferencia de zona (AXFR) para volcar todos los registros del dominio.", slug: "recon-y-servicios", cmds: ["dig axfr @$IP DOMINIO", "nmap -p $PORT --script dns-nsid $IP"] },
+  "69": { svc: "TFTP", note: "Transferencia sin auth sobre UDP. Sin listado: adivina nombres típicos (config, backup) para leer/escribir.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script tftp-enum $IP", "tftp $IP"] },
   "79": { svc: "Finger", note: "Enumera usuarios del sistema. Consulta cuentas comunes para armar lista de logins.", slug: "recon-y-servicios", cmds: ["finger @$IP", "nmap -p $PORT --script finger $IP"] },
-  "80": { svc: "HTTP", note: "Web. Fingerprint del stack, luego fuzz de directorios y ficheros; casi siempre es la via principal.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt", "curl -sv http://$IP:$PORT/"] },
-  "88": { svc: "Kerberos", note: "Autenticacion de Active Directory. Su presencia = hay dominio: enumera usuarios y busca AS-REP roasting.", slug: "active-directory", cmds: ["nmap -p $PORT $IP", "kerbrute userenum -d DOMINIO --dc $IP users.txt"] },
-  "110": { svc: "POP3", note: "Buzon de correo. Con credenciales, lee mensajes en busca de secretos.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script pop3-capabilities $IP"] },
+  "80": { svc: "HTTP", note: "Web. Fingerprint del stack, luego fuzz de directorios y ficheros; casi siempre es la vía principal.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt", "curl -sv http://$IP:$PORT/"] },
+  "88": { svc: "Kerberos", note: "Autenticación de Active Directory. Su presencia = hay dominio: enumera usuarios y busca AS-REP roasting.", slug: "active-directory", cmds: ["nmap -p $PORT $IP", "kerbrute userenum -d DOMINIO --dc $IP users.txt"] },
+  "110": { svc: "POP3", note: "Buzón de correo. Con credenciales, lee mensajes en busca de secretos.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script pop3-capabilities $IP"] },
   "111": { svc: "rpcbind / NFS portmapper", note: "Mapa de servicios RPC. Lista programas registrados; suele delatar NFS (mira 2049).", slug: "recon-y-servicios", cmds: ["rpcinfo -p $IP", "nmap -p $PORT --script rpcinfo $IP"] },
   "135": { svc: "MSRPC (Windows)", note: "Endpoint mapper de Windows. Enumera interfaces y valida usuarios/DCOM.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script msrpc-enum $IP", "impacket-rpcdump $IP"] },
   "139": { svc: "NetBIOS / SMB", note: "SMB sobre NetBIOS. Enumera shares y sesiones nulas igual que el 445.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p '' --shares", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
-  "143": { svc: "IMAP", note: "Buzon de correo. Con credenciales, lee carpetas en busca de loot.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script imap-capabilities $IP"] },
-  "161": { svc: "SNMP (UDP)", note: "Gestion de red sobre UDP. Prueba community 'public': suele filtrar procesos, usuarios y hasta credenciales.", slug: "recon-y-servicios", cmds: ["snmpwalk -v2c -c public $IP", "nmap -sU -p $PORT --script snmp-info $IP"] },
-  "389": { svc: "LDAP", note: "Directorio (a menudo AD). Consulta el naming context base con bind anonimo para volcar objetos.", slug: "active-directory", cmds: ["ldapsearch -x -H ldap://$IP:$PORT -s base namingcontexts", "nmap -p $PORT --script ldap-rootdse $IP"] },
-  "443": { svc: "HTTPS", note: "Web cifrada. Igual que HTTP pero mira ademas el certificado: revela hostnames y subdominios.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/", "ffuf -u https://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
-  "445": { svc: "SMB", note: "Comparticion de ficheros Windows. Sesion nula, listado de shares y enumeracion de usuarios; pilar en AD.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p '' --shares", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
+  "143": { svc: "IMAP", note: "Buzón de correo. Con credenciales, lee carpetas en busca de loot.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script imap-capabilities $IP"] },
+  "161": { svc: "SNMP (UDP)", note: "Gestión de red sobre UDP. Prueba community 'public': suele filtrar procesos, usuarios y hasta credenciales.", slug: "recon-y-servicios", cmds: ["snmpwalk -v2c -c public $IP", "nmap -sU -p $PORT --script snmp-info $IP"] },
+  "389": { svc: "LDAP", note: "Directorio (a menudo AD). Consulta el naming context base con bind anónimo para volcar objetos.", slug: "active-directory", cmds: ["ldapsearch -x -H ldap://$IP:$PORT -s base namingcontexts", "nmap -p $PORT --script ldap-rootdse $IP"] },
+  "443": { svc: "HTTPS", note: "Web cifrada. Igual que HTTP pero mira además el certificado: revela hostnames y subdominios.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/", "ffuf -u https://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
+  "445": { svc: "SMB", note: "Compartición de ficheros Windows. Sesión nula, listado de shares y enumeración de usuarios; pilar en AD.", slug: "recon-y-servicios", cmds: ["nxc smb $IP -u '' -p '' --shares", "smbclient -L //$IP/ -N", "enum4linux-ng -A $IP"] },
   "465": { svc: "SMTPS", note: "SMTP cifrado. Mismo juego que el 25 pero sobre TLS.", slug: "recon-y-servicios", cmds: ["openssl s_client -connect $IP:$PORT", "nmap -p $PORT --script smtp-commands $IP"] },
-  "512": { svc: "rexec (r-services)", note: "Ejecucion remota legacy. Junto a 513/514: si confia en hosts, da shell sin password.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script rexec-brute $IP"] },
+  "512": { svc: "rexec (r-services)", note: "Ejecución remota legacy. Junto a 513/514: si confía en hosts, da shell sin password.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script rexec-brute $IP"] },
   "513": { svc: "rlogin (r-services)", note: "Login remoto legacy. Con .rhosts permisivo entras sin credenciales.", slug: "recon-y-servicios", cmds: ["rlogin $IP -l root", "nmap -p $PORT --script rlogin-brute $IP"] },
   "514": { svc: "rsh / syslog", note: "Shell remota legacy o syslog. Prueba rsh con hosts de confianza.", slug: "recon-y-servicios", cmds: ["rsh $IP -l root id", "nmap -p $PORT $IP"] },
-  "587": { svc: "SMTP (submission)", note: "Envio de correo autenticado. Enumera usuarios y prueba credenciales encontradas.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-enum-users $IP"] },
-  "623": { svc: "IPMI (UDP)", note: "Gestion de hardware BMC. Vulnerable a volcado de hashes de credenciales sin auth.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script ipmi-version,ipmi-cipher-zero $IP"] },
+  "587": { svc: "SMTP (submission)", note: "Envío de correo autenticado. Enumera usuarios y prueba credenciales encontradas.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script smtp-enum-users $IP"] },
+  "623": { svc: "IPMI (UDP)", note: "Gestión de hardware BMC. Vulnerable a volcado de hashes de credenciales sin auth.", slug: "recon-y-servicios", cmds: ["nmap -sU -p $PORT --script ipmi-version,ipmi-cipher-zero $IP"] },
   "636": { svc: "LDAPS", note: "LDAP cifrado. Igual que 389 pero sobre TLS.", slug: "active-directory", cmds: ["ldapsearch -x -H ldaps://$IP:$PORT -s base namingcontexts", "openssl s_client -connect $IP:$PORT"] },
-  "873": { svc: "rsync", note: "Sincronizacion de ficheros. Lista modulos sin auth; a menudo se leen o escriben sin credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "rsync -av --list-only rsync://$IP:$PORT/"] },
-  "1099": { svc: "Java RMI", note: "Objetos remotos Java. Vuelca el registro; candidato a deserializacion (ysoserial).", slug: "cve-y-exploits", cmds: ["nmap -p $PORT --script rmi-dumpregistry $IP"] },
-  "1433": { svc: "MSSQL", note: "SQL Server. Con credenciales, ejecuta consultas y posible RCE via xp_cmdshell; clave en AD.", slug: "recon-y-servicios", cmds: ["nxc mssql $IP -u USER -p PASS", "impacket-mssqlclient USER@$IP"] },
+  "873": { svc: "rsync", note: "Sincronización de ficheros. Lista módulos sin auth; a menudo se leen o escriben sin credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "rsync -av --list-only rsync://$IP:$PORT/"] },
+  "1099": { svc: "Java RMI", note: "Objetos remotos Java. Vuelca el registro; candidato a deserialización (ysoserial).", slug: "cve-y-exploits", cmds: ["nmap -p $PORT --script rmi-dumpregistry $IP"] },
+  "1433": { svc: "MSSQL", note: "SQL Server. Con credenciales, ejecuta consultas y posible RCE vía xp_cmdshell; clave en AD.", slug: "recon-y-servicios", cmds: ["nxc mssql $IP -u USER -p PASS", "impacket-mssqlclient USER@$IP"] },
   "1521": { svc: "Oracle DB", note: "Base de datos Oracle. Enumera el SID antes de intentar credenciales.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script oracle-sid-brute $IP", "odat sidguesser -s $IP -p $PORT"] },
-  "2049": { svc: "NFS", note: "Sistema de ficheros de red. Lista exports; si hay no_root_squash, es via directa a privesc.", slug: "recon-y-servicios", cmds: ["showmount -e $IP", "nmap -p $PORT --script nfs-showmount,nfs-ls $IP"] },
+  "2049": { svc: "NFS", note: "Sistema de ficheros de red. Lista exports; si hay no_root_squash, es vía directa a privesc.", slug: "recon-y-servicios", cmds: ["showmount -e $IP", "nmap -p $PORT --script nfs-showmount,nfs-ls $IP"] },
   "2222": { svc: "SSH (alt)", note: "SSH en puerto alternativo. Igual que el 22.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script ssh2-enum-algos $IP", "ssh USER@$IP -p $PORT"] },
   "2375": { svc: "Docker API (sin TLS)", note: "API Docker expuesta sin auth. Lanza un contenedor que monte el disco del host = root.", slug: "cve-y-exploits", cmds: ["curl http://$IP:$PORT/version", "docker -H $IP:$PORT ps"] },
   "3000": { svc: "HTTP (Grafana / Node / dev)", note: "Web de desarrollo, a menudo Grafana. Identifica la app y busca su CVE o panel por defecto.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "curl -sv http://$IP:$PORT/"] },
   "3128": { svc: "Squid proxy", note: "Proxy HTTP. Puede dar acceso a servicios internos; prueba a proxyficar peticiones.", slug: "pivoting", cmds: ["curl -x http://$IP:$PORT http://127.0.0.1/", "nmap -p $PORT --script http-open-proxy $IP"] },
   "3306": { svc: "MySQL / MariaDB", note: "Base de datos. Prueba root sin password; con acceso, vuelca hashes y busca credenciales.", slug: "recon-y-servicios", cmds: ["mysql -h $IP -P $PORT -u root", "nmap -p $PORT --script mysql-info,mysql-empty-password $IP"] },
-  "3389": { svc: "RDP", note: "Escritorio remoto Windows. Con credenciales, entra en GUI; util tras conseguir un usuario.", slug: "credenciales-y-acceso", cmds: ["nxc rdp $IP -u USER -p PASS", "xfreerdp /v:$IP /u:USER /p:PASS"] },
+  "3389": { svc: "RDP", note: "Escritorio remoto Windows. Con credenciales, entra en GUI; útil tras conseguir un usuario.", slug: "credenciales-y-acceso", cmds: ["nxc rdp $IP -u USER -p PASS", "xfreerdp /v:$IP /u:USER /p:PASS"] },
   "3690": { svc: "SVN (subversion)", note: "Control de versiones. Descarga el repo y revisa el historial en busca de secretos.", slug: "recon-y-servicios", cmds: ["svn ls svn://$IP:$PORT/", "svn log -v svn://$IP:$PORT/"] },
-  "4369": { svc: "Erlang Port Mapper (EPMD)", note: "Descubre nodos Erlang/RabbitMQ. Con la cookie, RCE via distribucion Erlang.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script epmd-info $IP", "epmd -d"] },
-  "5000": { svc: "HTTP (Flask / Docker registry)", note: "App web (Flask) o registro Docker. Si es registro, lista imagenes y extrae capas con secretos.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/v2/_catalog"] },
-  "5432": { svc: "PostgreSQL", note: "Base de datos. Prueba postgres sin password; con acceso puede haber RCE via COPY/lo_import.", slug: "recon-y-servicios", cmds: ["psql -h $IP -p $PORT -U postgres", "nmap -p $PORT --script pgsql-brute $IP"] },
-  "5601": { svc: "Kibana", note: "Panel de Elasticsearch. Identifica version: varias tienen RCE conocido; mira tambien 9200.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/api/status"] },
+  "4369": { svc: "Erlang Port Mapper (EPMD)", note: "Descubre nodos Erlang/RabbitMQ. Con la cookie, RCE vía distribución Erlang.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script epmd-info $IP", "epmd -d"] },
+  "5000": { svc: "HTTP (Flask / Docker registry)", note: "App web (Flask) o registro Docker. Si es registro, lista imágenes y extrae capas con secretos.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/v2/_catalog"] },
+  "5432": { svc: "PostgreSQL", note: "Base de datos. Prueba postgres sin password; con acceso puede haber RCE vía COPY/lo_import.", slug: "recon-y-servicios", cmds: ["psql -h $IP -p $PORT -U postgres", "nmap -p $PORT --script pgsql-brute $IP"] },
+  "5601": { svc: "Kibana", note: "Panel de Elasticsearch. Identifica versión: varias tienen RCE conocido; mira también 9200.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl http://$IP:$PORT/api/status"] },
   "5672": { svc: "AMQP / RabbitMQ", note: "Cola de mensajes. Prueba credenciales por defecto (guest/guest); admin suele estar en 15672.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script amqp-info $IP"] },
-  "5900": { svc: "VNC", note: "Escritorio remoto. A veces sin password o con auth debil; conecta y mira la pantalla.", slug: "credenciales-y-acceso", cmds: ["nmap -p $PORT --script vnc-info,realvnc-auth-bypass $IP", "vncviewer $IP:$PORT"] },
-  "5985": { svc: "WinRM (HTTP)", note: "Gestion remota Windows. Con credenciales validas = shell directa via evil-winrm.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS", "evil-winrm -i $IP -u USER -p PASS"] },
-  "5986": { svc: "WinRM (HTTPS)", note: "WinRM cifrado. Igual que 5985 anadiendo -S/--ssl.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS --ssl", "evil-winrm -i $IP -u USER -p PASS -S"] },
-  "6379": { svc: "Redis", note: "Almacen clave-valor, normalmente sin auth. Sin password puede escribir claves SSH o webshell = RCE.", slug: "recon-y-servicios", cmds: ["redis-cli -h $IP -p $PORT", "redis-cli -h $IP -p $PORT info"] },
+  "5900": { svc: "VNC", note: "Escritorio remoto. A veces sin password o con auth débil; conecta y mira la pantalla.", slug: "credenciales-y-acceso", cmds: ["nmap -p $PORT --script vnc-info,realvnc-auth-bypass $IP", "vncviewer $IP:$PORT"] },
+  "5985": { svc: "WinRM (HTTP)", note: "Gestión remota Windows. Con credenciales válidas = shell directa vía evil-winrm.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS", "evil-winrm -i $IP -u USER -p PASS"] },
+  "5986": { svc: "WinRM (HTTPS)", note: "WinRM cifrado. Igual que 5985 añadiendo -S/--ssl.", slug: "credenciales-y-acceso", cmds: ["nxc winrm $IP -u USER -p PASS --ssl", "evil-winrm -i $IP -u USER -p PASS -S"] },
+  "6379": { svc: "Redis", note: "Almacén clave-valor, normalmente sin auth. Sin password puede escribir claves SSH o webshell = RCE.", slug: "recon-y-servicios", cmds: ["redis-cli -h $IP -p $PORT", "redis-cli -h $IP -p $PORT info"] },
   "6667": { svc: "IRC", note: "Chat. Lee el banner: algunas versiones (UnrealIRCd) tienen backdoor de RCE.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script irc-info,irc-unrealircd-backdoor $IP"] },
   "8000": { svc: "HTTP (alt)", note: "Web alternativa, a menudo apps o APIs de desarrollo. Fingerprint y fuzz como en el 80.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
   "8009": { svc: "AJP (Tomcat)", note: "Conector AJP de Tomcat. Vulnerable a Ghostcat (lectura de ficheros / RCE).", slug: "cve-y-exploits", cmds: ["nmap -p $PORT --script ajp-methods,ajp-headers $IP"] },
   "8080": { svc: "HTTP (proxy / Tomcat)", note: "Web alternativa, frecuente Tomcat. Prueba /manager con credenciales por defecto para desplegar WAR.", slug: "web-discovery", cmds: ["whatweb http://$IP:$PORT", "curl -sv http://$IP:$PORT/", "ffuf -u http://$IP:$PORT/FUZZ -w /usr/share/seclists/Discovery/Web-Content/common.txt"] },
   "8443": { svc: "HTTPS (alt)", note: "Web cifrada alternativa. Igual que 443; revisa el certificado.", slug: "web-discovery", cmds: ["whatweb https://$IP:$PORT", "curl -skv https://$IP:$PORT/"] },
-  "8500": { svc: "HashiCorp Consul", note: "Orquestacion de servicios. La API puede permitir registrar checks que ejecutan comandos = RCE.", slug: "cve-y-exploits", cmds: ["curl http://$IP:$PORT/v1/agent/self", "curl http://$IP:$PORT/v1/catalog/services"] },
-  "8888": { svc: "HTTP (alt / Jupyter)", note: "Web alternativa, a menudo Jupyter. Un notebook sin token da ejecucion de codigo directa.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
+  "8500": { svc: "HashiCorp Consul", note: "Orquestación de servicios. La API puede permitir registrar checks que ejecutan comandos = RCE.", slug: "cve-y-exploits", cmds: ["curl http://$IP:$PORT/v1/agent/self", "curl http://$IP:$PORT/v1/catalog/services"] },
+  "8888": { svc: "HTTP (alt / Jupyter)", note: "Web alternativa, a menudo Jupyter. Un notebook sin token da ejecución de código directa.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
   "9000": { svc: "HTTP (SonarQube / PHP-FPM)", note: "App web o FastCGI. Si es PHP-FPM, posible RCE; si es SonarQube, mira credenciales admin/admin.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
-  "9200": { svc: "Elasticsearch", note: "Motor de busqueda/BD. API REST sin auth: lista indices y vuelca datos; versiones viejas con RCE.", slug: "recon-y-servicios", cmds: ["curl http://$IP:$PORT/", "curl http://$IP:$PORT/_cat/indices?v"] },
-  "10000": { svc: "Webmin", note: "Panel de administracion de servidor. Identifica version: varias tienen RCE autenticado o no.", slug: "web-discovery", cmds: ["curl -skv https://$IP:$PORT/", "whatweb https://$IP:$PORT"] },
-  "11211": { svc: "Memcached", note: "Cache en memoria sin auth. Vuelca claves: a veces guardan sesiones o credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script memcached-info $IP"] },
-  "15672": { svc: "RabbitMQ (panel web)", note: "Consola de gestion de RabbitMQ. Prueba guest/guest y explora colas y usuarios.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl -u guest:guest http://$IP:$PORT/api/overview"] },
-  "25565": { svc: "Minecraft", note: "Servidor de juego. Rara vez la via; apunta version y busca plugins mal configurados.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script minecraft-info $IP"] },
+  "9200": { svc: "Elasticsearch", note: "Motor de búsqueda/BD. API REST sin auth: lista índices y vuelca datos; versiones viejas con RCE.", slug: "recon-y-servicios", cmds: ["curl http://$IP:$PORT/", "curl http://$IP:$PORT/_cat/indices?v"] },
+  "10000": { svc: "Webmin", note: "Panel de administración de servidor. Identifica versión: varias tienen RCE autenticado o no.", slug: "web-discovery", cmds: ["curl -skv https://$IP:$PORT/", "whatweb https://$IP:$PORT"] },
+  "11211": { svc: "Memcached", note: "Caché en memoria sin auth. Vuelca claves: a veces guardan sesiones o credenciales.", slug: "recon-y-servicios", cmds: ["nc $IP $PORT", "nmap -p $PORT --script memcached-info $IP"] },
+  "15672": { svc: "RabbitMQ (panel web)", note: "Consola de gestión de RabbitMQ. Prueba guest/guest y explora colas y usuarios.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "curl -u guest:guest http://$IP:$PORT/api/overview"] },
+  "25565": { svc: "Minecraft", note: "Servidor de juego. Rara vez la vía; apunta versión y busca plugins mal configurados.", slug: "recon-y-servicios", cmds: ["nmap -p $PORT --script minecraft-info $IP"] },
   "27017": { svc: "MongoDB", note: "Base de datos NoSQL, a veces sin auth. Conecta, lista bases y vuelca colecciones con secretos.", slug: "recon-y-servicios", cmds: ["mongosh mongodb://$IP:$PORT", "nmap -p $PORT --script mongodb-info,mongodb-databases $IP"] },
-  "50000": { svc: "HTTP (SAP / DB2 / Jenkins)", note: "Suele ser un panel web (SAP, Jenkins). Fingerprint la app y busca su via de RCE.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
+  "50000": { svc: "HTTP (SAP / DB2 / Jenkins)", note: "Suele ser un panel web (SAP, Jenkins). Fingerprint la app y busca su vía de RCE.", slug: "web-discovery", cmds: ["curl -sv http://$IP:$PORT/", "whatweb http://$IP:$PORT"] },
 };
 
 // Parsea "5050", "puerto 5050", "port 5050/tcp" -> ficha del puerto. Devuelve
@@ -279,8 +280,8 @@ export function lookupPort(query) {
   return {
     port,
     known: false,
-    svc: "Puerto no estandar",
-    note: "El nombre que muestra nmap para un puerto no estandar sale de una tabla estatica (/etc/services), NO es deteccion real. Haz fingerprint de version y banner-grab para saber que corre de verdad; muchos puertos raros son solo HTTP en otro numero.",
+    svc: "Puerto no estándar",
+    note: "El nombre que muestra nmap para un puerto no estándar sale de una tabla estática (/etc/services), NO es detección real. Haz fingerprint de versión y banner-grab para saber que corre de verdad; muchos puertos raros son solo HTTP en otro número.",
     slug: "recon-y-servicios",
     cmds: ["nmap -sV -sC -p $PORT $IP", "nc $IP $PORT", "curl -skv http://$IP:$PORT/", "searchsploit SERVICIO VERSION"],
   };
@@ -522,16 +523,16 @@ const FLAG_HELP = {
   "-sS": "escaneo SYN sigiloso",
   "-sT": "escaneo TCP connect",
   "-Pn": "omite el ping de descubrimiento",
-  "-n": "sin resolucion DNS",
+  "-n": "sin resolución DNS",
   "-v": "salida verbosa",
   "-O": "detecta el sistema operativo",
-  "-A": "OS + version + scripts + traceroute",
+  "-A": "OS + versión + scripts + traceroute",
   "--min-rate": "fuerza paquetes/seg (ruidoso)",
   "-T4": "timing agresivo",
   "-T5": "timing insano (muy ruidoso)",
   "-oN": "guarda salida en texto",
   "-oA": "guarda salida en los 3 formatos",
-  ffuf: "fuzzing web de rutas/parametros",
+  ffuf: "fuzzing web de rutas/parámetros",
   gobuster: "fuerza rutas/DNS/vhosts",
   feroxbuster: "fuerza rutas recursivo",
   "-w": "wordlist (diccionario)",
@@ -545,19 +546,19 @@ const FLAG_HELP = {
   curl: "cliente HTTP",
   "-i": "incluye cabeceras en la salida",
   "-x": "usa proxy",
-  chisel: "tunel TCP / SOCKS",
-  "ligolo-ng": "tunel y pivoting",
-  proxychains: "rutea trafico por un proxy",
+  chisel: "túnel TCP / SOCKS",
+  "ligolo-ng": "túnel y pivoting",
+  proxychains: "rutea tráfico por un proxy",
   "impacket-": "suite de ataques AD/SMB",
   crackmapexec: "enum/exec masivo SMB/WinRM",
   nxc: "netexec: enum/exec masivo",
   netexec: "enum/exec masivo (ex-CME)",
   "evil-winrm": "shell interactiva por WinRM",
   smbclient: "cliente SMB",
-  enum4linux: "enumeracion SMB/AD",
+  enum4linux: "enumeración SMB/AD",
   "sudo -l": "lista permisos sudo",
-  linpeas: "auditoria de privesc en Linux",
-  winpeas: "auditoria de privesc en Windows",
+  linpeas: "auditoría de privesc en Linux",
+  winpeas: "auditoría de privesc en Windows",
 };
 
 const DANGER_PATTERNS = [
@@ -610,8 +611,8 @@ const VAR_HELP = {
   "<PUERTOS>": "puerto(s)",
   "$USER": "usuario",
   "<USER>": "usuario",
-  "$PASS": "contrasena",
-  "<PASS>": "contrasena",
+  "$PASS": "contraseña",
+  "<PASS>": "contraseña",
   "$LHOST": "tu IP (attacker / listener)",
   "<LHOST>": "tu IP (attacker / listener)",
   "ATTACKER_IP": "tu IP (attacker / listener)",
@@ -622,17 +623,17 @@ const VAR_HELP = {
 // first-token tool -> one-line purpose for the explain modal.
 const TOOL_PURPOSE = {
   nmap: "Escanea puertos y detecta servicios y versiones en el objetivo.",
-  ffuf: "Fuzzing web: descubre rutas, ficheros o parametros por fuerza bruta.",
+  ffuf: "Fuzzing web: descubre rutas, ficheros o parámetros por fuerza bruta.",
   gobuster: "Fuerza bruta de rutas, subdominios o vhosts en un servidor web.",
   feroxbuster: "Fuerza bruta recursiva de rutas web.",
-  wfuzz: "Fuzzing web de parametros y rutas.",
+  wfuzz: "Fuzzing web de parámetros y rutas.",
   hashcat: "Crackea hashes con GPU usando diccionario o reglas.",
   john: "Crackea hashes con CPU (John the Ripper).",
   curl: "Cliente HTTP para lanzar peticiones y ver la respuesta.",
   wget: "Descarga ficheros por HTTP/HTTPS.",
-  chisel: "Crea un tunel TCP/SOCKS para pivotar a redes internas.",
-  socat: "Reenvia y conecta sockets; util para shells y tuneles.",
-  proxychains: "Rutea la herramienta que le sigue a traves de un proxy SOCKS.",
+  chisel: "Crea un túnel TCP/SOCKS para pivotar a redes internas.",
+  socat: "Reenvía y conecta sockets; útil para shells y túneles.",
+  proxychains: "Rutea la herramienta que le sigue a través de un proxy SOCKS.",
   crackmapexec: "Enumera y ejecuta en masa sobre SMB/WinRM/LDAP.",
   nxc: "NetExec: enumera y ejecuta en masa (sucesor de CrackMapExec).",
   netexec: "Enumera y ejecuta en masa sobre SMB/WinRM/LDAP.",
@@ -640,34 +641,34 @@ const TOOL_PURPOSE = {
   smbclient: "Cliente para listar y acceder a recursos compartidos SMB.",
   smbmap: "Enumera shares SMB y sus permisos.",
   enum4linux: "Enumera usuarios, grupos y shares por SMB/AD.",
-  "enum4linux-ng": "Enumeracion SMB/AD (version mejorada).",
+  "enum4linux-ng": "Enumeración SMB/AD (versión mejorada).",
   responder: "Envenena LLMNR/NBT-NS para capturar hashes NetNTLM.",
-  linpeas: "Audita un sistema Linux buscando vias de escalada.",
-  winpeas: "Audita un sistema Windows buscando vias de escalada.",
+  linpeas: "Audita un sistema Linux buscando vías de escalada.",
+  winpeas: "Audita un sistema Windows buscando vías de escalada.",
   wpscan: "Escanea WordPress: usuarios, plugins y vulnerabilidades.",
-  sqlmap: "Automatiza la deteccion y explotacion de inyeccion SQL.",
+  sqlmap: "Automatiza la detección y explotación de inyección SQL.",
   hydra: "Fuerza bruta de credenciales contra un servicio de red.",
-  msfvenom: "Genera payloads (shells, binarios) para explotacion.",
+  msfvenom: "Genera payloads (shells, binarios) para explotación.",
   nc: "Netcat: abre o escucha conexiones TCP/UDP (listener o cliente).",
   ncat: "Netcat de Nmap: conexiones TCP/UDP, listener o cliente.",
-  ssh: "Cliente SSH para acceso remoto y tuneles.",
-  sudo: "Ejecuta como otro usuario; util para revisar o abusar de permisos.",
+  ssh: "Cliente SSH para acceso remoto y túneles.",
+  sudo: "Ejecuta como otro usuario; útil para revisar o abusar de permisos.",
   ldapsearch: "Consulta un directorio LDAP.",
   kinit: "Solicita un ticket Kerberos (TGT).",
-  rustscan: "Escaneo de puertos ultrarrapido; pasa los abiertos a nmap.",
-  whatweb: "Identifica tecnologias, CMS y cabeceras de un sitio web.",
-  nikto: "Escaner web de vulnerabilidades y ficheros peligrosos conocidos.",
+  rustscan: "Escaneo de puertos ultrarrápido; pasa los abiertos a nmap.",
+  whatweb: "Identifica tecnologías, CMS y cabeceras de un sitio web.",
+  nikto: "Escáner web de vulnerabilidades y ficheros peligrosos conocidos.",
   dig: "Consulta registros DNS (A, MX, NS, TXT, transferencia de zona).",
   nslookup: "Resuelve nombres y consulta el servidor DNS.",
-  rpcclient: "Cliente MS-RPC para enumerar usuarios, grupos y politicas por SMB.",
+  rpcclient: "Cliente MS-RPC para enumerar usuarios, grupos y políticas por SMB.",
   showmount: "Lista los exports NFS disponibles en el objetivo.",
   mysql: "Cliente de base de datos MySQL/MariaDB.",
   psql: "Cliente de base de datos PostgreSQL.",
   redis: "Cliente de Redis para leer/escribir claves.",
   "redis-cli": "Cliente de Redis para leer/escribir claves.",
   snmpwalk: "Recorre la MIB SNMP para extraer info del dispositivo.",
-  searchsploit: "Busca exploits publicos de Exploit-DB para un servicio/version.",
-  kerbrute: "Enumera usuarios validos y hace spraying contra Kerberos.",
+  searchsploit: "Busca exploits públicos de Exploit-DB para un servicio/versión.",
+  kerbrute: "Enumera usuarios válidos y hace spraying contra Kerberos.",
   "impacket-getnpusers": "Pide TGTs de cuentas sin preauth (AS-REP roasting).",
   "impacket-getuserspns": "Extrae hashes de servicio (Kerberoasting).",
   "impacket-secretsdump": "Vuelca hashes NTLM y secretos del dominio/SAM.",
@@ -678,7 +679,7 @@ const TOOL_PURPOSE = {
   bloodhound: "Recopila y grafica rutas de ataque en Active Directory.",
   "bloodhound-python": "Recolector de BloodHound desde Linux.",
   certipy: "Enumera y abusa de plantillas de AD CS (certificados).",
-  arjun: "Descubre parametros HTTP ocultos por fuerza bruta.",
+  arjun: "Descubre parámetros HTTP ocultos por fuerza bruta.",
   weevely: "Genera y controla una webshell PHP sigilosa.",
   hashid: "Identifica el tipo de un hash.",
   "hash-identifier": "Identifica el tipo de un hash.",
@@ -699,14 +700,14 @@ const TOOL_PURPOSE = {
   accesschk: "Audita permisos de servicios, ficheros y claves (Sysinternals).",
   whoami: "Muestra tu usuario, grupos y privilegios actuales.",
   find: "Busca ficheros; se usa para SUID, permisos y datos sensibles.",
-  grep: "Filtra texto por patron; extrae datos utiles de una salida.",
+  grep: "Filtra texto por patrón; extrae datos útiles de una salida.",
   awk: "Procesa y extrae campos de texto por columnas.",
-  sed: "Edita y transforma texto en linea.",
+  sed: "Edita y transforma texto en línea.",
   cat: "Muestra el contenido de un fichero.",
   type: "Muestra el contenido de un fichero (Windows).",
   dir: "Lista ficheros y carpetas (Windows).",
   ls: "Lista ficheros y permisos (Linux).",
-  export: "Define una variable de entorno para la sesion actual.",
+  export: "Define una variable de entorno para la sesión actual.",
   echo: "Imprime texto o el valor de una variable.",
   ip: "Consulta interfaces, rutas y direcciones de red.",
   ifconfig: "Consulta interfaces y direcciones de red.",
@@ -717,8 +718,8 @@ const TOOL_PURPOSE = {
   mount: "Monta un sistema de ficheros (p.ej. un export NFS).",
   smbserver: "Levanta un servidor SMB para transferir ficheros.",
   "impacket-smbserver": "Levanta un servidor SMB para transferir ficheros.",
-  ligolo: "Tunel/pivote hacia redes internas (Ligolo-ng).",
-  "ligolo-ng": "Tunel/pivote hacia redes internas (Ligolo-ng).",
+  ligolo: "Túnel/pivote hacia redes internas (Ligolo-ng).",
+  "ligolo-ng": "Túnel/pivote hacia redes internas (Ligolo-ng).",
   ssh_keygen: "Genera un par de claves SSH.",
   "ssh-keygen": "Genera un par de claves SSH.",
   stty: "Ajusta el terminal; se usa para estabilizar una shell.",
@@ -735,13 +736,13 @@ const TOOL_FLAG_HELP = {
     "-p": "puertos objetivo",
     "-p-": "todos los 65535 puertos",
     "-sC": "scripts NSE por defecto",
-    "-sV": "deteccion de servicios y versiones",
+    "-sV": "detección de servicios y versiones",
     "-sU": "escaneo UDP",
     "-sS": "escaneo SYN",
     "-sT": "escaneo TCP connect",
     "-Pn": "omite el descubrimiento por ping",
-    "-n": "desactiva la resolucion DNS",
-    "-O": "deteccion del sistema operativo",
+    "-n": "desactiva la resolución DNS",
+    "-O": "detección del sistema operativo",
     "-A": "OS, versiones, scripts y traceroute",
     "-oN": "guarda la salida en formato normal",
     "-oA": "guarda la salida en los formatos principales",
@@ -756,34 +757,34 @@ const TOOL_FLAG_HELP = {
     "-a": "modo de ataque",
   },
   curl: {
-    "-u": "credenciales HTTP usuario:contrasena",
+    "-u": "credenciales HTTP usuario:contraseña",
     "-H": "cabecera HTTP personalizada",
     "-i": "incluye las cabeceras de respuesta",
-    "-x": "proxy utilizado para la peticion",
+    "-x": "proxy utilizado para la petición",
   },
   nxc: {
     "-u": "usuario o fichero de usuarios",
-    "-p": "contrasena o fichero de contrasenas",
-    "-H": "hash NTLM para autenticacion",
+    "-p": "contraseña o fichero de contraseñas",
+    "-H": "hash NTLM para autenticación",
     "--shares": "lista recursos compartidos y permisos",
     "--rid-brute": "enumera cuentas mediante RID cycling",
-    "--continue-on-success": "continua tras encontrar una credencial valida",
+    "--continue-on-success": "continúa tras encontrar una credencial válida",
   },
   netexec: {
     "-u": "usuario o fichero de usuarios",
-    "-p": "contrasena o fichero de contrasenas",
-    "-H": "hash NTLM para autenticacion",
+    "-p": "contraseña o fichero de contraseñas",
+    "-H": "hash NTLM para autenticación",
     "--shares": "lista recursos compartidos y permisos",
     "--rid-brute": "enumera cuentas mediante RID cycling",
-    "--continue-on-success": "continua tras encontrar una credencial valida",
+    "--continue-on-success": "continúa tras encontrar una credencial válida",
   },
   crackmapexec: {
     "-u": "usuario o fichero de usuarios",
-    "-p": "contrasena o fichero de contrasenas",
-    "-H": "hash NTLM para autenticacion",
+    "-p": "contraseña o fichero de contraseñas",
+    "-H": "hash NTLM para autenticación",
     "--shares": "lista recursos compartidos y permisos",
     "--rid-brute": "enumera cuentas mediante RID cycling",
-    "--continue-on-success": "continua tras encontrar una credencial valida",
+    "--continue-on-success": "continúa tras encontrar una credencial válida",
   },
 };
 
@@ -791,50 +792,50 @@ const TOOL_VALUE_HELP = {
   nmap: { "-p": "puerto(s) objetivo" },
   ffuf: { "-u": "URL objetivo", "-w": "ruta de la wordlist", "-H": "nombre y valor de la cabecera" },
   hashcat: { "-m": "identificador del tipo de hash", "-a": "identificador del modo de ataque" },
-  curl: { "-u": "usuario y contrasena HTTP", "-H": "nombre y valor de la cabecera", "-x": "URL del proxy" },
-  nxc: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
-  netexec: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
-  crackmapexec: { "-u": "usuario, cuenta vacia o fichero de usuarios", "-p": "contrasena vacia, valor o fichero de contrasenas", "-H": "hash NTLM" },
+  curl: { "-u": "usuario y contraseña HTTP", "-H": "nombre y valor de la cabecera", "-x": "URL del proxy" },
+  nxc: { "-u": "usuario, cuenta vacía o fichero de usuarios", "-p": "contraseña vacía, valor o fichero de contraseñas", "-H": "hash NTLM" },
+  netexec: { "-u": "usuario, cuenta vacía o fichero de usuarios", "-p": "contraseña vacía, valor o fichero de contraseñas", "-H": "hash NTLM" },
+  crackmapexec: { "-u": "usuario, cuenta vacía o fichero de usuarios", "-p": "contraseña vacía, valor o fichero de contraseñas", "-H": "hash NTLM" },
 };
 
 // Base tool -> "que esperas obtener" (senal de exito). Se muestra en el modal
 // cuando el comando no tiene una ficha curada, para que TODO comando explique
 // claramente su resultado esperado, no solo los 23 con metadata a mano.
 const TOOL_EXPECT = {
-  nmap: "Puertos abiertos con su servicio y version para decidir por donde entrar.",
+  nmap: "Puertos abiertos con su servicio y versión para decidir por dónde entrar.",
   rustscan: "La lista de puertos abiertos, que luego pasas a nmap -sV.",
   masscan: "Puertos abiertos a gran velocidad en rangos amplios.",
-  ffuf: "Rutas, ficheros o subdominios validos (fijate en codigo/tamano de respuesta).",
+  ffuf: "Rutas, ficheros o subdominios válidos (fíjate en código/tamaño de respuesta).",
   gobuster: "Rutas, directorios o vhosts que existen en el servidor.",
   feroxbuster: "Rutas y ficheros descubiertos de forma recursiva.",
-  wfuzz: "Parametros o rutas que responden distinto (posible punto de entrada).",
+  wfuzz: "Parámetros o rutas que responden distinto (posible punto de entrada).",
   dirb: "Directorios y ficheros web accesibles.",
-  whatweb: "El CMS, framework y tecnologias para buscar exploits concretos.",
+  whatweb: "El CMS, framework y tecnologías para buscar exploits concretos.",
   nikto: "Ficheros peligrosos, cabeceras y vulns conocidas del servidor.",
   wpscan: "Usuarios, plugins/temas y versiones vulnerables de WordPress.",
-  sqlmap: "Confirmacion de SQLi y, si hay, datos/tablas o incluso shell.",
-  arjun: "Nombres de parametros ocultos que aceptan input.",
+  sqlmap: "Confirmación de SQLi y, si hay, datos/tablas o incluso shell.",
+  arjun: "Nombres de parámetros ocultos que aceptan input.",
   curl: "La respuesta cruda (cabeceras, cookies, redirecciones, cuerpo) para analizarla.",
-  wget: "El fichero descargado en tu maquina.",
-  hydra: "Credenciales validas cuando una linea marca login correcto.",
-  medusa: "Credenciales validas para el servicio atacado.",
-  hashcat: "La contrasena en claro si el hash se crackea.",
-  john: "La contrasena en claro si el hash se crackea.",
+  wget: "El fichero descargado en tu máquina.",
+  hydra: "Credenciales válidas cuando una línea marca login correcto.",
+  medusa: "Credenciales válidas para el servicio atacado.",
+  hashcat: "La contraseña en claro si el hash se crackea.",
+  john: "La contraseña en claro si el hash se crackea.",
   hashid: "El tipo/modo de hash para elegir el ataque correcto.",
   keepass2john: "Un hash listo para crackear con John/hashcat.",
   office2john: "Un hash listo para crackear con John/hashcat.",
   ssh2john: "Un hash de la clave SSH listo para crackear.",
   responder: "Hashes NetNTLM capturados de la red para crackear o relayar.",
-  crackmapexec: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
-  nxc: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
-  netexec: "Que credenciales/accesos valen en que hosts (marca Pwn3d!).",
+  crackmapexec: "Qué credenciales/accesos valen en qué hosts (marca Pwn3d!).",
+  nxc: "Qué credenciales/accesos valen en qué hosts (marca Pwn3d!).",
+  netexec: "Qué credenciales/accesos valen en qué hosts (marca Pwn3d!).",
   smbclient: "El listado de shares y sus ficheros si tienes acceso.",
   smbmap: "Los shares y tus permisos (READ/WRITE) sobre cada uno.",
-  enum4linux: "Usuarios, grupos, shares y politica de contrasenas del objetivo.",
-  "enum4linux-ng": "Usuarios, grupos, shares y politica de contrasenas del objetivo.",
-  rpcclient: "Usuarios, grupos y SIDs del dominio via RPC.",
+  enum4linux: "Usuarios, grupos, shares y política de contraseñas del objetivo.",
+  "enum4linux-ng": "Usuarios, grupos, shares y política de contraseñas del objetivo.",
+  rpcclient: "Usuarios, grupos y SIDs del dominio vía RPC.",
   ldapsearch: "Objetos del directorio (usuarios, grupos, atributos) del dominio.",
-  kerbrute: "Usuarios validos del dominio (y logins si haces spraying).",
+  kerbrute: "Usuarios válidos del dominio (y logins si haces spraying).",
   "impacket-getnpusers": "Hashes AS-REP de cuentas sin preauth para crackear offline.",
   getnpusers: "Hashes AS-REP de cuentas sin preauth para crackear offline.",
   "impacket-getuserspns": "Hashes de servicio (TGS) para Kerberoasting offline.",
@@ -847,31 +848,31 @@ const TOOL_EXPECT = {
   snmpwalk: "Info del dispositivo: procesos, rutas, a veces credenciales.",
   dig: "Los registros DNS; con transferencia de zona, todos los hosts internos.",
   nslookup: "La IP/registro DNS consultado.",
-  searchsploit: "Exploits publicos que coinciden con el servicio/version.",
+  searchsploit: "Exploits públicos que coinciden con el servicio/versión.",
   linpeas: "Vectores de escalada resaltados (rojo/amarillo = prioritario).",
   winpeas: "Vectores de escalada resaltados (rojo/amarillo = prioritario).",
   "evil-winrm": "Una shell interactiva en el objetivo Windows.",
-  nc: "Una conexion: shell recibida (listener) o banner del servicio.",
-  ncat: "Una conexion: shell recibida (listener) o banner del servicio.",
+  nc: "Una conexión: shell recibida (listener) o banner del servicio.",
+  ncat: "Una conexión: shell recibida (listener) o banner del servicio.",
   msfvenom: "El fichero de payload listo para ejecutar en el objetivo.",
-  chisel: "Un tunel/SOCKS activo para llegar a la red interna.",
-  ligolo: "Un tunel activo para pivotar a subredes internas.",
-  "ligolo-ng": "Un tunel activo para pivotar a subredes internas.",
-  proxychains: "La herramienta ejecutada a traves del tunel/proxy.",
-  socat: "El reenvio o la shell establecida.",
+  chisel: "Un túnel/SOCKS activo para llegar a la red interna.",
+  ligolo: "Un túnel activo para pivotar a subredes internas.",
+  "ligolo-ng": "Un túnel activo para pivotar a subredes internas.",
+  proxychains: "La herramienta ejecutada a través del túnel/proxy.",
+  socat: "El reenvío o la shell establecida.",
   whoami: "Tu contexto: usuario, grupos y privilegios (ej. SeImpersonate).",
   find: "Los ficheros que cumplen el criterio (SUID, escribibles, con secretos).",
   getcap: "Binarios con capabilities abusables para escalar.",
-  sudo: "Que puedes ejecutar como root (mira la lista tras sudo -l).",
+  sudo: "Qué puedes ejecutar como root (mira la lista tras sudo -l).",
   wmic: "Info del sistema: parches instalados, procesos o cuentas.",
-  accesschk: "Servicios/ficheros con permisos debiles que abusar.",
+  accesschk: "Servicios/ficheros con permisos débiles que abusar.",
   icacls: "Los permisos NTFS; busca los que puedes modificar.",
   reg: "El valor del registro (a veces credenciales o autologon).",
   cmdkey: "Credenciales guardadas que reutilizar con runas.",
   certutil: "El fichero descargado en el objetivo Windows.",
   smbserver: "Un share tuyo montado desde el objetivo para mover ficheros.",
   "impacket-smbserver": "Un share tuyo montado desde el objetivo para mover ficheros.",
-  grep: "Solo las lineas que importan de una salida larga.",
+  grep: "Solo las líneas que importan de una salida larga.",
   cat: "El contenido del fichero (busca creds, flags o config).",
   type: "El contenido del fichero (busca creds, flags o config).",
 };
@@ -893,17 +894,17 @@ function classifyToken(token, index, prevToken, tool) {
     return "variable: reemplaza por tu valor";
   }
   if (index === 0) return "herramienta principal";
-  if (token.startsWith("--")) return TOOL_FLAG_HELP[tool]?.[token] || FLAG_HELP[token] || `opcion de ${tool || "la herramienta"}`;
+  if (token.startsWith("--")) return TOOL_FLAG_HELP[tool]?.[token] || FLAG_HELP[token] || `opción de ${tool || "la herramienta"}`;
   if (token.startsWith("-")) return TOOL_FLAG_HELP[tool]?.[token] || FLAG_HELP[token] || `flag de ${tool || "la herramienta"}`;
   if (TOOL_VALUE_HELP[tool]?.[prevToken]) return TOOL_VALUE_HELP[tool][prevToken];
   if (/^https?:\/\//.test(token)) return "URL objetivo";
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(token)) return "direccion IP";
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(token)) return "dirección IP";
   if (/[/\\]/.test(token) || /\.(txt|lst|list|conf|xml|json|pcap|php|sh|py|exe|elf)$/i.test(token)) {
     return "ruta / fichero / wordlist";
   }
   if (/^\d+[,-]\d+/.test(token) || PORT_FLAGS.has(prevToken)) return "puerto(s)";
-  if (/^\d+$/.test(token)) return "valor numerico";
-  if (/^[A-Za-z0-9_.]+=.+/.test(token)) return "parametro clave=valor";
+  if (/^\d+$/.test(token)) return "valor numérico";
+  if (/^[A-Za-z0-9_.]+=.+/.test(token)) return "parámetro clave=valor";
   return "argumento / valor";
 }
 
@@ -1024,17 +1025,17 @@ function openUsageGuide() {
   const box = el.querySelector(".usage-modal");
   box.innerHTML = `
     <button type="button" class="cmd-modal-close" data-usage-close aria-label="Cerrar">&times;</button>
-    <h2 id="usage-guide-title">Como usar Fieldbook</h2>
-    <p>Escribe un hallazgo real, revisa el playbook que aparece y guarda solo la evidencia util para decidir el siguiente paso.</p>
+    <h2 id="usage-guide-title">Cómo usar Fieldbook</h2>
+    <p>Escribe un hallazgo real, revisa el playbook que aparece y guarda solo la evidencia útil para decidir el siguiente paso.</p>
     <ol class="usage-steps">
-      <li><b>1. Crea una room.</b> Pulsa <code>room</code>, anade target, puertos y contexto. Password, hash y key solo se conservan durante la sesion salvo que actives el guardado local.</li>
+      <li><b>1. Crea una room.</b> Pulsa <code>room</code>, añade target, puertos y contexto. Password, hash y key solo se conservan durante la sesión salvo que actives el guardado local.</li>
       <li><b>2. Busca lo que has encontrado.</b> Ejemplos: <code>445</code>, <code>tengo smb 445</code>, <code>web 403</code>, <code>jwt</code>, <code>sudo NOPASSWD vim</code> o <code>shell linux www-data</code>.</li>
-      <li><b>3. Lee el resultado principal.</b> Un puerto conocido abre su servicio y acciones prioritarias. Las demas coincidencias son secciones relacionadas, no instrucciones para ejecutar todo.</li>
-      <li><b>4. Ajusta y valida.</b> Completa variables como <code>$IP</code>, <code>$USER</code> y <code>$PASS</code>. Usa el boton <code>i</code> para ver objetivo, requisitos, senal de exito, ruido y errores comunes.</li>
-      <li><b>5. Registra la evidencia.</b> Anade un hallazgo, credencial, shell o siguiente paso a Notas. Acepta la sugerencia de progreso solo si ya lo confirmaste.</li>
+      <li><b>3. Lee el resultado principal.</b> Un puerto conocido abre su servicio y acciones prioritarias. Las demás coincidencias son secciones relacionadas, no instrucciones para ejecutar todo.</li>
+      <li><b>4. Ajusta y valida.</b> Completa variables como <code>$IP</code>, <code>$USER</code> y <code>$PASS</code>. Usa el botón <code>i</code> para ver objetivo, requisitos, señal de éxito, ruido y errores comunes.</li>
+      <li><b>5. Registra la evidencia.</b> Añade un hallazgo, credencial, shell o siguiente paso a Notas. Acepta la sugerencia de progreso solo si ya lo confirmaste.</li>
       <li><b>6. Cierra la room.</b> Exporta las notas como Markdown para tener un writeup reproducible y exporta la room sin secretos si quieres guardarla o compartirla.</li>
     </ol>
-    <section class="usage-expectations"><h3>Que esperar de una busqueda</h3><dl><dt><code>445</code></dt><dd>Playbook SMB, comandos iniciales y enlace al detalle.</dd><dt><code>tengo credenciales</code></dt><dd>Rutas de validacion, reutilizacion y acceso relacionadas.</dd><dt><code>shell muere</code></dt><dd>Estabilizacion de shell y diagnostico de listener/TTY.</dd><dt>Sin resultado claro</dt><dd>Prueba un servicio, puerto, tecnologia, error o evidencia concreta; no una pregunta generica.</dd></dl></section>`;
+    <section class="usage-expectations"><h3>Qué esperar de una búsqueda</h3><dl><dt><code>445</code></dt><dd>Playbook SMB, comandos iniciales y enlace al detalle.</dd><dt><code>tengo credenciales</code></dt><dd>Rutas de validación, reutilización y acceso relacionadas.</dd><dt><code>shell muere</code></dt><dd>Estabilización de shell y diagnóstico de listener/TTY.</dd><dt>Sin resultado claro</dt><dd>Prueba un servicio, puerto, tecnología, error o evidencia concreta; no una pregunta genérica.</dd></dl></section>`;
   box.querySelector("[data-usage-close]").addEventListener("click", closeUsageGuide);
   showDialog(el);
 }
@@ -1246,7 +1247,7 @@ function renderShortcuts(data) {
       (shortcut) =>
         `<button type="button" data-query="${escapeHtml(shortcut.query)}" data-target="${escapeHtml(shortcut.target)}">
           <strong>${escapeHtml(shortcut.label)}</strong>
-          <span>${escapeHtml(shortcutHints[shortcut.label] || "Abrir ruta recomendada")}</span>
+          <span>${escapeHtml(shortcutHints[shortcut.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "")] || "Abrir ruta recomendada")}</span>
         </button>`,
     )
     .join("");
@@ -1308,7 +1309,7 @@ function renderResults(sections) {
   const portInfo = state.query ? lookupPort(state.query) : null;
   const portCard = portInfo ? portCardHtml(portInfo) : "";
   if (!sections.length) {
-    const rest = commandMatches || (portCard ? "" : `<p class="list-empty">Sin coincidencias. Cambia fase, tema o termino.</p>`);
+    const rest = commandMatches || (portCard ? "" : `<p class="list-empty">Sin coincidencias. Cambia fase, tema o término.</p>`);
     container.innerHTML = portCard + rest;
     bindPortCard(container);
     bindInlineCommandMatches(container);
@@ -1358,7 +1359,7 @@ function renderInlineCommandMatches() {
   return `<section class="command-matches" aria-label="Comandos encontrados">
     <div class="command-matches-head">
       <strong>Comandos encontrados</strong>
-      <button type="button" data-switch-commands>${entries.length === 6 ? "ver mas" : `${entries.length} resultados`}</button>
+      <button type="button" data-switch-commands>${entries.length === 6 ? "ver más" : `${entries.length} resultados`}</button>
     </div>
     ${entries
       .map((entry) => {
@@ -1429,7 +1430,7 @@ function renderCommandResults() {
   const container = document.querySelector("[data-results]");
   const entries = filterCommands();
   if (!entries.length) {
-    container.innerHTML = `<p class="list-empty">Ningun comando coincide. Prueba otro termino.</p>`;
+    container.innerHTML = `<p class="list-empty">Ningún comando coincide. Prueba otro término.</p>`;
     return;
   }
   const terms = queryTerms();
@@ -1494,11 +1495,11 @@ function renderCommandSearchDetail() {
   container.innerHTML = `
     <header class="detail-head command-search-head">
       <div class="detail-meta">
-        <span class="detail-phase">Busqueda</span>
+        <span class="detail-phase">Búsqueda</span>
         <span class="detail-count">${entries.length} comandos</span>
       </div>
       <h2>Comandos para "${escapeHtml(state.query)}"</h2>
-      <p>Resultados copiables del master y de las secciones. Doble click en un resultado de la izquierda abre su seccion.</p>
+      <p>Resultados copiables del master y de las secciones. Doble click en un resultado de la izquierda abre su sección.</p>
     </header>
     <section class="detail-body">
       <section class="command-shelf command-focus" aria-label="Comandos encontrados">
@@ -1545,7 +1546,7 @@ function commandsHtml(section) {
     ? `Adaptados a <b>${escapeHtml(state.room.ip)}</b>.`
     : "Fija la IP de la room arriba para autocompletar <b>$IP</b> / <b>$URL</b>.";
   const allCommands = escapeHtml(section.commands.map((command) => adaptCommand(command, state.room)).join("\n"));
-  return `<section class="command-shelf" aria-label="Comandos de esta seccion">
+  return `<section class="command-shelf" aria-label="Comandos de esta sección">
     <div class="command-shelf-head">
       <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
       <h3>comandos · ${section.commands.length}</h3>
@@ -1624,17 +1625,17 @@ function sectionBodyHtml(section) {
   const leftover = leftoverCommands(section);
   if (leftover.length) {
     const id = `sec-grp-${k++}`;
-    toc.push({ id, title: "Mas comandos", count: leftover.length });
+    toc.push({ id, title: "Más comandos", count: leftover.length });
     const terms = queryTerms();
     const cards = leftover.map((command) => commandCard(command, { edit: true, terms })).join("");
     parts.push(
-      `<details class="cmd-group" id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">Mas comandos</span><b>${leftover.length} cmd</b><span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body"><div class="code-stack">${cards}</div></div></details>`,
+      `<details class="cmd-group" id="${id}"><summary class="cmd-group-head"><span class="cmd-group-title">Más comandos</span><b>${leftover.length} cmd</b><span class="cmd-group-chev" aria-hidden="true">▾</span></summary><div class="cmd-group-body"><div class="code-stack">${cards}</div></div></details>`,
     );
   }
 
   const tocHtml =
     toc.length >= 2
-      ? `<nav class="section-toc" aria-label="Ir a un bloque de la seccion">${toc
+      ? `<nav class="section-toc" aria-label="Ir a un bloque de la sección">${toc
           .map((item) => `<button type="button" data-jump="${item.id}"><span>${escapeHtml(item.title)}</span><b>${item.count}</b></button>`)
           .join("")}</nav>`
       : "";
@@ -1681,7 +1682,7 @@ function renderDetail(section) {
   const container = document.querySelector("[data-detail]");
   if (!section) {
     container.style.removeProperty("--phase");
-    container.innerHTML = `<div class="empty"><span class="empty-mark">¯\\_(ツ)_/¯</span><strong>Nada por aqui</strong><p>Prueba con otro concepto, fase o etiqueta.</p></div>`;
+    container.innerHTML = `<div class="empty"><span class="empty-mark">¯\\_(ツ)_/¯</span><strong>Nada por aquí</strong><p>Prueba con otro concepto, fase o etiqueta.</p></div>`;
     return;
   }
   const progress = checklistProgress(section);
@@ -2233,7 +2234,7 @@ function bindRoomActions() {
       return;
     }
     const active = state.rooms.find((room) => room.id === state.activeRoomId);
-    if (!window.confirm(`Eliminar ${active?.name || "esta room"}? Esta accion no se puede deshacer.`)) return;
+    if (!window.confirm(`¿Eliminar ${active?.name || "esta room"}? Esta acción no se puede deshacer.`)) return;
     const next = state.rooms.find((room) => room.id !== state.activeRoomId);
     roomStore.storage.remove(secretStorageKey(state.activeRoomId));
     roomStore.sessionStorage.remove(secretStorageKey(state.activeRoomId));
@@ -2638,9 +2639,9 @@ function theoryRowHtml(slug) {
     .map((concept) => `<button type="button" class="theory-chip" data-goto-concept="${escapeHtml(concept.id)}">${escapeHtml(concept.title)}</button>`)
     .join("");
   const more = concepts.length > CAP
-    ? `<button type="button" class="theory-chip theory-more" data-goto-concept="${escapeHtml(concepts[0].id)}">+${concepts.length - CAP} mas</button>`
+    ? `<button type="button" class="theory-chip theory-more" data-goto-concept="${escapeHtml(concepts[0].id)}">+${concepts.length - CAP} más</button>`
     : "";
-  return `<div class="theory-row"><span class="theory-row-label">Teoria</span>${chips}${more}</div>`;
+  return `<div class="theory-row"><span class="theory-row-label">Teoría</span>${chips}${more}</div>`;
 }
 
 function renderLearn() {
@@ -2730,9 +2731,9 @@ export function studyPromptsFor(concept) {
   const evidence = concept.confirmacion || concept.resultado || (concept.senales || [])[0];
   return [
     { label: "Explica", question: `Explica ${concept.title} con tus propias palabras.`, answer: concept.que || concept.summary },
-    { label: "Decide", question: "Que necesitas comprobar antes de usar esta tecnica?", answer: (concept.necesitas || []).join("; ") || concept.cuando },
-    { label: "Interpreta", question: "Que evidencia confirmaria que vas por el camino correcto?", answer: evidence },
-    { label: "Siguiente paso", question: "Cual seria tu siguiente comprobacion manual?", answer: firstStep || concept.resultado },
+    { label: "Decide", question: "¿Qué necesitas comprobar antes de usar esta técnica?", answer: (concept.necesitas || []).join("; ") || concept.cuando },
+    { label: "Interpreta", question: "¿Qué evidencia confirmaría que vas por el camino correcto?", answer: evidence },
+    { label: "Siguiente paso", question: "¿Cuál sería tu siguiente comprobación manual?", answer: firstStep || concept.resultado },
   ].filter((item) => item.answer);
 }
 
@@ -2745,7 +2746,7 @@ function renderStudy() {
   if (!matches.length) {
     listEl.innerHTML = `<p class="list-empty">No hay temas de estudio para "${escapeHtml(state.query)}".</p>`;
     detailEl.removeAttribute("style");
-    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Prueba otra busqueda</strong><p>El modo Estudiar usa los conceptos existentes y no genera contenido automaticamente.</p></div>`;
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Prueba otra búsqueda</strong><p>El modo Estudiar usa los conceptos existentes y no genera contenido automáticamente.</p></div>`;
     return;
   }
   if (!matches.some((concept) => concept.id === state.activeConcept)) state.activeConcept = matches[0].id;
@@ -2776,9 +2777,9 @@ function renderStudy() {
       <summary><span>${index + 1}. ${escapeHtml(card.label)}</span>${escapeHtml(card.question)}</summary>
       <div class="study-answer"><span>Referencia</span><p>${conceptProseHtml(card.answer, [])}</p></div>
     </details>`).join("")}</div>
-    <section class="study-assessment" aria-label="Autoevaluacion manual">
-      <h3>Como te ha ido?</h3>
-      <p>Elige una opcion solo para reflexionar. No cambia tu progreso ni se guarda.</p>
+    <section class="study-assessment" aria-label="Autoevaluación manual">
+      <h3>¿Cómo te ha ido?</h3>
+      <p>Elige una opción solo para reflexionar. No cambia tu progreso ni se guarda.</p>
       <div class="study-assessment-actions">
         <button type="button" data-study-level="No lo entiendo" aria-pressed="false">No lo entiendo</button>
         <button type="button" data-study-level="Con ayuda" aria-pressed="false">Con ayuda</button>
@@ -2791,7 +2792,7 @@ function renderStudy() {
     button.addEventListener("click", () => {
       levelButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
       const status = detailEl.querySelector("[data-study-status]");
-      if (status) status.textContent = `Autoevaluacion: ${button.dataset.studyLevel}.`;
+      if (status) status.textContent = `Autoevaluación: ${button.dataset.studyLevel}.`;
     });
   });
 }
@@ -2812,10 +2813,10 @@ function conceptPageHtml(concept, terms) {
   // Quick-scan block: what this needs, how to test it cheaply, and what
   // confirms it, all above the fold before the deep explanation.
   const necesitas = list("Necesitas", concept.necesitas, "concept-needs");
-  const confirmacion = block("Confirmacion minima", prose(concept.confirmacion));
+  const confirmacion = block("Confirmación mínima", prose(concept.confirmacion));
   const resultado = block("Resultado esperado", prose(concept.resultado));
-  const noAplica = list("Cuando NO aplica", concept.no_aplica, "concept-no-aplica");
-  const senales = list("Que senales lo delatan", concept.senales);
+  const noAplica = list("Cuándo NO aplica", concept.no_aplica, "concept-no-aplica");
+  const senales = list("Qué señales lo delatan", concept.senales);
   const pasos = (concept.pasos || []).length
     ? `<section class="concept-block"><h3>Pasos</h3><ol class="concept-steps">${concept.pasos
         .map((item) => `<li>${prose(item)}</li>`)
@@ -2853,9 +2854,9 @@ function conceptPageHtml(concept, terms) {
     ${confirmacion}
     ${resultado}
     <hr class="concept-divider" />
-    ${block("Que es", prose(concept.que))}
-    ${block("Por que ocurre", prose(concept.porque))}
-    ${block("Cuando aplica", prose(concept.cuando))}
+    ${block("Qué es", prose(concept.que))}
+    ${block("Por qué ocurre", prose(concept.porque))}
+    ${block("Cuándo aplica", prose(concept.cuando))}
     ${noAplica}
     ${senales}
     ${pasos}
@@ -2878,9 +2879,9 @@ function renderConcepts() {
   const hlTerms = queryTerms();
   const matchIds = new Set(state.concepts.filter((concept) => conceptMatches(concept, terms)).map((c) => c.id));
   if (!matchIds.size) {
-    listEl.innerHTML = `<p class="list-empty">Ningun concepto menciona "${escapeHtml(state.query)}".</p>`;
+    listEl.innerHTML = `<p class="list-empty">Ningún concepto menciona "${escapeHtml(state.query)}".</p>`;
     detailEl.removeAttribute("style");
-    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin concepto para eso</strong><p>Cambia a <b>Practica</b> y busca ahi: tiene el comando concreto aunque no haya teoria.</p></div>`;
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin concepto para eso</strong><p>Cambia a <b>Práctica</b> y busca ahí: tiene el comando concreto aunque no haya teoría.</p></div>`;
     return;
   }
   if (!matchIds.has(state.activeConcept)) {
@@ -2942,15 +2943,15 @@ function renderGuides() {
   const detailEl = document.querySelector("[data-guide-detail]");
   if (!listEl || !detailEl) return;
   if (!state.guides.length) {
-    detailEl.innerHTML = `<p class="list-empty">No hay guias disponibles.</p>`;
+    detailEl.innerHTML = `<p class="list-empty">No hay guías disponibles.</p>`;
     return;
   }
   const terms = normalizeQuery(state.query).split(" ").filter(Boolean);
   const matches = state.guides.filter((guide) => guideMatches(guide, terms));
   if (!matches.length) {
-    listEl.innerHTML = `<p class="list-empty">Ninguna guia menciona "${escapeHtml(state.query)}".</p>`;
+    listEl.innerHTML = `<p class="list-empty">Ninguna guía menciona "${escapeHtml(state.query)}".</p>`;
     detailEl.removeAttribute("style");
-    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin guia para eso</strong><p>Cambia a <b>Practica</b> y busca ahi: tiene el comando concreto aunque no haya guia teorica.</p></div>`;
+    detailEl.innerHTML = `<div class="empty"><span class="empty-mark">?</span><strong>Sin guía para eso</strong><p>Cambia a <b>Práctica</b> y busca ahí: tiene el comando concreto aunque no haya guía teórica.</p></div>`;
     return;
   }
   if (!matches.some((guide) => guide.id === state.activeGuide)) {
@@ -3081,11 +3082,11 @@ function renderGuidedPractica() {
     .join("");
   const firstRun = state.firstRun ? `<div class="guided-first-run"><strong>¿Qué vas a hacer hoy?</strong><button type="button" data-first-practica>Resolver una room</button><button type="button" data-first-learn>Aprender una técnica</button></div>` : "";
   container.innerHTML = `<div class="guided">
-      <h2>Que has encontrado?</h2>
-      <p>Escribe un puerto, servicio, error, permiso o credencial. Fieldbook te lleva al siguiente playbook util.</p>
+      <h2>¿Qué has encontrado?</h2>
+      <p>Escribe un puerto, servicio, error, permiso o credencial. Fieldbook te lleva al siguiente playbook útil.</p>
       ${firstRun}
       <div class="guided-block"><span class="guided-label">Prueba con una evidencia real</span><div class="guided-row">${examples}</div></div>
-      <p class="guided-hint">Los filtros y el catalogo aparecen cuando sales de esta entrada guiada.</p>
+      <p class="guided-hint">Los filtros y el catálogo aparecen cuando sales de esta entrada guiada.</p>
     </div>`;
   container.querySelectorAll("[data-guided-q]").forEach((button) => {
     button.addEventListener("click", () => {
