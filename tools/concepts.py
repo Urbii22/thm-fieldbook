@@ -15,11 +15,11 @@
 CONCEPTS = [
     {
         "id": "lfi",
-        "title": "Local File Inclusión (LFI)",
+        "title": "Local File Inclusion (LFI)",
         "phase": "enumeration",
         "section": "web-ficheros-y-ejecucion",
         "summary": "La web incluye un fichero cuyo nombre controlas tú; si no lo valida, lees ficheros del servidor.",
-        "que": "Una LFI ocurre cuando una página construye la ruta de un fichero a incluir usando un valor que viene del usuario (típicamente un parámetro como ?page=), sin comprobar que ese valor sea uno de los permitidos. El servidor entonces lee y a veces ejecuta el fichero que tu le pidas, no el que el programador esperaba.",
+        "que": "Una LFI ocurre cuando una página construye la ruta de un fichero a incluir usando un valor que viene del usuario (típicamente un parámetro como ?page=), sin comprobar que ese valor sea uno de los permitidos. El servidor entonces lee y a veces ejecuta el fichero que tú le pidas, no el que el programador esperaba.",
         "porque": "El código hace algo como include($_GET['page'].'.php'). El programador asume que page siempre será 'home' o 'about', pero nada lo obliga. Si metes ../../../../etc/passwd, la función de inclusión resuelve esa ruta relativa y sirve el fichero. La causa raíz es confiar en la entrada del usuario para decidir qué fichero abrir.",
         "cuando": "Sospecha LFI en cualquier parámetro que parezca nombrar una vista, una plantilla, un idioma o un documento: page, file, view, template, lang, doc, include. Sobre todo si el valor aparece reflejado en la URL y el contenido de la página cambia según ese valor.",
         "no_aplica": [
@@ -175,7 +175,7 @@ CONCEPTS = [
             {
                 "cmd": "' UNION SELECT NULL,version(),NULL-- -",
                 "why": "Extrae la versión del motor por una columna reflejada (ajusta la posición a la que viste antes).",
-                "out": "La versión de MySQL/MariaDB; te dice que sintaxis de enumeración usar.",
+                "out": "La versión de MySQL/MariaDB; te dice qué sintaxis de enumeración usar.",
             },
             {
                 "cmd": "' UNION SELECT NULL,table_name,NULL FROM information_schema.tables-- -",
@@ -200,7 +200,7 @@ CONCEPTS = [
             {
                 "cmd": "' AND 1=1-- -",
                 "why": "Blind booleana (caso verdadero): la página responde normal. Compáralo con el caso 1=2.",
-                "out": "Respuesta identica a la normal = condición verdadera. Es tu oráculo de 'si'.",
+                "out": "Respuesta idéntica a la normal = condición verdadera. Es tu oráculo de 'sí'.",
             },
             {
                 "cmd": "' AND 1=2-- -",
@@ -225,7 +225,7 @@ CONCEPTS = [
         "phase": "access",
         "section": "acceso-inicial",
         "summary": "Dos formas de conseguir una shell remota; la dirección de la conexión decide cuál funciona detrás de un firewall.",
-        "que": "Una bind shell abre un puerto EN LA VICTIMA y tu te conectas a el. Una reverse shell hace lo contrario: la víctima se conecta HACIA TI, a un listener que tienes abierto. En ambos casos acabas con una shell del objetivo, pero la dirección de la conexión cambia cuál es viable.",
+        "que": "Una bind shell abre un puerto EN LA VÍCTIMA y tú te conectas a él. Una reverse shell hace lo contrario: la víctima se conecta HACIA TI, a un listener que tienes abierto. En ambos casos acabas con una shell del objetivo, pero la dirección de la conexión cambia cuál es viable.",
         "porque": "Los firewalls casi siempre bloquean conexiones entrantes a la víctima pero permiten las salientes. Por eso la reverse shell (víctima -> atacante) funciona donde la bind shell (atacante -> víctima) falla: la conexión de salida rara vez está filtrada. Por defecto, piensa siempre en reverse.",
         "cuando": "Reverse: el caso normal, sobre todo si la víctima está tras NAT o firewall. Bind: solo cuando TU no puedes recibir conexiones (estás tras NAT sin port-forward) pero la víctima sí acepta entrantes. Tras conseguirla, casi siempre toca [[tty-stabilization]].",
         "no_aplica": [
@@ -803,7 +803,7 @@ CONCEPTS = [
         ],
         "pasos": [
             "Saca la versión exacta y busca exploits para ESE producto y versión.",
-            "Lee el PoC entero: que variables pide y si hace algo peligroso o conecta fuera.",
+            "Lee el PoC entero: qué variables pide y si hace algo peligroso o conecta fuera.",
             "Cambia IP/puerto a los tuyos y prueba primero con un comando inocuo (id).",
             "Confirmada la ejecución, cambia el comando por tu reverse shell ([[reverse-vs-bind]]).",
         ],
@@ -948,7 +948,7 @@ CONCEPTS = [
             },
             {
                 "cmd": "whoami /groups",
-                "why": "Muestra tus grupos y el nivel de integridad. Pertenecer a Administrators (aunque sin elevar) o un nivel alto cambia que vectores aplican.",
+                "why": "Muestra tus grupos y el nivel de integridad. Pertenecer a Administrators (aunque sin elevar) o un nivel alto cambia qué vectores aplican.",
                 "out": "Grupos y flags. 'BUILTIN\\Administrators' presente -> bypass de UAC para elevar. Nivel de integridad Medium vs High orienta el siguiente paso.",
             },
         ],
@@ -1012,7 +1012,7 @@ CONCEPTS = [
         "confirmacion": "Levanta el túnel y prueba un curl/nc contra un puerto conocido de la red interna antes de escanear.",
         "resultado": "El puerto SOCKS local escuchando (ss -tlnp) y respuesta del host interno a través del proxy.",
         "senales": [
-            "El pivot tiene una IP en un rango distinto al que tu atacas (ej. 10.10.20.x).",
+            "El pivot tiene una IP en un rango distinto al que tú atacas (ej. 10.10.20.x).",
             "ip route o arp -a revelan hosts internos que no salían en tu escaneo inicial.",
             "Servicios internos que solo responden a través del proxy.",
         ],
@@ -1041,7 +1041,7 @@ CONCEPTS = [
         "phase": "privesc",
         "section": "linux-privesc",
         "summary": "Antes de explotar hay que enumerar en orden fijo; un script automatiza, pero saber qué mira cada check es lo que te hace resolver.",
-        "que": "Enumerar para privesc es recorrer de forma sistemática todos los vectores posibles en un orden que va de lo más rentable a lo más laborioso. Herramientas como linpeas lo automatizan y colorean los hallazgos, pero entender que representa cada resultado es lo que convierte 'output' en 'vector'. Es el paso previo obligado del [[privesc-modelo]].",
+        "que": "Enumerar para privesc es recorrer de forma sistemática todos los vectores posibles en un orden que va de lo más rentable a lo más laborioso. Herramientas como linpeas lo automatizan y colorean los hallazgos, pero entender qué representa cada resultado es lo que convierte 'output' en 'vector'. Es el paso previo obligado del [[privesc-modelo]].",
         "porque": "Adivinar pierde tiempo. Un recorrido fijo (sudo, SUID, capabilities, cron, servicios, credenciales, kernel) garantiza que no te saltas nada. linpeas resalta en rojo/amarillo lo probable, pero da falsos positivos: hay que validar cada pista contra el modelo mental.",
         "cuando": "Justo tras conseguir shell y estabilizarla ([[tty-stabilization]]). Corre primero los checks rápidos manuales (sudo -l, id) y luego lanza linpeas para lo exhaustivo.",
         "necesitas": [
@@ -1114,7 +1114,7 @@ CONCEPTS = [
             {
                 "cmd": "/usr/bin/python3 -c 'import os; os.setuid(0); os.system(\"/bin/bash\")'",
                 "why": "Si python tiene cap_setuid, setuid(0) cambia tu uid a root y luego lanzas una shell que ya corre como root. Es la receta de GTFOBins para esa capability.",
-                "out": "Prompt de root y id con uid=0. Cambia python por el intérprete concreto que getcap marco con cap_setuid.",
+                "out": "Prompt de root y id con uid=0. Cambia python por el intérprete concreto que getcap marcó con cap_setuid.",
             },
         ],
     },
@@ -1293,7 +1293,7 @@ CONCEPTS = [
         "phase": "privesc",
         "section": "linux-privesc",
         "summary": "Pertenecer a ciertos grupos es root casi directo: docker/lxd montan el disco del host; disk lo lee crudo.",
-        "que": "Algunos grupos conceden capacidades que equivalen a root aunque tu usuario no lo sea. docker y lxd permiten arrancar un contenedor que monta el sistema de ficheros del host y escribir en el como root. disk da acceso crudo al dispositivo (leer /etc/shadow con debugfs). adm permite leer todos los logs. Es el atajo más rápido del [[privesc-modelo]].",
+        "que": "Algunos grupos conceden capacidades que equivalen a root aunque tu usuario no lo sea. docker y lxd permiten arrancar un contenedor que monta el sistema de ficheros del host y escribir en él como root. disk da acceso crudo al dispositivo (leer /etc/shadow con debugfs). adm permite leer todos los logs. Es el atajo más rápido del [[privesc-modelo]].",
         "porque": "Estos grupos existen para administrar subsistemas, pero su poder se traduce trivialmente en root: si controlas el demonio de contenedores puedes montar / del host; si lees el disco crudo, saltas todos los permisos de fichero. Por eso id/groups es lo primero que se mira.",
         "cuando": "Nada más orientarte con id/groups ([[privesc-modelo]]). Si sales en docker/lxd/disk/adm, prioriza este vector sobre todo lo demás.",
         "necesitas": [
@@ -1335,7 +1335,7 @@ CONCEPTS = [
         "phase": "privesc",
         "section": "linux-privesc",
         "summary": "Un export NFS con no_root_squash te deja crear ficheros SUID como root desde tu máquina y ejecutarlos en la víctima.",
-        "que": "no_root_squash es una opción de NFS que hace que el root de tu máquina sea tratado como root en el servidor NFS (en lugar de degradarlo a nobody). Si un share exportado con esa opción está montado en una ruta accesible en la víctima, montas el share desde tu Kali (donde SI eres root), creas ahí un binario SUID root, y lo ejecutas en la víctima para escalar.",
+        "que": "no_root_squash es una opción de NFS que hace que el root de tu máquina sea tratado como root en el servidor NFS (en lugar de degradarlo a nobody). Si un share exportado con esa opción está montado en una ruta accesible en la víctima, montas el share desde tu Kali (donde SÍ eres root), creas ahí un binario SUID root, y lo ejecutas en la víctima para escalar.",
         "porque": "Normalmente NFS 'aplasta' (squash) el root remoto para que no pueda actuar como root local. no_root_squash desactiva esa protección: los ficheros que creas como root en tu máquina conservan uid 0 en el servidor. Un binario SUID creado así corre como root al ejecutarlo en la víctima.",
         "cuando": "Cuando ves NFS (2049) o /etc/exports revela un share con no_root_squash. showmount lista los exports disponibles.",
         "necesitas": [
@@ -1775,7 +1775,7 @@ CONCEPTS = [
         "commands": [
             {
                 "cmd": "systeminfo > sysinfo.txt",
-                "why": "Captura versión, build y hotfixes. Es la entrada para las herramientas que sugieren que exploit de kernel aplica a esta máquina.",
+                "why": "Captura versión, build y hotfixes. Es la entrada para las herramientas que sugieren qué exploit de kernel aplica a esta máquina.",
                 "out": "OS versión/build y lista de KB. Guárdalo y pásalo por wesng: te dará CVEs sin parchear con exploit público.",
             },
             {
@@ -1804,7 +1804,7 @@ CONCEPTS = [
             "Un servicio de login accesible: ssh, ftp, smb, o un formulario web.",
             "Al menos un usuario, o una lista users.txt (sácala de enum: [[smb-enum]], la web, OSINT).",
             "Un diccionario de passwords (rockyou.txt cubre la mayoría de rooms).",
-            "Para un login WEB: el método (GET/POST), los nombres exactos de los campos usuario/password, y el mensaje EXACTO que sale al fallar (hydra lo usa para saber que un intento fallo).",
+            "Para un login WEB: el método (GET/POST), los nombres exactos de los campos usuario/password, y el mensaje EXACTO que sale al fallar (hydra lo usa para saber que un intento falló).",
         ],
         "senales": [
             "Hay un panel de login, un ssh o un ftp expuesto y no tienes con que entrar.",
@@ -1836,7 +1836,7 @@ CONCEPTS = [
         "phase": "privesc",
         "section": "linux-privesc",
         "summary": "Un script Python que corre como root importa un módulo; si puedes escribir ese módulo (o uno que Python busque antes), tu código corre como root.",
-        "que": "Cuando un script de Python que se ejecuta como root hace 'import módulo', Python busca ese módulo recorriendo una lista de directorios (sys.path) en orden. Si puedes colocar un fichero .py con ese nombre en un directorio que se busque ANTES que el módulo real, o sobrescribir el propio módulo, tu código se ejecuta con privilegios de root al importarse. Es el [[path-hijacking]] aplicado al sistema de imports de Python.",
+        "que": "Cuando un script de Python que se ejecuta como root hace 'import modulo', Python busca ese módulo recorriendo una lista de directorios (sys.path) en orden. Si puedes colocar un fichero .py con ese nombre en un directorio que se busque ANTES que el módulo real, o sobrescribir el propio módulo, tu código se ejecuta con privilegios de root al importarse. Es el [[path-hijacking]] aplicado al sistema de imports de Python.",
         "porque": "sys.path incluye, y normalmente en primer lugar, el directorio del propio script; además de PYTHONPATH y los site-packages. El programador confía en qué se importará el módulo legítimo, pero Python simplemente coge el primero que encuentra. Si el directorio del script es escribible, o el módulo importado lo es, o sudo conserva PYTHONPATH, rompes esa confianza. Misma lógica que el [[privesc-modelo]].",
         "cuando": "Cuando puedes ejecutar un script Python como root (vía [[sudo-abuse]]) o un cron root lo ejecuta, Y puedes escribir uno de los sitios donde Python busca sus módulos. Es un vector muy común en rooms de escalada Linux.",
         "no_aplica": [
@@ -1866,7 +1866,7 @@ CONCEPTS = [
             {
                 "cmd": "sudo -l",
                 "why": "Punto de partida: ver si puedes ejecutar un script .py como root. Una entrada NOPASSWD sobre un python es el candidato típico de este vector.",
-                "out": "Líneas '(root) NOPASSWD: /usr/bin/python3 /ruta/script.py'. Abre y lee ese script: te dice que módulos importa y donde vive.",
+                "out": "Líneas '(root) NOPASSWD: /usr/bin/python3 /ruta/script.py'. Abre y lee ese script: te dice qué módulos importa y dónde vive.",
             },
             {
                 "cmd": "python3 -c 'import sys; print(sys.path)'",
@@ -1886,7 +1886,7 @@ CONCEPTS = [
         "phase": "enumeration",
         "section": "web-inyecciones",
         "summary": "Tu entrada se evalúa como código de plantilla en vez de mostrarse como texto; según el motor, eso llega a ejecución de comandos.",
-        "que": "Muchas apps meten tu entrada dentro de una plantilla (Jinja2, Twig, Freemarker...) para generar HTML dinámico. Si el motor de plantillas EVALUA tu entrada en vez de solo insertarla como texto, puedes inyectar sintaxis de la propia plantilla. Según el motor, eso escala desde leer variables internas hasta ejecutar comandos del sistema.",
+        "que": "Muchas apps meten tu entrada dentro de una plantilla (Jinja2, Twig, Freemarker...) para generar HTML dinámico. Si el motor de plantillas EVALÚA tu entrada en vez de solo insertarla como texto, puedes inyectar sintaxis de la propia plantilla. Según el motor, eso escala desde leer variables internas hasta ejecutar comandos del sistema.",
         "porque": "El programador hace algo como render_template_string('Hola ' + nombre) en vez de pasar nombre como variable separada. El motor no distingue 'tu texto' de 'código de plantilla que debo evaluar', igual que en [[sqli]] o [[command-injection]] la app no distingue dato de instrucción.",
         "cuando": "Cuando tu entrada aparece reflejada en la página Y el backend usa un motor de plantillas (Jinja2/Python, Twig/PHP, Freemarker o Velocity/Java, ERB/Ruby). Sospecha en campos de nombre, mensajes, plantillas de email o generación de PDF/HTML.",
         "necesitas": [
@@ -1928,7 +1928,7 @@ CONCEPTS = [
         "title": "Server-Side Request Forgery (SSRF)",
         "phase": "enumeration",
         "section": "web-inyecciones",
-        "summary": "Consigues que el SERVIDOR haga una petición HTTP a la URL que tu eliges, alcanzando redes internas que tú no ves directamente.",
+        "summary": "Consigues que el SERVIDOR haga una petición HTTP a la URL que tú eliges, alcanzando redes internas que tú no ves directamente.",
         "que": "Un SSRF ocurre cuando la app acepta una URL (para descargar un avatar, verificar un webhook, importar un fichero remoto...) y el SERVIDOR la solicita el mismo. Si controlas esa URL, el servidor se convierte en tu proxy: puedes hacerle pedir localhost, la red interna, o metadatos de la nube, cosas a las que tú no llegas directamente.",
         "porque": "El programador confía en qué la URL apuntará a un recurso externo legítimo (una imagen, un webhook real) y no valida ni restringe el destino. El servidor, al estar dentro de la red interna, ve cosas que tu Kali no ve desde fuera.",
         "cuando": "Cuando un parámetro pide una URL, un dominio, o algo que 'importa' o 'verifica' un recurso remoto: url, webhook, avatar, import, callback, feed. Muy común también en generadores de PDF que renderizan una URL.",
@@ -2059,7 +2059,7 @@ CONCEPTS = [
         "title": "Cross-Site Scripting (XSS)",
         "phase": "enumeration",
         "section": "web-inyecciones",
-        "summary": "Tu entrada se inserta en el HTML/JS de la página sin escapar; un navegador que la visita ejecuta el JavaScript que tu pusiste.",
+        "summary": "Tu entrada se inserta en el HTML/JS de la página sin escapar; un navegador que la visita ejecuta el JavaScript que tú pusiste.",
         "que": "Un XSS ocurre cuando la app mete tu entrada dentro del HTML de una página sin neutralizar caracteres especiales (<, >, \"), y el navegador de OTRA persona (o el tuyo) interpreta esa entrada como código HTML/JavaScript en vez de texto. Hay tres tipos: reflejado (el payload viaja en la URL/petición y se refleja en la respuesta inmediata), almacenado (el payload se guarda en la BD y se sirve a cualquiera que vea esa página), y DOM-based (el JavaScript del CLIENTE inserta el payload sin pasar por el servidor).",
         "porque": "El HTML no distingue 'texto que el usuario escribió' de 'código que el navegador debe ejecutar' salvo que la app escape los caracteres especiales antes de insertarlo. Es la misma causa raíz que [[sqli]] (mezclar dato y código), aplicada al navegador en vez de a la base de datos.",
         "cuando": "En cualquier campo cuyo valor termine mostrándose en HTML: comentarios, nombres de perfil, búsquedas, mensajes de error que reflejan tu input, parámetros de URL que se pintan en la página.",
@@ -2079,7 +2079,7 @@ CONCEPTS = [
             "El payload de prueba dispara el alert/console.log.",
         ],
         "pasos": [
-            "Identifica donde se refleja o almacena tu entrada viendo el HTML fuente (no solo lo que se ve renderizado).",
+            "Identifica dónde se refleja o almacena tu entrada viendo el HTML fuente (no solo lo que se ve renderizado).",
             "Prueba un payload mínimo de detección (<script>alert(1)</script>); si se filtra, prueba variantes (atributos de evento, distintas etiquetas).",
             "Distingue el tipo: si el payload va en la URL y se refleja al momento, es reflejado; si persiste tras recargar o lo ve otro usuario, es almacenado.",
             "En un CTF/lab, el impacto típico es robar la cookie de sesión de otro usuario o forzar una acción en su nombre.",
@@ -2109,7 +2109,7 @@ CONCEPTS = [
             "El servidor valida magic bytes Y extensión Y Content-Type de forma consistente, y además sirve los uploads desde una ruta sin permiso de ejecución.",
             "Los ficheros subidos se guardan fuera del webroot o se renombran de forma no predecible sin que puedas listarlos.",
         ],
-        "confirmacion": "Sube un fichero con extensión ejecutable disfrazado de imagen (Content-Type image/png) y comprueba si el servidor lo acepta y donde lo guarda.",
+        "confirmacion": "Sube un fichero con extensión ejecutable disfrazado de imagen (Content-Type image/png) y comprueba si el servidor lo acepta y dónde lo guarda.",
         "resultado": "El fichero se sube sin rechazo y puedes localizarlo (ruta predecible o listado); al pedirlo por HTTP, el servidor lo EJECUTA en vez de servirlo como archivo estático.",
         "senales": [
             "El formulario solo comprueba la extensión del NOMBRE, no el contenido real del fichero.",
@@ -2117,7 +2117,7 @@ CONCEPTS = [
             "El Content-Type que TU envías en la petición es el que decide la validación (fácilmente falseable).",
         ],
         "pasos": [
-            "Prueba primero un upload normal para entender el flujo: donde se guarda, como se nombra, si redirige a una URL del fichero.",
+            "Prueba primero un upload normal para entender el flujo: dónde se guarda, cómo se nombra, si redirige a una URL del fichero.",
             "Prueba bypasses de extensión: doble extensión (shell.php.jpg), extensiones alternativas que el servidor también ejecuta (.phtml, .phar), o null byte si el stack es muy viejo.",
             "Si valida Content-Type, cámbialo a image/png o similar mientras el contenido sigue siendo tu shell.",
             "Localiza el fichero subido y pídelo por HTTP; si se ejecuta, confirma con un payload mínimo antes de una reverse shell completa.",
@@ -2148,7 +2148,7 @@ CONCEPTS = [
         "commands": [
             {"cmd": "keepass2john vault.kdbx > vault.hash", "why": "Convierte la protección del vault a un formato que John puede atacar offline.", "out": "Un hash de KeePass en vault.hash; si no se genera, revisa la herramienta y el tipo de vault."},
             {"cmd": "john --wordlist=/usr/share/wordlists/rockyou.txt vault.hash", "why": "Prueba una master password con un diccionario sin interactuar más con el objetivo.", "out": "Password recuperada o resultado negativo para orientar una pista mejor."},
-            {"cmd": "keepassxc-cli ls vault.kdbx", "why": "Lista las entradas del vault después de desbloquearlo para clasificar que servicio representa cada una.", "out": "Grupos y nombres de entradas; revisa secretos solo dentro del alcance autorizado."},
+            {"cmd": "keepassxc-cli ls vault.kdbx", "why": "Lista las entradas del vault después de desbloquearlo para clasificar qué servicio representa cada una.", "out": "Grupos y nombres de entradas; revisa secretos solo dentro del alcance autorizado."},
         ],
     },
     {
@@ -2196,7 +2196,7 @@ CONCEPTS = [
         "phase": "enumeration",
         "section": "web-inyecciones",
         "summary": "Un parámetro llega sin filtrar a una llamada al sistema operativo (ping, convert, backup); anades un separador de shell y ejecutas lo tuyo.",
-        "que": "Ocurre cuando la app construye un comando del sistema operativo concatenando tu entrada (por ejemplo, para hacer ping a una IP que tu escribes) y lo ejecuta con system()/exec()/popen(). Como el shell no distingue 'el argumento que espera la app' de 'un comando nuevo', separadores como ; && | permiten añadir tu propio comando a continuación.",
+        "que": "Ocurre cuando la app construye un comando del sistema operativo concatenando tu entrada (por ejemplo, para hacer ping a una IP que tú escribes) y lo ejecuta con system()/exec()/popen(). Como el shell no distingue 'el argumento que espera la app' de 'un comando nuevo', separadores como ; && | permiten añadir tu propio comando a continuación.",
         "porque": "El programador confía en qué el campo (host, IP, nombre de fichero) solo contendrá ese dato, sin validar ni escapar los caracteres especiales de shell. Misma causa raíz que [[sqli]] y [[ssti]]: mezclar dato de usuario con una instrucción que el sistema interpreta.",
         "cuando": "En funciones que 'suenan a' llamar herramientas del sistema: ping, traceroute, nslookup, convertir un fichero, hacer backup, comprobar disponibilidad de un host. Parámetros típicos: host, ip, domain, filename, target.",
         "necesitas": [
@@ -2234,7 +2234,7 @@ CONCEPTS = [
         "phase": "enumeration",
         "section": "web-inyecciones",
         "summary": "El backend ejecuta una herramienta (curl, wget, tar, convert) con tu entrada como argumento; no metes un comando nuevo, sino flags o una segunda URL/fichero que cambian lo que hace.",
-        "que": "Ocurre cuando la app pasa tu entrada como ARGUMENTO a un binario que ya ejecuta (curl una URL, tar un fichero, ImageMagick una imagen), sin escaparla. No hay un shell que intérprete ';': lo que abusas son las CAPACIDADES de esa herramienta. Con curl, por ejemplo, puedes colar una segunda URL o el esquema file:// para leer ficheros locales; con tar, flags como --checkpoint-action para ejecutar código.",
+        "que": "Ocurre cuando la app pasa tu entrada como ARGUMENTO a un binario que ya ejecuta (curl una URL, tar un fichero, ImageMagick una imagen), sin escaparla. No hay un shell que interprete ';': lo que abusas son las CAPACIDADES de esa herramienta. Con curl, por ejemplo, puedes colar una segunda URL o el esquema file:// para leer ficheros locales; con tar, flags como --checkpoint-action para ejecutar código.",
         "porque": "El programador valida superficialmente 'la URL' o 'el fichero' pero construye la invocación concatenando tu texto en la línea de argumentos. La herramienta hace exactamente lo que le pides: curl acepta varias URLs y el esquema local file://, así que una entrada como 'http://ok file:///etc/passwd' se convierte en dos descargas.",
         "cuando": "Cuando la salida delata que el backend envuelve una herramienta (aparece un medidor de progreso de curl, cabeceras, mensajes de wget/tar) y un ';id' NO ejecuta un segundo comando. Es la diferencia clave: si ';whoami' no corre pero un file:// o un flag si cambian el resultado, es argument injection, no [[command-injection]].",
         "necesitas": [
@@ -2271,7 +2271,7 @@ CONCEPTS = [
         "title": "Bypass de OTP/MFA por manipulación de parámetros",
         "phase": "access",
         "section": "web-apis-y-autorizacion",
-        "summary": "El servidor confía en un dato que envía el cliente (is_verified=true) para dar por superado el 2FA; tu decides el estado de una comprobación que debería calcular solo el servidor.",
+        "summary": "El servidor confía en un dato que envía el cliente (is_verified=true) para dar por superado el 2FA; tú decides el estado de una comprobación que debería calcular solo el servidor.",
         "que": "El segundo factor (OTP, código por email/SMS) debe verificarlo y recordarlo EL SERVIDOR. El bypass aparece cuando el backend acepta del cliente una señal de 'ya verificado' (un campo is_verified, verified, mfa_passed, un paso de estado) y la respeta aunque el OTP sea incorrecto. Es parameter tampering aplicado a un control de seguridad: ver [[client-side-controls]].",
         "porque": "El desarrollador reutiliza un formulario o un JSON donde el estado de verificación viaja junto a los datos y confía en el. Como el cliente controla todo lo que envía, puede poner is_verified=true. La causa raíz es mantener el estado de seguridad en el cliente en vez de derivarlo en el servidor tras comprobar el OTP.",
         "cuando": "En cualquier paso de 2FA/OTP tras un login válido: una pantalla de 'introduce el código', un endpoint verify_otp, un formulario con campos ocultos de estado. Intercepta la petición y mira qué campos viajan además del propio código.",
@@ -2551,7 +2551,7 @@ CONCEPTS = [
         "summary": "El servidor de correo a veces confirma si un usuario existe (VRFY/EXPN) o filtra software en el banner.",
         "que": "SMTP (puerto 25, o 587/465) es el protocolo de envío de correo. Algunos servidores mal configurados responden a los comandos VRFY (verifica si un usuario existe) o EXPN (expande una lista de distribución), lo que te deja confirmar usuarios válidos del dominio sin autenticarte. El banner también suele filtrar el software y versión del MTA.",
         "porque": "VRFY/EXPN son comandos legítimos del protocolo SMTP pensados para diagnóstico, pero dejarlos activos sin restricción permite enumerar cuentas de correo válidas (que a menudo son también cuentas del sistema o del dominio). Es la misma lógica de fuga de información que RID brute en [[smb-enum]].",
-        "cuando": "Cuando el recon muestra el puerto 25 (o 587/465) abierto. Sirve tanto para sacar usuarios como para entender que servidor de correo corre.",
+        "cuando": "Cuando el recon muestra el puerto 25 (o 587/465) abierto. Sirve tanto para sacar usuarios como para entender qué servidor de correo corre.",
         "necesitas": [
             "El puerto 25 (o 587/465) abierto en el objetivo.",
         ],
@@ -3006,7 +3006,7 @@ CONCEPTS = [
         "phase": "enumeration",
         "section": "recon-y-servicios",
         "summary": "Separar captura, filtrado e interpretación para reconstruir conversaciones de red sin intervenir en ellas.",
-        "que": "Una captura PCAP conserva paquetes observados en una interfaz. Los filtros de captura reducen que se guarda; los filtros de visualización seleccionan después que analizar. Seguir un stream reconstruye la conversación de una sesión TCP.",
+        "que": "Una captura PCAP conserva paquetes observados en una interfaz. Los filtros de captura reducen qué se guarda; los filtros de visualización seleccionan después qué analizar. Seguir un stream reconstruye la conversación de una sesión TCP.",
         "porque": "Mirar paquetes aislados produce conclusiones pobres. Relacionar DNS, establecimiento TCP, protocolo de aplicación, autenticación y errores permite identificar hosts, servicios y datos expuestos con evidencia temporal.",
         "cuando": "Cuando tienes permiso y visibilidad de una interfaz, una PCAP de una room o necesitas entender por qué dos sistemas no se comunican.",
         "no_aplica": ["No ver tráfico no demuestra que el servicio no exista: puede faltar visibilidad, interfaz o ventana temporal.", "TLS protege el contenido aunque metadatos como IP, puerto, SNI y tiempos sigan siendo visibles."],
@@ -3024,7 +3024,7 @@ CONCEPTS = [
         "title": "Segmentación, rutas y firewalls",
         "phase": "pivot",
         "section": "pivoting",
-        "summary": "Distinguir que redes conoce cada host, que camino sigue el tráfico y que control permite o bloquea cada dirección.",
+        "summary": "Distinguir qué redes conoce cada host, qué camino sigue el tráfico y qué control permite o bloquea cada dirección.",
         "que": "La segmentación separa redes y limita sus flujos mediante rutas, ACL y firewalls. Alcanzable describe que existe un camino; permitido describe que los controles dejan pasar protocolo, puerto y dirección concretos.",
         "porque": "Un host comprometido puede tener rutas que Kali no posee. También puede aceptar conexiones salientes pero bloquear entrantes, motivo por el que un túnel reverse funciona donde uno directo falla.",
         "cuando": "Cuando aparecen varias interfaces, subredes internas, puertos filtered, respuestas asimétricas o servicios accesibles solo desde otro host.",
@@ -3035,7 +3035,7 @@ CONCEPTS = [
         "senales": ["ip route", "Dos interfaces", "filtered", "Timeout", "Egress permitido", "Red interna"],
         "pasos": ["Dibuja redes por host.", "Compara las rutas.", "Prueba un puerto conocido.", "Identifica dirección y control.", "Elige túnel o forwarding mínimo."],
         "commands": [
-            {"cmd": "ip route", "why": "Muestra que redes conoce el host actual y por qué interfaz o gateway intentará alcanzarlas.", "out": "Prefijos, gateways e interfaces que revelan redes internas y posibles pivots."},
+            {"cmd": "ip route", "why": "Muestra qué redes conoce el host actual y por qué interfaz o gateway intentará alcanzarlas.", "out": "Prefijos, gateways e interfaces que revelan redes internas y posibles pivots."},
         ],
     },
     {

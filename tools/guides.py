@@ -155,7 +155,7 @@ GUIDES = [
                     {
                         "cmd": "whatweb $URL",
                         "why": "La tecnología condiciona los bugs probables: un PHP viejo huele a LFI/RCE, un template engine a SSTI. Empiezas por saber contra qué juegas.",
-                        "out": "Lenguaje/framework, versiones, cabeceras. Guárdalo: te dirá que extensiones fuzzear (.php, .aspx) y que familia de bug priorizar.",
+                        "out": "Lenguaje/framework, versiones, cabeceras. Guárdalo: te dirá qué extensiones fuzzear (.php, .aspx) y qué familia de bug priorizar.",
                     },
                     {
                         "cmd": "ffuf -u \"$URL/FUZZ\" -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.bak -fc 404",
@@ -267,7 +267,7 @@ GUIDES = [
             },
             {
                 "title": "Explota el vector, no solo lo enumeres",
-                "idea": "Encontrar el vector es la mitad; hay que ejecutarlo. GTFOBins te da la línea concreta para cada binario. La idea común es forzar que ese proceso privilegiado te de una shell o te copie/edite algo como root (por ejemplo, poner el bit SUID a bash).",
+                "idea": "Encontrar el vector es la mitad; hay que ejecutarlo. GTFOBins te da la línea concreta para cada binario. La idea común es forzar que ese proceso privilegiado te dé una shell o te copie/edite algo como root (por ejemplo, poner el bit SUID a bash).",
                 "commands": [
                     {
                         "cmd": "sudo find . -exec /bin/sh \\; -quit",
@@ -649,8 +649,8 @@ GUIDES = [
                     },
                     {
                         "cmd": "systeminfo",
-                        "why": "Versión, build y arquitectura de Windows. Te dice si un exploit de kernel podría aplicar más adelante, y que binarios (32/64 bits) subir después.",
-                        "out": "OS Versión/Build y System Type (x64/x86). Guarda esto para comparar con CVEs si los vectores de config no dan nada.",
+                        "why": "Versión, build y arquitectura de Windows. Te dice si un exploit de kernel podría aplicar más adelante, y qué binarios (32/64 bits) subir después.",
+                        "out": "OS Version/Build y System Type (x64/x86). Guarda esto para comparar con CVEs si los vectores de config no dan nada.",
                     },
                 ],
                 "look": "Privilegios de token con State: Enabled (no basta con que aparezcan listados, tienen que estar habilitados). Grupos privilegiados. Versión exacta del sistema.",
@@ -721,7 +721,7 @@ GUIDES = [
                     },
                 ],
                 "look": "Confirmación clara de SYSTEM o admin con integridad alta, no solo pertenecer al grupo Administrators con integridad Medium (eso todavía necesitaría un bypass de UAC).",
-                "decide": "SYSTEM confirmado -> recoge la flag y documenta el vector exacto (qué privilegio/servicio/credencial lo permitio). Sigues en Medium/usuario normal -> vuelve a los vectores prioritarios antes de recurrir a un exploit de kernel.",
+                "decide": "SYSTEM confirmado -> recoge la flag y documenta el vector exacto (qué privilegio/servicio/credencial lo permitió). Sigues en Medium/usuario normal -> vuelve a los vectores prioritarios antes de recurrir a un exploit de kernel.",
             },
         ],
     },
@@ -817,7 +817,7 @@ GUIDES = [
             },
             {
                 "title": "Convierte la cadena de ataque en hallazgos",
-                "idea": "No redactes una lista cronológica de comandos. Agrupa por causa raíz: condición vulnerable, pasos mínimos, evidencia, impacto y activos afectados. Separa la vulnerabilidad del camino completo que permitio encadenarla con otras.",
+                "idea": "No redactes una lista cronológica de comandos. Agrupa por causa raíz: condición vulnerable, pasos mínimos, evidencia, impacto y activos afectados. Separa la vulnerabilidad del camino completo que permitió encadenarla con otras.",
                 "commands": [],
                 "look": "Título preciso, precondiciones, prueba reproducible, resultado observado, impacto y causa raíz.",
                 "decide": "Dos técnicas con la misma causa raíz suelen ser un hallazgo; dos causas independientes deben mantenerse separadas.",
