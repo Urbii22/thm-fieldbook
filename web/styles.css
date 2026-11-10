@@ -2216,7 +2216,9 @@ tr:last-child td {
   .roompanel-inner { padding: 16px 14px; }
   .shortcuts { grid-template-columns: 1fr 1fr; }
   .stats { flex-wrap: wrap; }
-  .topbar-right { flex: 1; gap: 8px; }
+  .topbar-inner { grid-template-columns: auto minmax(0, 1fr); }
+  .brand-text { display: none; }
+  .topbar-right { flex: 1; gap: 8px; min-width: 0; }
   .target { flex: 1; min-width: 0; }
   .target input { width: 100%; }
   .vars { grid-template-columns: 1fr; }

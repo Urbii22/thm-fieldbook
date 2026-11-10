@@ -1,77 +1,93 @@
-# THM Fieldbook
+<div align="center">
 
-> Consola de campo para rooms de TryHackMe y CTF: de una evidencia (un puerto, un error, una credencial) a la siguiente comprobación concreta.
+# `>_` THM Fieldbook
 
-**Web:** <https://urbii22.github.io/thm-fieldbook/>
+**Consola de campo para rooms de TryHackMe y CTF.**
+Escribe lo que has encontrado (un puerto, un error, una credencial) y Fieldbook te lleva a la siguiente comprobación concreta.
 
-THM Fieldbook es una web estática (sin backend) que reúne playbooks, comandos comentados, guías y conceptos de pentesting ofensivo. No ejecuta nada: adapta los comandos a tu objetivo (`$IP`, `$USER`, `$PASS`…), explica para qué sirven y te los deja copiados para que los revises antes de lanzarlos.
+[![CI y despliegue](https://github.com/Urbii22/thm-fieldbook/actions/workflows/pages.yml/badge.svg)](https://github.com/Urbii22/thm-fieldbook/actions/workflows/pages.yml)
+[![Web](https://img.shields.io/badge/web-urbii22.github.io%2Fthm--fieldbook-3fb950)](https://urbii22.github.io/thm-fieldbook/)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE)
+![PWA offline](https://img.shields.io/badge/PWA-offline-5a0fc8)
+![Sin backend](https://img.shields.io/badge/backend-ninguno-lightgrey)
 
-## Qué incluye
+[**Abrir la app →**](https://urbii22.github.io/thm-fieldbook/)
 
-| Bloque | Contenido |
+</div>
+
+![Búsqueda "tengo smb 445": Fieldbook detecta SMB y propone las acciones prioritarias](docs/img/search.png)
+
+## Por qué existe
+
+En una room de TryHackMe o un CTF el problema rara vez es no conocer una herramienta: es saber **qué toca hacer ahora** con lo que acabas de ver. Los cheat sheets son listas largas de comandos sin contexto. Fieldbook parte de la **evidencia** (`445`, `web 403`, `sudo NOPASSWD vim`, `shell muere`) y devuelve un playbook corto, ordenado y adaptado a tu objetivo.
+
+No ejecuta nada: rellena `$IP`, `$USER`, `$PASS`… con los datos de tu room, explica para qué sirve cada comando y qué buscar en la salida, y te lo deja listo para copiar y revisar.
+
+## Funcionalidades
+
+| | |
 | --- | --- |
-| **Secciones** | 24 áreas prácticas: recon, web discovery, APIs, inyecciones, SQLi, WordPress, hashes y cracking, acceso inicial, privesc Linux/Windows, Active Directory, pivoting, CVE, checklist de atasco… |
-| **Comandos** | ~440 comandos; los más importantes con ficha (objetivo, requisitos, salida esperada, riesgos, errores comunes). |
-| **Aprender** | Guías paso a paso y una wiki de conceptos enlazados entre sí, organizados en rutas de aprendizaje. |
-| **Room** | IP objetivo, puertos, dominio y usuario; notas, progreso y exportación del writeup en Markdown. |
-| **Extras** | Generador de reverse shells, favoritos, recientes y funcionamiento offline (PWA). |
+| **Búsqueda por intención** | Entiende puertos, servicios, síntomas y frases (`tengo credenciales`, `shell linux www-data`) y prioriza el playbook adecuado. |
+| **24 playbooks prácticos** | Recon, web discovery, APIs, inyecciones, SQLi, WordPress, cracking, acceso inicial, privesc Linux/Windows, Active Directory, pivoting, CVE, checklist de atasco… |
+| **~440 comandos comentados** | 215 con ficha verificada: objetivo, requisitos, salida esperada, ruido/riesgo y errores comunes. |
+| **Modo Aprender** | 12 guías paso a paso y una wiki de 88 conceptos enlazados entre sí, organizados en 19 rutas de aprendizaje. |
+| **Gestión de room** | IP, puertos, dominio y usuario; progreso por fases, notas y exportación del writeup en Markdown. |
+| **Extras** | Generador de reverse shells, favoritos y recientes, atajos de teclado y funcionamiento offline. |
 
-### Ejemplos de búsqueda
+<p align="center">
+  <img src="docs/img/home.png" alt="Pantalla de inicio en escritorio" width="68%" />
+  &nbsp;
+  <img src="docs/img/mobile.png" alt="Pantalla de inicio en móvil" width="24%" />
+</p>
 
-| Escribe | Qué obtienes |
-| --- | --- |
-| `445` o `tengo smb 445` | Playbook SMB: usuarios y shares. |
-| `tengo credenciales` | Cómo validar y reutilizar credenciales. |
-| `web 403` | Discovery, vhosts, autenticación y autorización. |
-| `sudo NOPASSWD vim` | Escalada por sudo y GTFOBins. |
-| `shell muere` | Diagnóstico de listener, TTY y red. |
+## Stack y decisiones técnicas
 
-Más detalle del flujo de uso en [GUIA_DE_USO.md](GUIA_DE_USO.md).
+- **Web estática sin dependencias**: HTML, CSS y JavaScript nativo (ES modules), sin framework ni paso de build. Se publica tal cual en GitHub Pages.
+- **PWA offline-first**: un service worker versionado cachea la app y el contenido; funciona sin conexión durante una room.
+- **El contenido es código**: secciones, guías, conceptos y fichas de comandos viven en módulos Python (`tools/`) y se exportan a un único `content.json`. Así el contenido se revisa en diffs y se valida igual que el código.
+- **Fichas verificables**: la metadata de cada comando se enlaza por sección y comando normalizado, y el exportador falla si una ficha apunta a un comando que ya no existe.
+- **Privacidad por defecto**: todo vive en el navegador. Credenciales, hashes y claves se guardan solo durante la sesión (`sessionStorage`) salvo que actives la persistencia local, y la exportación de una room excluye los secretos.
+- **CI que protege el contenido**: cada push ejecuta los tests de Python y JavaScript y comprueba que el `content.json` publicado coincide con lo que genera la fuente.
 
-## Privacidad
-
-Todo vive en tu navegador. Las credenciales, hashes y claves se guardan solo durante la sesión (`sessionStorage`) salvo que actives explícitamente la persistencia local. La exportación de una room excluye los secretos.
-
-## Estructura del repositorio
+## Estructura
 
 ```text
-tools/                         Fuente del contenido y exportador
-  generate_structured_playbook.py   SECTIONS: secciones y comandos (+ PDF por sección)
-  generate_thm_playbook.py          Guías PDF temáticas (output/pdf/)
-  guides.py                         GUIDES: guías del modo Aprender
-  concepts.py                       CONCEPTS y rutas de aprendizaje
-  command_metadata.py               Fichas verificables de comandos
-  export_web_content.py             Genera web/data/content.json
-web/                           App estática publicada en GitHub Pages
+web/                    App publicada en GitHub Pages
   index.html, app.mjs, styles.css, sw.js, manifest.webmanifest
-  js/                               Módulos (búsqueda, ranking, rooms, notas, progreso) con sus tests
-  data/content.json                 Contenido exportado (se commitea)
-  data/revshells.json               Plantillas de reverse shells
-tests/                         Tests del exportador (unittest)
-output/                        PDFs y capturas generadas (no es fuente)
+  js/                   Módulos: búsqueda, ranking, rooms, notas, progreso (+ tests)
+  data/content.json     Contenido exportado (generado, se commitea)
+tools/                  Fuente del contenido y exportador
+  generate_structured_playbook.py   Secciones y comandos
+  guides.py, concepts.py            Modo Aprender: guías, conceptos y rutas
+  command_metadata.py               Fichas de comandos
+  export_web_content.py             Genera web/data/content.json
+  generate_thm_playbook.py          Guías temáticas en PDF
+tests/                  Tests del exportador
+output/pdf/             Guías y playbook en PDF
+docs/                   Guía de uso, capturas y notas de desarrollo
 ```
 
 ## Desarrollo local
 
-Requisitos: Python 3.13+ y Node 24+. Para generar PDFs, además `pypdf` y `reportlab`.
-
-Servir la web en <http://localhost:4599>:
+Requisitos: Python 3.13+ y Node 24+.
 
 ```bash
 python -m http.server 4599 --directory web
 ```
 
+Abre <http://localhost:4599>.
+
 ### Editar contenido
 
-1. Edita la fuente en `tools/` (secciones, guías, conceptos o metadata de comandos), nunca `web/data/content.json` a mano.
-2. Regenera el JSON:
+1. Edita la fuente en `tools/`, nunca `web/data/content.json` a mano.
+2. Regenera el contenido:
 
    ```bash
    python tools/export_web_content.py
    ```
 
-3. Si cambias `app.mjs` o `styles.css`, actualiza el parámetro `?v=` de `index.html` para invalidar la caché del service worker.
-4. Commitea la fuente **y** el `content.json` regenerado: la CI comprueba que coinciden.
+3. Si cambias `app.mjs` o `styles.css`, sube la versión (`?v=` en `index.html`, `VERSION` y `CACHE` en `sw.js`, `APP_VERSION` en `app.mjs`) para que el service worker sirva la nueva.
+4. Commitea la fuente y el `content.json` regenerado.
 
 ### Tests
 
@@ -83,7 +99,9 @@ python -m unittest discover -s tests
 node --test web/app.test.mjs web/js/*.test.mjs
 ```
 
-### PDFs (opcional)
+### PDFs
+
+Necesitan `pypdf` y `reportlab`; se escriben en `output/pdf/`.
 
 ```bash
 python tools/generate_structured_playbook.py
@@ -93,16 +111,16 @@ python tools/generate_structured_playbook.py
 python tools/generate_thm_playbook.py
 ```
 
-Los PDFs se escriben en `output/pdf/` (temporales en `tmp/`).
+## Documentación
 
-## Despliegue
-
-[`.github/workflows/pages.yml`](.github/workflows/pages.yml) se ejecuta en cada push y PR a `main`:
-
-1. Tests de Python y de JavaScript.
-2. Re-exporta el contenido y lo compara con `web/data/content.json`.
-3. En `main`, publica la carpeta `web/` en GitHub Pages.
+- [Guía de uso](docs/GUIA_DE_USO.md): flujo recomendado y cómo leer los resultados.
+- [Guías en PDF](output/pdf/): playbook estructurado y guías temáticas descargables.
+- [Notas de desarrollo](docs/dev/): planes de contenido, priorización y auditoría de cobertura PT1.
 
 ## Uso responsable
 
-El contenido está pensado para laboratorios (TryHackMe, HackTheBox, CTF) y auditorías autorizadas. Lanza cada comando solo dentro del alcance que tengas permitido.
+El contenido está pensado para laboratorios (TryHackMe, Hack The Box, CTF) y auditorías con autorización. Lanza cada comando solo dentro del alcance que tengas permitido.
+
+## Licencia
+
+[MIT](LICENSE)

@@ -392,9 +392,9 @@ assert.deepEqual(
   "busqueda con y sin tilde debe devolver el mismo resultado",
 );
 
-const releaseVersion = "20260713-format-strings";
+const releaseVersion = "20261110-mobile-topbar";
 for (const asset of [html, js, sw]) assert.ok(asset.includes(releaseVersion), `falta version PWA ${releaseVersion}`);
-assert.match(sw, /thm-fieldbook-v70/);
+assert.match(sw, /thm-fieldbook-v71/);
 
 assert.match(js, /registration\.update\(\)/);
 assert.match(js, /controllerchange/);

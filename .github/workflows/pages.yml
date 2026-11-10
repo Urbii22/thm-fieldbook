@@ -39,12 +39,18 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Run JavaScript tests
-        run: node --test web/app.test.mjs
+        run: node --test web/app.test.mjs web/js/*.test.mjs
 
       - name: Verify committed web export
         run: |
           python tools/export_web_content.py --output /tmp/content.json
-          diff -u web/data/content.json /tmp/content.json
+          python - <<'PY'
+          import json, sys
+          load = lambda p: {k: v for k, v in json.load(open(p, encoding="utf-8")).items() if k != "generatedAt"}
+          if load("web/data/content.json") != load("/tmp/content.json"):
+              sys.exit("web/data/content.json is stale: run python tools/export_web_content.py and commit it")
+          print("content.json in sync")
+          PY
 
   deploy:
     needs: validate
